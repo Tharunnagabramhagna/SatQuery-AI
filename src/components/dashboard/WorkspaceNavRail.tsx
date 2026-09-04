@@ -44,8 +44,8 @@ export function WorkspaceNavRail({
   ];
 
   return (
-    <aside className="w-16 border-r border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#070b15] flex flex-col items-center justify-between py-3 shrink-0 select-none z-20">
-      <div className="flex flex-col items-center gap-4 w-full px-1">
+    <aside className="w-[72px] border-r border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#070b15] flex flex-col items-center justify-between py-3 shrink-0 select-none z-20">
+      <div className="flex flex-col items-center gap-3 w-full px-1.5">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = activeItem === item.id;
@@ -54,7 +54,7 @@ export function WorkspaceNavRail({
               key={item.id}
               onClick={item.onClick}
               className={cn(
-                'group relative w-13 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-center transition-all duration-150',
+                'group relative w-full flex flex-col items-center justify-center py-2 px-1 rounded-xl text-center transition-all duration-150',
                 isActive
                   ? 'bg-blue-50 dark:bg-blue-600/15 text-blue-600 dark:text-cyan-400 border border-blue-200 dark:border-blue-500/30 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
@@ -71,7 +71,7 @@ export function WorkspaceNavRail({
               >
                 <Icon className="w-4 h-4" />
               </div>
-              <span className="text-[9px] font-medium leading-tight mt-1 max-w-[56px] truncate text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200">
+              <span className="text-[10px] font-medium leading-tight mt-1 text-center text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200">
                 {item.label}
               </span>
             </button>

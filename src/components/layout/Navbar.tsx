@@ -17,7 +17,7 @@ interface NavbarProps {
 
 export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onToggleSidebar: _onToggleSidebar }: NavbarProps) {
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-13 px-4 lg:px-6 bg-white dark:bg-[#070b15] border-b border-slate-200 dark:border-slate-800/90 w-full select-none transition-colors duration-150">
+    <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 lg:px-6 bg-white dark:bg-[#070b15] border-b border-slate-200 dark:border-slate-800/90 w-full select-none transition-colors duration-150">
       {/* Left Brand Area */}
       <div className="flex items-center gap-6">
         <button
@@ -37,14 +37,14 @@ export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onToggleSidebar
             to="/dashboard"
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
+                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all',
                 isActive
                   ? 'bg-slate-100 dark:bg-slate-800/90 text-blue-700 dark:text-white border border-slate-300 dark:border-slate-700 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               )
             }
           >
-            <LayoutDashboard className="w-3.5 h-3.5" />
+            <LayoutDashboard className="w-4 h-4" />
             <span>Dashboard</span>
           </NavLink>
 
@@ -52,7 +52,7 @@ export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onToggleSidebar
             to="/history"
             className={({ isActive }) =>
               cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                'px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors',
                 isActive
                   ? 'bg-slate-100 dark:bg-slate-800/90 text-blue-700 dark:text-white border border-slate-300 dark:border-slate-700 font-semibold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
@@ -66,7 +66,7 @@ export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onToggleSidebar
             to="/datasets"
             className={({ isActive }) =>
               cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                'px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors',
                 isActive
                   ? 'bg-slate-100 dark:bg-slate-800/90 text-blue-700 dark:text-white border border-slate-300 dark:border-slate-700 font-semibold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
@@ -80,7 +80,7 @@ export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onToggleSidebar
             to="/documentation"
             className={({ isActive }) =>
               cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                'px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors',
                 isActive
                   ? 'bg-slate-100 dark:bg-slate-800/90 text-blue-700 dark:text-white border border-slate-300 dark:border-slate-700 font-semibold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
