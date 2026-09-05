@@ -45,6 +45,7 @@ pnpm-debug.log*
 # Environment
 .env
 .env.*
+*.env
 !.env.example
 
 # IDE & OS
