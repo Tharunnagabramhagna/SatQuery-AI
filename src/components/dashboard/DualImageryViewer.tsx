@@ -37,12 +37,26 @@ export function DualImageryViewer({
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [stageWidth, setStageWidth] = useState(0);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (stageRef.current) {
+        setStageWidth(stageRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const handleSliderMove = useCallback((clientX: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+    const target = stageRef.current || containerRef.current;
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
     const offsetX = clientX - rect.left;
-    const percentage = Math.max(5, Math.min(95, (offsetX / rect.width) * 100));
+    const percentage = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
     setSliderPosition(percentage);
   }, []);
 
@@ -200,128 +214,134 @@ export function DualImageryViewer({
         {/* Dual Split Satellite Comparison Canvas */}
         <div
           ref={containerRef}
-          className="xl:col-span-8 relative rounded-xl border border-slate-300 dark:border-slate-800 bg-[#060a14] overflow-hidden shadow-md h-[340px] sm:h-[380px] lg:h-[400px] flex items-center justify-center group"
+          className="xl:col-span-8 relative rounded-xl border border-slate-300 dark:border-slate-800 bg-[#060a14] overflow-hidden shadow-md h-[340px] sm:h-[380px] lg:h-[400px] flex items-center justify-center group select-none"
           style={{ cursor: isDragging ? 'col-resize' : 'default' }}
         >
-          {/* Zoom wrapper for zoom scale */}
+          {/* Aspect-Ratio Preserving Imagery Stage (1200 x 896 intrinsic ratio) */}
           <div
-            className="relative w-full h-full transition-transform duration-150 ease-out origin-center"
-            style={{ transform: `scale(${zoomLevel})` }}
+            ref={stageRef}
+            className="relative h-full max-w-full aspect-[1200/896] overflow-hidden flex items-center justify-center"
           >
-            {/* Background: Current/After Image (Full width base) */}
-            <img
-              src="/imagery/sat_after.jpg"
-              alt="Current Satellite Imagery (2026)"
-              className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-            />
-
-            {/* Left Clip: Previous/Before Image (Clipped at sliderPosition %) */}
+            {/* Zoom wrapper for zoom scale */}
             <div
-              className="absolute inset-0 overflow-hidden"
-              style={{
-                width: `${modeCategory === 'single' ? 0 : sliderPosition}%`,
-                display: modeCategory === 'single' ? 'none' : 'block',
-              }}
+              className="relative w-full h-full transition-transform duration-150 ease-out origin-center"
+              style={{ transform: `scale(${zoomLevel})` }}
             >
+              {/* Background: Current/After Image (Full width base) */}
               <img
-                src="/imagery/sat_before.jpg"
-                alt="Previous Satellite Imagery (2025)"
-                className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-                style={{
-                  width: containerRef.current ? `${containerRef.current.clientWidth}px` : '100%',
-                  maxWidth: 'none',
-                }}
+                src="/imagery/sat_after.jpg"
+                alt="Current Satellite Imagery (2026)"
+                className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none"
               />
+
+              {/* Left Clip: Previous/Before Image (Clipped at sliderPosition %) */}
+              <div
+                className="absolute inset-0 overflow-hidden"
+                style={{
+                  width: `${modeCategory === 'single' ? 0 : sliderPosition}%`,
+                  display: modeCategory === 'single' ? 'none' : 'block',
+                }}
+              >
+                <img
+                  src="/imagery/sat_before.jpg"
+                  alt="Previous Satellite Imagery (2025)"
+                  className="absolute inset-0 h-full object-contain select-none pointer-events-none"
+                  style={{
+                    width: stageWidth ? `${stageWidth}px` : '100%',
+                    maxWidth: 'none',
+                  }}
+                />
+              </div>
+
+              {/* SVG Overlays: Golden Polygons & Bounding Boxes */}
+              {showOverlays && (
+                <svg
+                  className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                  viewBox="0 0 800 500"
+                  preserveAspectRatio="none"
+                >
+                  {/* Changed Region Golden Boxes */}
+                  <g className="animate-pulse-slow">
+                    {/* Region 1: Northern new warehouse complex */}
+                    <polygon
+                      points="420,120 540,110 570,220 440,240"
+                      fill="rgba(250, 204, 21, 0.18)"
+                      stroke="#facc15"
+                      strokeWidth="2.5"
+                      strokeDasharray="none"
+                    />
+                    <rect
+                      x="420"
+                      y="110"
+                      width="150"
+                      height="130"
+                      fill="none"
+                      stroke="#eab308"
+                      strokeWidth="1.2"
+                      strokeDasharray="4 2"
+                    />
+
+                    {/* Region 2: Central structural foundation */}
+                    <polygon
+                      points="370,260 480,250 510,340 390,360"
+                      fill="rgba(245, 158, 11, 0.22)"
+                      stroke="#fbbf24"
+                      strokeWidth="2.2"
+                    />
+
+                    {/* Region 3: Eastern cleared parcel */}
+                    <polygon
+                      points="590,160 670,150 680,260 600,270"
+                      fill="rgba(250, 204, 21, 0.15)"
+                      stroke="#facc15"
+                      strokeWidth="2"
+                    />
+
+                    {/* Detected building footprint boxes */}
+                    <rect x="440" y="130" width="35" height="40" fill="rgba(250, 204, 21, 0.3)" stroke="#fef08a" strokeWidth="1.5" />
+                    <rect x="490" y="145" width="40" height="45" fill="rgba(250, 204, 21, 0.3)" stroke="#fef08a" strokeWidth="1.5" />
+                    <rect x="410" y="275" width="30" height="35" fill="rgba(250, 204, 21, 0.3)" stroke="#fef08a" strokeWidth="1.5" />
+                    <rect x="455" y="280" width="38" height="42" fill="rgba(250, 204, 21, 0.3)" stroke="#fef08a" strokeWidth="1.5" />
+                  </g>
+                </svg>
+              )}
             </div>
 
-            {/* SVG Overlays: Golden Polygons & Bounding Boxes */}
-            {showOverlays && (
-              <svg
-                className="absolute inset-0 w-full h-full pointer-events-none z-10"
-                viewBox="0 0 800 500"
-                preserveAspectRatio="none"
+            {/* Interactive Split Divider & Drag Handle */}
+            {modeCategory !== 'single' && (
+              <div
+                className="absolute top-0 bottom-0 z-20"
+                style={{ left: `${sliderPosition}%` }}
               >
-                {/* Changed Region Golden Boxes */}
-                <g className="animate-pulse-slow">
-                  {/* Region 1: Northern new warehouse complex */}
-                  <polygon
-                    points="420,120 540,110 570,220 440,240"
-                    fill="rgba(250, 204, 21, 0.18)"
-                    stroke="#facc15"
-                    strokeWidth="2.5"
-                    strokeDasharray="none"
-                  />
-                  <rect
-                    x="420"
-                    y="110"
-                    width="150"
-                    height="130"
-                    fill="none"
-                    stroke="#eab308"
-                    strokeWidth="1.2"
-                    strokeDasharray="4 2"
-                  />
+                {/* Divider Line */}
+                <div className="absolute top-0 bottom-0 -left-0.5 w-1 bg-white/90 shadow-[0_0_10px_rgba(0,0,0,0.6)] cursor-col-resize" />
 
-                  {/* Region 2: Central structural foundation */}
-                  <polygon
-                    points="370,260 480,250 510,340 390,360"
-                    fill="rgba(245, 158, 11, 0.22)"
-                    stroke="#fbbf24"
-                    strokeWidth="2.2"
-                  />
+                {/* Drag Handle Circle */}
+                <div
+                  onMouseDown={handleMouseDown}
+                  onTouchStart={handleTouchStart}
+                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-900/90 text-white border-2 border-white shadow-xl flex items-center justify-center cursor-col-resize hover:scale-110 active:scale-95 transition-transform"
+                  title="Drag to compare before & after satellite imagery"
+                >
+                  <span className="text-[10px] font-bold tracking-tighter select-none flex items-center justify-center">
+                    &lt;&gt;
+                  </span>
+                </div>
+              </div>
+            )}
 
-                  {/* Region 3: Eastern cleared parcel */}
-                  <polygon
-                    points="590,160 670,150 680,260 600,270"
-                    fill="rgba(250, 204, 21, 0.15)"
-                    stroke="#facc15"
-                    strokeWidth="2"
-                  />
-
-                  {/* Detected building footprint boxes */}
-                  <rect x="440" y="130" width="35" height="40" fill="rgba(250, 204, 21, 0.3)" stroke="#fef08a" strokeWidth="1.5" />
-                  <rect x="490" y="145" width="40" height="45" fill="rgba(250, 204, 21, 0.3)" stroke="#fef08a" strokeWidth="1.5" />
-                  <rect x="410" y="275" width="30" height="35" fill="rgba(250, 204, 21, 0.3)" stroke="#fef08a" strokeWidth="1.5" />
-                  <rect x="455" y="280" width="38" height="42" fill="rgba(250, 204, 21, 0.3)" stroke="#fef08a" strokeWidth="1.5" />
-                </g>
-              </svg>
+            {/* Bottom Temporal Labels */}
+            {modeCategory !== 'single' && (
+              <>
+                <div className="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-200 shadow-md">
+                  Previous Image (2025-03-12)
+                </div>
+                <div className="absolute bottom-3 right-3 z-20 px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-200 shadow-md">
+                  Current Image (2026-03-12)
+                </div>
+              </>
             )}
           </div>
-
-          {/* Interactive Split Divider & Drag Handle */}
-          {modeCategory !== 'single' && (
-            <div
-              className="absolute top-0 bottom-0 z-20"
-              style={{ left: `${sliderPosition}%` }}
-            >
-              {/* Divider Line */}
-              <div className="absolute top-0 bottom-0 -left-0.5 w-1 bg-white/90 shadow-[0_0_10px_rgba(0,0,0,0.6)] cursor-col-resize" />
-
-              {/* Drag Handle Circle */}
-              <div
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleTouchStart}
-                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-900/90 text-white border-2 border-white shadow-xl flex items-center justify-center cursor-col-resize hover:scale-110 active:scale-95 transition-transform"
-                title="Drag to compare before & after satellite imagery"
-              >
-                <span className="text-[10px] font-bold tracking-tighter select-none flex items-center justify-center">
-                  &lt;&gt;
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Temporal Labels */}
-          {modeCategory !== 'single' && (
-            <>
-              <div className="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-200 shadow-md">
-                Previous Image (2025-03-12)
-              </div>
-              <div className="absolute bottom-3 right-3 z-20 px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-200 shadow-md">
-                Current Image (2026-03-12)
-              </div>
-            </>
-          )}
 
           {/* Left Floating Map Navigation Controls */}
           <div className="absolute top-4 left-3 z-20 flex flex-col rounded-lg bg-slate-900/85 backdrop-blur-md border border-slate-700/80 p-1 shadow-lg text-slate-200 divide-y divide-slate-800">
@@ -389,70 +409,73 @@ export function DualImageryViewer({
         </div>
 
         {/* Beside Map Viewport: Zoomed Detail Inspection Tile */}
-        <div className="xl:col-span-4 relative rounded-xl border border-slate-300 dark:border-slate-800 bg-[#060a14] overflow-hidden shadow-md h-[340px] sm:h-[380px] lg:h-[400px] flex flex-col justify-between p-3">
-          {/* Background Detail Satellite Imagery */}
-          <img
-            src="/imagery/sat_detail.jpg"
-            alt="High-resolution localized satellite tile"
-            className="absolute inset-0 w-full h-full object-cover opacity-90 select-none"
-          />
-
-          {/* Golden Polygon Overlays on Detail Tile */}
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none z-10"
-            viewBox="0 0 400 400"
-          >
-            <polygon
-              points="140,80 280,70 310,210 160,230"
-              fill="rgba(250, 204, 21, 0.22)"
-              stroke="#facc15"
-              strokeWidth="2.5"
+        <div className="xl:col-span-4 relative rounded-xl border border-slate-300 dark:border-slate-800 bg-[#060a14] overflow-hidden shadow-md h-[340px] sm:h-[380px] lg:h-[400px] flex items-center justify-center p-3">
+          {/* Aspect-Ratio Preserving Detail Stage (1024 x 1024 square) */}
+          <div className="relative h-full max-w-full aspect-square overflow-hidden flex flex-col justify-between p-3 rounded-lg">
+            {/* Background Detail Satellite Imagery */}
+            <img
+              src="/imagery/sat_detail.jpg"
+              alt="High-resolution localized satellite tile"
+              className="absolute inset-0 w-full h-full object-contain opacity-90 select-none"
             />
-            <polygon
-              points="170,240 260,230 280,310 190,320"
-              fill="rgba(250, 204, 21, 0.2)"
-              stroke="#facc15"
-              strokeWidth="2"
-            />
-          </svg>
 
-          {/* Top Pill: Detected Buildings Badge */}
-          <div className="relative z-20 flex items-center justify-between w-full">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-400/90 text-slate-950 text-xs font-bold shadow-md">
-              <span className="w-2.5 h-2.5 rounded-sm bg-slate-950" />
-              <span>Detected Buildings</span>
+            {/* Golden Polygon Overlays on Detail Tile */}
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none z-10"
+              viewBox="0 0 400 400"
+            >
+              <polygon
+                points="140,80 280,70 310,210 160,230"
+                fill="rgba(250, 204, 21, 0.22)"
+                stroke="#facc15"
+                strokeWidth="2.5"
+              />
+              <polygon
+                points="170,240 260,230 280,310 190,320"
+                fill="rgba(250, 204, 21, 0.2)"
+                stroke="#facc15"
+                strokeWidth="2"
+              />
+            </svg>
+
+            {/* Top Pill: Detected Buildings Badge */}
+            <div className="relative z-20 flex items-center justify-between w-full">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-400/90 text-slate-950 text-xs font-bold shadow-md">
+                <span className="w-2.5 h-2.5 rounded-sm bg-slate-950" />
+                <span>Detected Buildings</span>
+              </div>
+
+              {/* Quick action: Crosshair locator */}
+              <button
+                onClick={() => onInspectRegion?.('zoom-detail')}
+                className="p-1 rounded-md bg-slate-950/80 backdrop-blur-sm border border-slate-700 text-slate-200 hover:text-white hover:bg-slate-800 transition-colors shadow-sm"
+                title="Inspect detail bounds"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            {/* Quick action: Crosshair locator */}
-            <button
-              onClick={() => onInspectRegion?.('zoom-detail')}
-              className="p-1 rounded-md bg-slate-950/80 backdrop-blur-sm border border-slate-700 text-slate-200 hover:text-white hover:bg-slate-800 transition-colors shadow-sm"
-              title="Inspect detail bounds"
-            >
-              <MapPin className="w-3.5 h-3.5" />
-            </button>
-          </div>
+            {/* Floating Right Side Controls on Detail View */}
+            <div className="relative z-20 self-end flex flex-col rounded-lg bg-slate-900/85 backdrop-blur-md border border-slate-700/80 p-1 shadow-lg text-slate-200 divide-y divide-slate-800">
+              <button
+                className="p-1.5 hover:bg-slate-800 hover:text-cyan-400 rounded transition-colors"
+                title="Layer opacity"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+              </button>
+              <button
+                className="p-1.5 hover:bg-slate-800 hover:text-blue-400 rounded transition-colors"
+                title="Toggle infrared"
+              >
+                <Layers className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-          {/* Floating Right Side Controls on Detail View */}
-          <div className="relative z-20 self-end flex flex-col rounded-lg bg-slate-900/85 backdrop-blur-md border border-slate-700/80 p-1 shadow-lg text-slate-200 divide-y divide-slate-800">
-            <button
-              className="p-1.5 hover:bg-slate-800 hover:text-cyan-400 rounded transition-colors"
-              title="Layer opacity"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-            </button>
-            <button
-              className="p-1.5 hover:bg-slate-800 hover:text-blue-400 rounded transition-colors"
-              title="Toggle infrared"
-            >
-              <Layers className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Bottom Inset Caption */}
-          <div className="relative z-20 flex items-center justify-between px-2 py-1 rounded bg-slate-950/85 backdrop-blur-md border border-slate-800/90 text-[10px] text-slate-300 font-mono">
-            <span>ROI Alpha (Sub-pixel 0.5m)</span>
-            <span className="text-emerald-400 font-semibold">100% Coherence</span>
+            {/* Bottom Inset Caption */}
+            <div className="relative z-20 flex items-center justify-between px-2 py-1 rounded bg-slate-950/85 backdrop-blur-md border border-slate-800/90 text-[10px] text-slate-300 font-mono">
+              <span>ROI Alpha (Sub-pixel 0.5m)</span>
+              <span className="text-emerald-400 font-semibold">100% Coherence</span>
+            </div>
           </div>
         </div>
       </div>

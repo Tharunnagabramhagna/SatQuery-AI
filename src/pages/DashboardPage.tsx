@@ -15,6 +15,7 @@ import { WorkspaceFooter } from '../components/dashboard/WorkspaceFooter';
 import { NewAnalysisModal } from '../components/dashboard/NewAnalysisModal';
 import { EvidenceModal } from '../components/dashboard/EvidenceModal';
 import { SystemStatusModal } from '../components/dashboard/SystemStatusModal';
+import { QueryAgentOverlay } from '../components/dashboard/QueryAgentOverlay';
 
 const QUERY_AGENT_SUGGESTIONS = [
   'What objects are visible?',
@@ -41,6 +42,9 @@ export function DashboardPage() {
 
   // Analyzing state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Query Agent overlay state
+  const [isQueryAgentOpen, setIsQueryAgentOpen] = useState(false);
 
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -154,6 +158,18 @@ export function DashboardPage() {
     setModeCategory(targetMode.category);
   };
 
+  // Query Agent overlay handlers
+  const handleOpenQueryAgent = () => {
+    setSelectedToolId('query_agent');
+    setIsQueryAgentOpen(true);
+  };
+
+  const handleCloseQueryAgent = () => {
+    setIsQueryAgentOpen(false);
+    // Do NOT reset selectedToolId, modeCategory, activePresetMode, or queryAgentQuery.
+    // Analysis context is preserved across open/close cycles.
+  };
+
   return (
     <div className="flex flex-col flex-1 min-h-[calc(100vh-3.5rem)] w-full bg-slate-100/50 dark:bg-[#060a14]">
       {/* 3-Column Workspace Main Structure */}
@@ -169,8 +185,8 @@ export function DashboardPage() {
 
         {/* Column 2: Secondary Sidebar */}
         <WorkspaceSecondarySidebar
-          activeToolId={selectedToolId}
-          onSelectTool={handleSelectTool}
+          isQueryAgentOpen={isQueryAgentOpen}
+          onOpenQueryAgent={handleOpenQueryAgent}
           onNewAnalysis={() => setIsNewModalOpen(true)}
           onUploadImagery={() => setIsNewModalOpen(true)}
           onSavedResults={() => navigate('/history?filter=saved')}
@@ -188,8 +204,13 @@ export function DashboardPage() {
             </p>
           </div>
 
-          {/* Interactive Workspace Grid */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 flex-1 items-start">
+          {/* Interactive Workspace Grid — visually present underneath; dimmed & inert when overlay is open */}
+          <div
+            className={`grid grid-cols-1 xl:grid-cols-12 gap-4 flex-1 items-start transition-opacity duration-200 ${
+              isQueryAgentOpen ? 'pointer-events-none select-none opacity-40' : ''
+            }`}
+            aria-hidden={isQueryAgentOpen}
+          >
             {/* Center-Left Content Column (Map Viewer + Query/Execution Panels) */}
             <div className="xl:col-span-9 flex flex-col gap-4 min-w-0">
               {/* Dual Satellite Map Viewer */}
@@ -243,6 +264,27 @@ export function DashboardPage() {
       {/* Footer Bar */}
       <WorkspaceFooter />
 
+      {/* Query Agent Overlay — Full Analysis Workspace */}
+      <QueryAgentOverlay
+        isOpen={isQueryAgentOpen}
+        onClose={handleCloseQueryAgent}
+        selectedToolId={selectedToolId}
+        onSelectTool={handleSelectTool}
+        modeCategory={modeCategory}
+        onCategoryChange={handleCategoryChange}
+        queryAgentQuery={queryAgentQuery}
+        onQueryChange={setQueryAgentQuery}
+        onAnalyze={handleAnalyze}
+        isAnalyzing={isAnalyzing}
+        activeDisplayName={activeDisplayName}
+        activePresetMode={activePresetMode}
+        onViewEvidence={() => setIsEvidenceModalOpen(true)}
+        onViewOnMap={handleViewOnMap}
+        onDownloadReport={handleDownloadReport}
+        detectedFeaturesCount={activePresetMode.detectedFeaturesCount}
+        onInspectRegion={() => setIsEvidenceModalOpen(true)}
+      />
+
       {/* Supporting Interactive Modals */}
       <NewAnalysisModal
         isOpen={isNewModalOpen}
@@ -263,3 +305,4 @@ export function DashboardPage() {
     </div>
   );
 }
+

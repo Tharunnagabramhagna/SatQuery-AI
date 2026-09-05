@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Plus,
   Upload,
@@ -10,8 +10,6 @@ import {
   MessageSquareDiff,
   Layers,
   Sparkles,
-  ChevronUp,
-  ChevronRight,
   Bot,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -163,28 +161,20 @@ export const ANALYSIS_TOOLS: AnalysisTool[] = [
 ];
 
 interface WorkspaceSecondarySidebarProps {
-  activeToolId?: string;
-  activeModeId?: string;
-  onSelectTool: (tool: AnalysisTool) => void;
-  onSelectMode?: (mode: AnalysisModeConfig) => void;
+  isQueryAgentOpen?: boolean;
+  onOpenQueryAgent: () => void;
   onNewAnalysis: () => void;
   onUploadImagery: () => void;
   onSavedResults: () => void;
 }
 
 export function WorkspaceSecondarySidebar({
-  activeToolId,
-  activeModeId,
-  onSelectTool,
-  onSelectMode,
+  isQueryAgentOpen = false,
+  onOpenQueryAgent,
   onNewAnalysis,
   onUploadImagery,
   onSavedResults,
 }: WorkspaceSecondarySidebarProps) {
-  const [isQueryAgentExpanded, setIsQueryAgentExpanded] = useState(true);
-  const currentActiveId = activeToolId || activeModeId;
-  const isQueryAgentActive = currentActiveId === 'query_agent';
-
   return (
     <aside className="w-56 lg:w-60 border-r border-slate-200 dark:border-slate-800/80 bg-slate-50/60 dark:bg-[#080d1a] flex flex-col py-3 px-2 shrink-0 select-none overflow-y-auto">
       {/* Header Pill */}
@@ -223,111 +213,38 @@ export function WorkspaceSecondarySidebar({
       {/* Divider */}
       <div className="h-px bg-slate-200 dark:bg-slate-800/80 my-2 mx-1" />
 
-      {/* Query Agent Section - Primary Analysis Workspace Entry */}
-      <div className="space-y-1">
+      {/* Query Agent — Primary Analysis Workspace Trigger */}
+      <button
+        type="button"
+        onClick={onOpenQueryAgent}
+        className={cn(
+          'w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 text-left mt-1',
+          isQueryAgentOpen
+            ? 'bg-blue-600/10 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-300 border border-blue-400/40 dark:border-cyan-500/30 shadow-sm'
+            : 'text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent'
+        )}
+      >
         <div
           className={cn(
-            'w-full flex items-center justify-between rounded-lg transition-all duration-150',
-            isQueryAgentActive
-              ? 'bg-slate-200/90 dark:bg-slate-800/95 text-blue-700 dark:text-slate-100 border border-slate-300 dark:border-slate-700 shadow-sm font-semibold'
-              : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent'
+            'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+            isQueryAgentOpen
+              ? 'bg-blue-600/20 dark:bg-cyan-500/20 text-blue-600 dark:text-cyan-400'
+              : 'bg-blue-500/10 dark:bg-cyan-400/10 text-blue-600 dark:text-cyan-400'
           )}
         >
-          {/* Main selection button */}
-          <button
-            type="button"
-            onClick={() => {
-              if (isQueryAgentActive) {
-                // If already active, toggle expand/collapse
-                setIsQueryAgentExpanded((prev) => !prev);
-              } else {
-                onSelectTool(QUERY_AGENT_TOOL);
-                if (!isQueryAgentExpanded) {
-                  setIsQueryAgentExpanded(true);
-                }
-              }
-            }}
-            className="flex items-center gap-2.5 px-2.5 py-2 flex-1 min-w-0 text-left focus:outline-none"
-          >
-            <div
-              className={cn(
-                'w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors',
-                isQueryAgentActive
-                  ? 'bg-blue-600/15 dark:bg-cyan-500/20 text-blue-600 dark:text-cyan-400'
-                  : 'text-blue-600 dark:text-cyan-400 bg-blue-500/10 dark:bg-cyan-400/10'
-              )}
-            >
-              <Bot className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-xs font-semibold tracking-tight truncate">Query Agent</span>
-          </button>
-
-          {/* Chevron expand/collapse toggle button */}
-          <button
-            type="button"
-            aria-expanded={isQueryAgentExpanded}
-            aria-label={isQueryAgentExpanded ? 'Collapse Query Agent analysis tools' : 'Expand Query Agent analysis tools'}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsQueryAgentExpanded((prev) => !prev);
-            }}
-            className="p-2 mr-1 rounded hover:bg-slate-300/40 dark:hover:bg-slate-700/40 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors shrink-0 focus:outline-none"
-          >
-            {isQueryAgentExpanded ? (
-              <ChevronUp className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5" />
-            )}
-          </button>
+          <Bot className="w-4 h-4" />
         </div>
-
-        {/* Nested Child Analysis Tools */}
-        {isQueryAgentExpanded && (
-          <div className="ml-2 pl-2 border-l border-slate-200/80 dark:border-slate-800/80 space-y-1 mt-1">
-            <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-              Analysis Tools
-            </div>
-
-            <div className="space-y-1">
-              {ANALYSIS_TOOLS.map((tool) => {
-                const Icon = tool.icon;
-                const isActive = currentActiveId === tool.id;
-
-                return (
-                  <button
-                    key={tool.id}
-                    onClick={() => {
-                      onSelectTool(tool);
-                      if (onSelectMode && tool.modeId) {
-                        const mode = WORKSPACE_MODES.find((m) => m.id === tool.modeId);
-                        if (mode) onSelectMode(mode);
-                      }
-                    }}
-                    className={cn(
-                      'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 text-left',
-                      isActive
-                        ? 'bg-slate-200/90 dark:bg-slate-800/95 text-blue-700 dark:text-slate-100 border border-slate-300 dark:border-slate-700 shadow-sm font-semibold'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors',
-                        isActive
-                          ? 'bg-blue-600/15 dark:bg-cyan-500/20 text-blue-600 dark:text-cyan-400'
-                          : 'text-slate-500 dark:text-slate-400'
-                      )}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="truncate">{tool.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        <div className="flex flex-col min-w-0">
+          <span className="truncate leading-snug">Query Agent</span>
+          <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400 leading-tight truncate">
+            AI analysis workspace
+          </span>
+        </div>
+        {isQueryAgentOpen && (
+          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
         )}
-      </div>
+      </button>
     </aside>
   );
 }
+
