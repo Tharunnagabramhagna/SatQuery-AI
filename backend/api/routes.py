@@ -47,7 +47,12 @@ async def process_query_endpoint(request: QueryRequest) -> QueryResponse:
         POST /api/query -> QueryRequest validation -> Agent Orchestrator -> QueryResponse
     """
     try:
-        result = await orchestrator.process_query(query=request.query)
+        result = await orchestrator.process_query(
+            query=request.query,
+            before_image=request.before_image,
+            after_image=request.after_image,
+            parameters=request.parameters,
+        )
         return QueryResponse(**result)
     except HTTPException:
         raise

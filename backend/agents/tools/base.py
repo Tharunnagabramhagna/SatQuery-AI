@@ -77,28 +77,7 @@ class GroundingTool(BaseTool):
             ],
         )
 
-
-class ChangeDetectionTool(BaseTool):
-    """Safe architectural placeholder for Bi-Temporal Change Detection tool."""
-
-    tool_id = ToolIdentifier.CHANGE_DETECTION_TOOL
-    name = "Bi-Temporal Change Detection Tool"
-    description = "Analyzes changes, construction, or land cover transitions across two observation periods."
-
-    async def execute(self, params: Dict[str, Any]) -> ToolResult:
-        return ToolResult(
-            tool_name=self.tool_id.value,
-            status=ToolStatus.NOT_IMPLEMENTED.value,
-            answer=None,
-            confidence=None,
-            evidence=[],
-            visualizations=[],
-            metadata={"capability": "CHANGE_DETECTION", "params": params},
-            warnings=[
-                "Change Detection specialist capability is registered as an architectural placeholder. "
-                "Bi-temporal model inference is not yet connected."
-            ],
-        )
+from backend.agents.tools.change_detection.tool import ChangeDetectionTool
 
 
 class ComparisonTool(BaseTool):

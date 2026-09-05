@@ -85,11 +85,10 @@ def test_placeholder_tools_return_not_implemented():
     """Verify specialist placeholder tools return not_implemented rather than fabricated answers."""
     executor = ToolExecutor()
 
-    # Test each specialist tool
+    # Test remaining placeholder tools (VQA, Grounding, Comparison)
     tools_to_test = [
         (ToolIdentifier.VQA_TOOL, QueryIntent.VQA),
         (ToolIdentifier.GROUNDING_TOOL, QueryIntent.GROUNDING),
-        (ToolIdentifier.CHANGE_DETECTION_TOOL, QueryIntent.CHANGE_DETECTION),
         (ToolIdentifier.COMPARISON_TOOL, QueryIntent.COMPARISON),
     ]
 
@@ -110,6 +109,19 @@ def test_placeholder_tools_return_not_implemented():
         assert len(res.visualizations) == 0  # CRITICAL: No fake bounding boxes / masks
         assert len(res.warnings) >= 1
         assert "placeholder" in res.warnings[0].lower() or "not yet connected" in res.warnings[0].lower()
+
+    # CHANGE_DETECTION_TOOL is a real tool in Block 5, returning input_required when imagery is omitted
+    rd_cd = RoutingDecision(
+        selected_tool=ToolIdentifier.CHANGE_DETECTION_TOOL,
+        intent=QueryIntent.CHANGE_DETECTION,
+        routing_confidence=0.90,
+        reason="Test routing",
+        requires_clarification=False,
+        parameters={},
+    )
+    res_cd = asyncio.run(executor.execute(rd_cd))
+    assert res_cd.status == ToolStatus.INPUT_REQUIRED.value
+    assert "requires before and after imagery" in res_cd.answer.lower()
 
 
 def test_clarification_tool_returns_clarification_prompt():
@@ -194,12 +206,12 @@ def test_api_query_returns_tool_result_and_three_stage_trace():
     assert data["task"] == "CHANGE_DETECTION"
     assert data["routing_decision"]["selected_tool"] == "CHANGE_DETECTION_TOOL"
 
-    # Block 4 ToolResult check
+    # Block 4 & 5 ToolResult check
     assert "tool_result" in data
     tr = data["tool_result"]
     assert tr["tool_name"] == "CHANGE_DETECTION_TOOL"
-    assert tr["status"] == "not_implemented"
-    assert tr["answer"] is None
+    assert tr["status"] == "input_required"
+    assert "requires before and after imagery" in tr["answer"].lower()
 
     # Block 4 Execution Trace (Step 1, Step 2, Step 3)
     trace = data["execution_trace"]
@@ -216,7 +228,7 @@ def test_api_query_returns_tool_result_and_three_stage_trace():
     assert trace[2]["step"] == 3
     assert trace[2]["action"] == "Tool Execution"
     assert "CHANGE_DETECTION_TOOL" in trace[2]["detail"]
-    assert "not_implemented" in trace[2]["detail"]
+    assert "input_required" in trace[2]["detail"]
     assert trace[2]["status"] == "completed"
 
 

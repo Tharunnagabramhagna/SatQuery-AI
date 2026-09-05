@@ -57,12 +57,21 @@ class AgentOrchestrator:
         self.router = router or default_agent_router
         self.tool_executor = tool_executor or default_tool_executor
 
-    async def process_query(self, query: str) -> Dict[str, Any]:
+    async def process_query(
+        self,
+        query: str,
+        before_image: Optional[str] = None,
+        after_image: Optional[str] = None,
+        parameters: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """
         Process an incoming natural-language query through the agent pipeline.
 
         Args:
             query: Validated user query string.
+            before_image: Optional path or base64 data for baseline (T1) image.
+            after_image: Optional path or base64 data for follow-up (T2) image.
+            parameters: Optional dictionary of tool-specific parameters.
 
         Returns:
             Dictionary matching QueryResponse data structure.
@@ -111,9 +120,16 @@ class AgentOrchestrator:
 
         # Step 3: Tool Execution
         t2 = time.perf_counter()
+        extra_params: Dict[str, Any] = dict(parameters or {})
+        if before_image:
+            extra_params["before_image"] = before_image
+        if after_image:
+            extra_params["after_image"] = after_image
+
         tool_result = await self.tool_executor.execute(
             routing_decision=routing_decision,
             structured_query=structured,
+            extra_params=extra_params,
         )
         duration_step3 = (time.perf_counter() - t2) * 1000
 
@@ -122,6 +138,11 @@ class AgentOrchestrator:
             step3_detail = (
                 f"Invoked {tool_result.tool_name} (status: not_implemented). "
                 f"Specialist capability stub executed without mock fabrication."
+            )
+        elif tool_result.status == "input_required":
+            step3_detail = (
+                f"Invoked {tool_result.tool_name} (status: input_required). "
+                f"{tool_result.answer or 'Missing required image inputs.'}"
             )
         elif tool_result.status == "clarification_needed":
             step3_detail = (

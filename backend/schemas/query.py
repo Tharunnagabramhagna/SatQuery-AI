@@ -1,6 +1,6 @@
 """Typed request and response schemas for SatQuery queries."""
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 from backend.schemas.common import AnalysisEvidence, AnalysisVisualization
@@ -26,6 +26,20 @@ class QueryRequest(BaseModel):
         ...,
         description="Natural language question or instruction for remote sensing analysis.",
         examples=["What objects are present in this image?"],
+    )
+    before_image: Optional[str] = Field(
+        default=None,
+        description="Path, URI, or base64 string for baseline (T1) satellite image.",
+        examples=["tests/data/sat_before.jpg"],
+    )
+    after_image: Optional[str] = Field(
+        default=None,
+        description="Path, URI, or base64 string for follow-up (T2) satellite image.",
+        examples=["tests/data/sat_after.jpg"],
+    )
+    parameters: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional tool-specific execution parameters (e.g. sensitivity, coregistration_threshold).",
     )
 
     @field_validator("query")

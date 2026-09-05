@@ -30,6 +30,7 @@ class ToolExecutor:
         self,
         routing_decision: RoutingDecision,
         structured_query: Optional[StructuredQuery] = None,
+        extra_params: Optional[Dict[str, Any]] = None,
     ) -> ToolResult:
         """
         Resolve and execute the tool designated by the routing decision.
@@ -37,6 +38,7 @@ class ToolExecutor:
         Args:
             routing_decision: Routing decision from the Agent Router.
             structured_query: Optional structured query context.
+            extra_params: Optional extra execution parameters (e.g. imagery, thresholds).
 
         Returns:
             ToolResult containing status, output, warnings, or error details.
@@ -73,6 +75,8 @@ class ToolExecutor:
 
         # 2. Build parameter payload
         params: Dict[str, Any] = dict(routing_decision.parameters or {})
+        if extra_params:
+            params.update({k: v for k, v in extra_params.items() if v is not None})
         if routing_decision.clarification_prompt:
             params["clarification_prompt"] = routing_decision.clarification_prompt
         params["routing_confidence"] = routing_decision.routing_confidence

@@ -12,6 +12,8 @@ class ToolStatus(str, Enum):
 
     NOT_IMPLEMENTED = "not_implemented"
     COMPLETED = "completed"
+    SUCCESS = "success"
+    INPUT_REQUIRED = "input_required"
     CLARIFICATION_NEEDED = "clarification_needed"
     ERROR = "error"
 
