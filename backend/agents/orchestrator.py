@@ -11,9 +11,11 @@ Execution flow across hackathon blocks:
         ↓
     Agent Router         <-- [Block 3 Active]
         ↓
-    Tools (VQA, Grounding, Change Detection, Geospatial Ops)
+    Tool Executor        <-- [Block 4 Active]
         ↓
-    Evidence Validation
+    Specialist Tool (Stub / Real Model)
+        ↓
+    Tool Result
         ↓
     Response
 """
@@ -29,6 +31,7 @@ from backend.agents.query_understanding.service import (
 )
 from backend.agents.router.agent_router import AgentRouter, default_agent_router
 from backend.agents.router.base import BaseRouter
+from backend.agents.tools.executor import ToolExecutor, default_tool_executor
 from backend.schemas.query import ExecutionTraceStep
 
 
@@ -36,19 +39,23 @@ class AgentOrchestrator:
     """
     Orchestrates the SatQuery agent pipeline.
 
-    Block 3 executes:
+    Block 4 executes:
       1. Query Understanding: Analyzes intent, entities, temporal & spatial context.
       2. Agent Router: Evaluates structured intelligence and maps to specialist tools
          or clarification handlers.
+      3. Tool Executor: Dispatches the routing decision to the selected specialist
+         tool or clarification handler through the BaseTool contract.
     """
 
     def __init__(
         self,
         query_understanding: Optional[QueryUnderstandingService] = None,
         router: Optional[BaseRouter] = None,
+        tool_executor: Optional[ToolExecutor] = None,
     ):
         self.query_understanding = query_understanding or default_query_understanding
         self.router = router or default_agent_router
+        self.tool_executor = tool_executor or default_tool_executor
 
     async def process_query(self, query: str) -> Dict[str, Any]:
         """
@@ -102,21 +109,64 @@ class AgentOrchestrator:
             status="completed",
         )
 
+        # Step 3: Tool Execution
+        t2 = time.perf_counter()
+        tool_result = await self.tool_executor.execute(
+            routing_decision=routing_decision,
+            structured_query=structured,
+        )
+        duration_step3 = (time.perf_counter() - t2) * 1000
+
+        step3_status = "completed" if tool_result.status != "error" else "failed"
+        if tool_result.status == "not_implemented":
+            step3_detail = (
+                f"Invoked {tool_result.tool_name} (status: not_implemented). "
+                f"Specialist capability stub executed without mock fabrication."
+            )
+        elif tool_result.status == "clarification_needed":
+            step3_detail = (
+                f"Invoked {tool_result.tool_name} (status: clarification_needed). "
+                f"Prompting user for clarification."
+            )
+        elif tool_result.status == "error":
+            step3_detail = (
+                f"Tool execution failed for {tool_result.tool_name}: "
+                f"{', '.join(tool_result.warnings)}"
+            )
+        else:
+            step3_detail = f"Executed {tool_result.tool_name} successfully (status: {tool_result.status})."
+
+        trace_step3 = ExecutionTraceStep(
+            step=3,
+            action="Tool Execution",
+            detail=step3_detail,
+            duration_ms=round(duration_step3, 2),
+            status=step3_status,
+        )
+
+        # Merge warnings
         warnings = []
         if structured.is_ambiguous and structured.ambiguity_reason:
             warnings.append(structured.ambiguity_reason)
         if routing_decision.requires_clarification and routing_decision.clarification_prompt:
             warnings.append(routing_decision.clarification_prompt)
+        for w in tool_result.warnings:
+            if w not in warnings:
+                warnings.append(w)
 
         return {
             "received_query": query,
             "status": "received",
             "task": structured.intent.value,
             "confidence": routing_decision.routing_confidence,
-            "execution_trace": [trace_step1, trace_step2],
+            "answer": tool_result.answer,
+            "evidence": tool_result.evidence,
+            "visualizations": tool_result.visualizations,
+            "execution_trace": [trace_step1, trace_step2, trace_step3],
             "warnings": warnings,
             "structured_query": structured,
             "routing_decision": routing_decision,
+            "tool_result": tool_result,
         }
 
 

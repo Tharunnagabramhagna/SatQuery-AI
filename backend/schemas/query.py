@@ -3,8 +3,10 @@
 from typing import Any, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
+from backend.schemas.common import AnalysisEvidence, AnalysisVisualization
 from backend.schemas.query_understanding import StructuredQuery
 from backend.schemas.router import RoutingDecision
+from backend.schemas.tool import ToolResult
 
 
 class ExecutionTraceStep(BaseModel):
@@ -15,22 +17,6 @@ class ExecutionTraceStep(BaseModel):
     detail: str = Field(..., description="Detailed description of step output or action")
     duration_ms: Optional[float] = Field(default=None, description="Step duration in milliseconds")
     status: str = Field(default="completed", description="Execution status: completed | skipped | failed")
-
-
-class AnalysisEvidence(BaseModel):
-    """Evidence item supporting the analytical answer."""
-
-    type: str = Field(..., description="Evidence type (e.g., metric, metadata, spectral_index)")
-    description: str = Field(..., description="Explanation of what was detected or measured")
-    source: str = Field(..., description="Tool or sensor source of the evidence")
-
-
-class AnalysisVisualization(BaseModel):
-    """Visual evidence or overlay item."""
-
-    type: str = Field(..., description="Visualization type: bounding_box | polygon | mask | heatmap | point")
-    data: Any = Field(default=None, description="Structured coordinates or base64 overlay")
-    label: str = Field(..., description="Descriptive label for UI overlay rendering")
 
 
 class QueryRequest(BaseModel):
@@ -109,4 +95,8 @@ class QueryResponse(BaseModel):
     routing_decision: Optional[RoutingDecision] = Field(
         default=None,
         description="Structured tool selection decision produced by the Agent Router.",
+    )
+    tool_result: Optional[ToolResult] = Field(
+        default=None,
+        description="Structured execution result returned by the selected specialist tool.",
     )

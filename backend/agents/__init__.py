@@ -14,7 +14,12 @@ from backend.agents.tools import (
     ClarificationTool,
     ComparisonTool,
     GroundingTool,
+    ToolExecutor,
+    ToolNotFoundError,
+    ToolRegistry,
     VQATool,
+    default_tool_executor,
+    default_tool_registry,
 )
 
 __all__ = [
@@ -33,4 +38,9 @@ __all__ = [
     "ChangeDetectionTool",
     "ComparisonTool",
     "ClarificationTool",
+    "ToolRegistry",
+    "default_tool_registry",
+    "ToolNotFoundError",
+    "ToolExecutor",
+    "default_tool_executor",
 ]

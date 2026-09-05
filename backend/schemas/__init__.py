@@ -16,6 +16,7 @@ from backend.schemas.query_understanding import (
     TemporalInfo,
 )
 from backend.schemas.router import RoutingDecision, ToolIdentifier
+from backend.schemas.tool import ToolResult, ToolStatus
 
 __all__ = [
     "HealthResponse",
@@ -31,4 +32,6 @@ __all__ = [
     "StructuredQuery",
     "ToolIdentifier",
     "RoutingDecision",
+    "ToolStatus",
+    "ToolResult",
 ]

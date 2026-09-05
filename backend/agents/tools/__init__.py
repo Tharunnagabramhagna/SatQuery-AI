@@ -1,4 +1,4 @@
-"""SatQuery Tool Abstraction and Registry package."""
+"""SatQuery Tool Execution Layer."""
 
 from backend.agents.tools.base import (
     BaseTool,
@@ -8,6 +8,12 @@ from backend.agents.tools.base import (
     GroundingTool,
     VQATool,
 )
+from backend.agents.tools.executor import ToolExecutor, default_tool_executor
+from backend.agents.tools.registry import (
+    ToolNotFoundError,
+    ToolRegistry,
+    default_tool_registry,
+)
 
 __all__ = [
     "BaseTool",
@@ -16,4 +22,9 @@ __all__ = [
     "ChangeDetectionTool",
     "ComparisonTool",
     "ClarificationTool",
+    "ToolRegistry",
+    "default_tool_registry",
+    "ToolNotFoundError",
+    "ToolExecutor",
+    "default_tool_executor",
 ]
