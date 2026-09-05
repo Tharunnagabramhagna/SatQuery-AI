@@ -4,6 +4,7 @@ from typing import Any, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 from backend.schemas.query_understanding import StructuredQuery
+from backend.schemas.router import RoutingDecision
 
 
 class ExecutionTraceStep(BaseModel):
@@ -104,4 +105,8 @@ class QueryResponse(BaseModel):
     structured_query: Optional[StructuredQuery] = Field(
         default=None,
         description="Detailed structured parameters extracted by the Query Understanding intelligence layer.",
+    )
+    routing_decision: Optional[RoutingDecision] = Field(
+        default=None,
+        description="Structured tool selection decision produced by the Agent Router.",
     )
