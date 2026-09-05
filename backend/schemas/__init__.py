@@ -8,6 +8,13 @@ from backend.schemas.query import (
     QueryRequest,
     QueryResponse,
 )
+from backend.schemas.query_understanding import (
+    ComparisonInfo,
+    QueryIntent,
+    SpatialInfo,
+    StructuredQuery,
+    TemporalInfo,
+)
 
 __all__ = [
     "HealthResponse",
@@ -16,4 +23,9 @@ __all__ = [
     "ExecutionTraceStep",
     "AnalysisEvidence",
     "AnalysisVisualization",
+    "QueryIntent",
+    "TemporalInfo",
+    "SpatialInfo",
+    "ComparisonInfo",
+    "StructuredQuery",
 ]

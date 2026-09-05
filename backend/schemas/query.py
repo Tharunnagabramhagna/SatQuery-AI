@@ -3,6 +3,8 @@
 from typing import Any, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
+from backend.schemas.query_understanding import StructuredQuery
+
 
 class ExecutionTraceStep(BaseModel):
     """Single step in the agent execution trace."""
@@ -98,4 +100,8 @@ class QueryResponse(BaseModel):
     warnings: List[str] = Field(
         default_factory=list,
         description="Informational warnings or caveats regarding imagery/inference.",
+    )
+    structured_query: Optional[StructuredQuery] = Field(
+        default=None,
+        description="Detailed structured parameters extracted by the Query Understanding intelligence layer.",
     )
