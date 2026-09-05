@@ -1,0 +1,25 @@
+
+[project]
+name = "satquery-ai"
+version = "0.1.0"
+description = "Interactive Vision-Language Assistant for Multimodal Remote Sensing Image Analysis through Text Queries (SIH26167)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "pydantic>=2.6.0",
+    "pillow>=10.0.0",
+    "numpy>=1.26.0",
+]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+
+[tool.pyright]
+include = ["src", "tests"]
+extraPaths = ["."]
+reportMissingImports = false
