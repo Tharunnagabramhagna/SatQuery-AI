@@ -1,15 +1,25 @@
 """FastAPI routes for SatQuery API."""
 
 import logging
-from fastapi import APIRouter, HTTPException, status
+import os
+import shutil
+import tempfile
+from typing import Optional
+
+from fastapi import APIRouter, Form, HTTPException, UploadFile, status
+from fastapi.responses import JSONResponse
 
 from backend.agents.orchestrator import orchestrator
+from backend.schemas.frontend import FrontendAnalysisResponse
 from backend.schemas.health import HealthResponse
 from backend.schemas.query import QueryRequest, QueryResponse
 
 logger = logging.getLogger("satquery.api")
 
 router = APIRouter(prefix="/api", tags=["SatQuery"])
+
+# Accepted image file extensions for /api/analysis multipart upload
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
 
 
 @router.get(
@@ -62,3 +72,108 @@ async def process_query_endpoint(request: QueryRequest) -> QueryResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while processing the query: {str(exc)}",
         ) from exc
+
+
+def _validate_upload_extension(file: UploadFile) -> str:
+    """Validate uploaded file has an allowed extension. Returns the extension.
+
+    Raises:
+        HTTPException: if the file type is not in ALLOWED_IMAGE_EXTENSIONS.
+    """
+    filename = file.filename or ""
+    _, ext = os.path.splitext(filename.lower())
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                f"Unsupported image file type '{ext}' for file '{filename}'. "
+                f"Accepted formats: {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS))}"
+            ),
+        )
+    return ext
+
+
+async def _save_upload_to_temp(file: UploadFile, temp_dir: str, prefix: str) -> str:
+    """Save an UploadFile to a controlled temporary directory. Returns the temp file path."""
+    ext = _validate_upload_extension(file)
+    temp_path = os.path.join(temp_dir, f"{prefix}{ext}")
+    contents = await file.read()
+    with open(temp_path, "wb") as f:
+        f.write(contents)
+    return temp_path
+
+
+@router.post(
+    "/analysis",
+    status_code=status.HTTP_200_OK,
+    summary="Frontend-compatible multipart analysis endpoint",
+    description=(
+        "Accepts multipart/form-data with image file uploads for frontend integration. "
+        "Routes through the existing Query Understanding → Agent Router → Tool Executor pipeline. "
+        "Returns a camelCase response matching the frontend AnalysisResponse type."
+    ),
+)
+async def frontend_analysis_endpoint(
+    query: str = Form(..., description="Natural language query for satellite analysis"),
+    mode: Optional[str] = Form(default=None, description="Frontend analysis mode hint (e.g. compare_images)"),
+    capability: Optional[str] = Form(default=None, description="Frontend capability hint (e.g. change_detection)"),
+    before_image: Optional[UploadFile] = None,
+    after_image: Optional[UploadFile] = None,
+) -> JSONResponse:
+    """
+    Frontend-compatible analysis endpoint.
+
+    Accepts multipart file uploads, saves to temp directory, runs through
+    the existing orchestrator pipeline, and returns a camelCase response.
+
+    Flow:
+        POST /api/analysis (multipart) → temp file save → orchestrator.process_query()
+        → FrontendAnalysisResponse adapter → camelCase JSON
+    """
+    # Validate query is not empty
+    query_stripped = query.strip()
+    if not query_stripped:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Query string cannot be empty or contain only whitespace.",
+        )
+
+    temp_dir = tempfile.mkdtemp(prefix="satquery_upload_")
+    before_path: Optional[str] = None
+    after_path: Optional[str] = None
+
+    try:
+        # Save uploaded files to controlled temp directory
+        if before_image is not None and before_image.filename:
+            before_path = await _save_upload_to_temp(before_image, temp_dir, "before")
+
+        if after_image is not None and after_image.filename:
+            after_path = await _save_upload_to_temp(after_image, temp_dir, "after")
+
+        # Run through the existing orchestrator pipeline
+        result = await orchestrator.process_query(
+            query=query_stripped,
+            before_image=before_path,
+            after_image=after_path,
+            parameters=None,
+        )
+
+        # Transform to frontend-compatible response
+        frontend_response = FrontendAnalysisResponse.from_orchestrator_result(result)
+        return JSONResponse(
+            content=frontend_response.model_dump(by_alias=True),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Error in /api/analysis: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while processing the analysis: {str(exc)}",
+        ) from exc
+    finally:
+        # Always clean up temporary files
+        if os.path.isdir(temp_dir):
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            logger.debug("Cleaned up temp directory: %s", temp_dir)
