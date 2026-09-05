@@ -1,21 +1,23 @@
 import { NavLink } from 'react-router-dom';
 import {
   Menu,
-  Bell,
   ChevronDown,
   LayoutDashboard,
+  LogIn,
 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 import { ThemeToggle } from './ThemeToggle';
+import { NotificationPopover } from './NotificationPopover';
 import { cn } from '../../utils/cn';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
   onToggleMobileMenu?: () => void;
   onOpenSystemStatus?: () => void;
+  onSignIn?: () => void;
 }
 
-export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onToggleSidebar: _onToggleSidebar }: NavbarProps) {
+export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onSignIn, onToggleSidebar: _onToggleSidebar }: NavbarProps) {
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 lg:px-6 bg-white dark:bg-[#070b15] border-b border-slate-200 dark:border-slate-800/90 w-full select-none transition-colors duration-150">
       {/* Left Brand Area */}
@@ -108,18 +110,22 @@ export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onToggleSidebar
           <ChevronDown className="w-3 h-3 text-slate-400" />
         </button>
 
+        {/* Sign In Button */}
+        <button
+          type="button"
+          onClick={onSignIn}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600/10 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-300 border border-blue-400/40 dark:border-cyan-500/30 hover:bg-blue-600/20 dark:hover:bg-cyan-500/20 hover:border-blue-500/60 dark:hover:border-cyan-400/50 transition-all duration-150 shadow-sm"
+          title="Sign In to SatQuery AI"
+        >
+          <LogIn className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
+          <span>Sign In</span>
+        </button>
+
         {/* Theme Mode Toggle (Light/Dark) */}
         <ThemeToggle />
 
-        {/* Notification Bell */}
-        <button
-          className="relative p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          title="Notifications"
-          aria-label="Notifications"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
-        </button>
+        {/* Notifications Popover */}
+        <NotificationPopover />
 
         {/* User Profile Avatar */}
         <div className="flex items-center gap-2 pl-1 border-l border-slate-200 dark:border-slate-800">

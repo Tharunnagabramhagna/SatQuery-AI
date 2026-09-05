@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { WorkspaceNavRail } from '../components/dashboard/WorkspaceNavRail';
 import {
   WorkspaceSecondarySidebar,
   WORKSPACE_MODES,
@@ -10,6 +9,7 @@ import {
 import { DualImageryViewer } from '../components/dashboard/DualImageryViewer';
 import { QueryAndExecutionPanel } from '../components/dashboard/QueryAndExecutionPanel';
 import { FinalAnswerPanel } from '../components/dashboard/FinalAnswerPanel';
+import { LayerControlsPanel } from '../components/dashboard/LayerControlsPanel';
 import { ImageMetadataPanel } from '../components/dashboard/ImageMetadataPanel';
 import { WorkspaceFooter } from '../components/dashboard/WorkspaceFooter';
 import { NewAnalysisModal } from '../components/dashboard/NewAnalysisModal';
@@ -17,11 +17,11 @@ import { EvidenceModal } from '../components/dashboard/EvidenceModal';
 import { SystemStatusModal } from '../components/dashboard/SystemStatusModal';
 import { QueryAgentOverlay } from '../components/dashboard/QueryAgentOverlay';
 
-const QUERY_AGENT_SUGGESTIONS = [
-  'What objects are visible?',
-  'How many buildings are present?',
-  'Describe the scene',
-];
+// Phase 2: Centralized Mock Data & Types
+import { DEFAULT_BASE_LAYERS, DEFAULT_OVERLAY_LAYERS, BAND_COMBINATIONS } from '../mock/mockLayers';
+import { MOCK_REGIONS, MOCK_EVIDENCE } from '../mock/mockEvidence';
+import { MOCK_CONFIDENCE, MOCK_STATISTICS, MOCK_PROCESSING_STAGES } from '../mock/mockAnalysisResults';
+import type { VisualizationLayer, BandCombination } from '../types/visualization';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -52,10 +52,78 @@ export function DashboardPage() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isMapHighlighted, setIsMapHighlighted] = useState(false);
 
+  // ─── Phase 2: Centralized Layer State ─────────────────────────────
+  const [baseLayers, setBaseLayers] = useState<VisualizationLayer[]>(DEFAULT_BASE_LAYERS);
+  const [overlayLayers, setOverlayLayers] = useState<VisualizationLayer[]>(DEFAULT_OVERLAY_LAYERS);
+  const [activeBandCombo, setActiveBandCombo] = useState<BandCombination>('true_color');
+
+  // ─── Phase 2: Evidence ↔ Viewer Linking State ─────────────────────
+  const [selectedEvidenceId, setSelectedEvidenceId] = useState<string | null>('evidence-1');
+  const [highlightedRegionId, setHighlightedRegionId] = useState<string | null>('region-1');
+
   const isQueryAgent = selectedToolId === 'query_agent';
   const displayedQuery = isQueryAgent ? queryAgentQuery : activePresetMode.prompt;
-  const displayedSuggestions = isQueryAgent ? QUERY_AGENT_SUGGESTIONS : activePresetMode.suggestions;
   const activeDisplayName = isQueryAgent ? 'Query Agent' : activePresetMode.name;
+
+  // Layer control handlers
+  const handleBaseLayerChange = (layerId: string) => {
+    setBaseLayers((prev) =>
+      prev.map((layer) => ({
+        ...layer,
+        visible: layer.id === layerId,
+      }))
+    );
+  };
+
+  const handleOverlayToggle = (layerId: string) => {
+    setOverlayLayers((prev) =>
+      prev.map((layer) =>
+        layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
+      )
+    );
+  };
+
+  const handleOverlayOpacityChange = (layerId: string, opacity: number) => {
+    setOverlayLayers((prev) =>
+      prev.map((layer) =>
+        layer.id === layerId ? { ...layer, opacity } : layer
+      )
+    );
+  };
+
+  const handleBandCombinationChange = (combo: BandCombination) => {
+    setActiveBandCombo(combo);
+  };
+
+  // Evidence ↔ Viewer interaction handlers
+  const handleSelectEvidence = (evidenceId: string) => {
+    setSelectedEvidenceId(evidenceId);
+    const item = MOCK_EVIDENCE.find((e) => e.id === evidenceId);
+    if (item?.regionId) {
+      setHighlightedRegionId(item.regionId);
+    }
+  };
+
+  const handleRegionClick = (regionId: string) => {
+    setHighlightedRegionId(regionId);
+    const item = MOCK_EVIDENCE.find((e) => e.regionId === regionId);
+    if (item) {
+      setSelectedEvidenceId(item.id);
+    }
+  };
+
+  const handleInspectRegion = (regionId: string) => {
+    handleRegionClick(regionId);
+    setIsEvidenceModalOpen(true);
+  };
+
+  const handleHighlightRegionOnMap = (regionId: string) => {
+    setHighlightedRegionId(regionId);
+    setIsMapHighlighted(true);
+    setTimeout(() => {
+      setIsMapHighlighted(false);
+    }, 2500);
+  };
 
   // Tool selection handler
   const handleSelectTool = (tool: AnalysisTool) => {
@@ -127,7 +195,7 @@ export function DashboardPage() {
         coordinates: '28.6139° N, 77.2090° E',
       },
       query: isQueryAgent ? (queryAgentQuery || 'Autonomous Query Agent Satellite Analysis') : activePresetMode.prompt,
-      confidence: `${activePresetMode.confidence}%`,
+      confidence: `${activePresetMode.confidence}% (Demo)`,
       answer: activePresetMode.answerSummary,
       evidence: activePresetMode.evidencePoints,
       detectedFeatures: activePresetMode.detectedFeaturesCount,
@@ -166,29 +234,80 @@ export function DashboardPage() {
 
   const handleCloseQueryAgent = () => {
     setIsQueryAgentOpen(false);
-    // Do NOT reset selectedToolId, modeCategory, activePresetMode, or queryAgentQuery.
-    // Analysis context is preserved across open/close cycles.
+  };
+
+  // Submit query handler: captures query, selects capability if Auto, closes overlay, starts analysis
+  const handleSubmitQuery = (submittedQuery?: string) => {
+    const finalQuery = submittedQuery !== undefined ? submittedQuery : queryAgentQuery;
+    if (finalQuery) {
+      setQueryAgentQuery(finalQuery);
+    }
+
+    // If in Auto / Query Agent mode, intelligently match query to appropriate capability
+    if (selectedToolId === 'query_agent') {
+      const qLower = (finalQuery || '').toLowerCase();
+      let matchedMode = activePresetMode;
+
+      if (
+        qLower.includes('building') ||
+        qLower.includes('count') ||
+        qLower.includes('locate') ||
+        qLower.includes('road')
+      ) {
+        matchedMode = WORKSPACE_MODES.find((m) => m.id === 'grounding') || activePresetMode;
+      } else if (
+        qLower.includes('describe') ||
+        qLower.includes('land use') ||
+        qLower.includes('scene')
+      ) {
+        matchedMode = WORKSPACE_MODES.find((m) => m.id === 'captioning') || activePresetMode;
+      } else if (
+        qLower.includes('change') ||
+        qLower.includes('urban') ||
+        qLower.includes('vegetation')
+      ) {
+        matchedMode = WORKSPACE_MODES.find((m) => m.id === 'change_analysis') || activePresetMode;
+      } else if (
+        qLower.includes('radar') ||
+        qLower.includes('sar') ||
+        qLower.includes('optical') ||
+        qLower.includes('penetration')
+      ) {
+        matchedMode = WORKSPACE_MODES.find((m) => m.id === 'optical_sar') || activePresetMode;
+      } else if (
+        qLower.includes('one image') ||
+        qLower.includes('infrastructure')
+      ) {
+        matchedMode = WORKSPACE_MODES.find((m) => m.id === 'vqa') || activePresetMode;
+      }
+
+      if (matchedMode) {
+        setActivePresetMode(matchedMode);
+        setModeCategory(matchedMode.category);
+      }
+    }
+
+    // Close overlay immediately
+    setIsQueryAgentOpen(false);
+
+    // Start analysis workflow on dashboard
+    setIsAnalyzing(true);
+    setTimeout(() => {
+      setIsAnalyzing(false);
+    }, 1100);
   };
 
   return (
     <div className="flex flex-col flex-1 min-h-[calc(100vh-3.5rem)] w-full bg-slate-100/50 dark:bg-[#060a14]">
-      {/* 3-Column Workspace Main Structure */}
+      {/* Main Workspace Structure */}
       <div className="flex flex-1 min-h-0 w-full overflow-x-auto">
-        {/* Column 1: Far-Left Icon Rail */}
-        <WorkspaceNavRail
-          onNewAnalysis={() => setIsNewModalOpen(true)}
-          onUploadImagery={() => setIsNewModalOpen(true)}
-          onRecentAnalyses={() => navigate('/history')}
-          onSavedResults={() => navigate('/history?filter=saved')}
-          activeItem="new"
-        />
-
-        {/* Column 2: Secondary Sidebar */}
+        {/* Left Navigation Sidebar */}
         <WorkspaceSecondarySidebar
           isQueryAgentOpen={isQueryAgentOpen}
           onOpenQueryAgent={handleOpenQueryAgent}
           onNewAnalysis={() => setIsNewModalOpen(true)}
           onUploadImagery={() => setIsNewModalOpen(true)}
+          onRecentAnalyses={() => navigate('/history')}
           onSavedResults={() => navigate('/history?filter=saved')}
         />
 
@@ -207,7 +326,7 @@ export function DashboardPage() {
           {/* Interactive Workspace Grid — visually present underneath; dimmed & inert when overlay is open */}
           <div
             className={`grid grid-cols-1 xl:grid-cols-12 gap-4 flex-1 items-start transition-opacity duration-200 ${
-              isQueryAgentOpen ? 'pointer-events-none select-none opacity-40' : ''
+              isQueryAgentOpen ? 'pointer-events-none select-none' : ''
             }`}
             aria-hidden={isQueryAgentOpen}
           >
@@ -223,28 +342,28 @@ export function DashboardPage() {
                   modeCategory={modeCategory}
                   onCategoryChange={handleCategoryChange}
                   detectedFeaturesCount={activePresetMode.detectedFeaturesCount}
-                  onInspectRegion={() => setIsEvidenceModalOpen(true)}
+                  onInspectRegion={handleInspectRegion}
+                  layers={overlayLayers}
+                  regions={MOCK_REGIONS}
+                  highlightedRegionId={highlightedRegionId}
+                  onRegionClick={handleRegionClick}
                 />
               </div>
 
-              {/* Natural Language Query Panel & AI Execution Panel */}
+              {/* AI Execution Panel (Query Agent chat is solely inside the Query Agent Overlay) */}
               <QueryAndExecutionPanel
-                showQueryInput={isQueryAgent}
+                showQueryInput={false}
                 currentQuery={displayedQuery}
-                onQueryChange={(q) => {
-                  if (isQueryAgent) setQueryAgentQuery(q);
-                }}
-                suggestions={displayedSuggestions}
-                onSelectSuggestion={(s) => {
-                  if (isQueryAgent) setQueryAgentQuery(s);
-                }}
+                onQueryChange={() => {}}
+                suggestions={[]}
+                onSelectSuggestion={() => {}}
                 onAnalyze={handleAnalyze}
                 isAnalyzing={isAnalyzing}
                 activeModeName={activeDisplayName}
               />
             </div>
 
-            {/* Right Inspector Column (Final Answer Panel & Image Metadata Panel) */}
+            {/* Right Inspector Column (Final Answer Panel, Layer Controls & Image Metadata Panel) */}
             <div className="xl:col-span-3 flex flex-col gap-4 min-w-0">
               <FinalAnswerPanel
                 answerSummary={activePresetMode.answerSummary}
@@ -253,6 +372,20 @@ export function DashboardPage() {
                 onViewEvidence={() => setIsEvidenceModalOpen(true)}
                 onViewOnMap={handleViewOnMap}
                 onDownloadReport={handleDownloadReport}
+                confidenceScore={MOCK_CONFIDENCE}
+                statistics={MOCK_STATISTICS}
+                processingStages={MOCK_PROCESSING_STAGES}
+              />
+
+              <LayerControlsPanel
+                baseLayers={baseLayers}
+                overlayLayers={overlayLayers}
+                bandCombinations={BAND_COMBINATIONS}
+                activeBandCombination={activeBandCombo}
+                onBaseLayerChange={handleBaseLayerChange}
+                onOverlayToggle={handleOverlayToggle}
+                onOverlayOpacityChange={handleOverlayOpacityChange}
+                onBandCombinationChange={handleBandCombinationChange}
               />
 
               <ImageMetadataPanel modeCategory={modeCategory} />
@@ -264,25 +397,17 @@ export function DashboardPage() {
       {/* Footer Bar */}
       <WorkspaceFooter />
 
-      {/* Query Agent Overlay — Full Analysis Workspace */}
+      {/* Query Agent Overlay — Focused Input & Intelligence Launcher matching IMAGE 1 */}
       <QueryAgentOverlay
         isOpen={isQueryAgentOpen}
         onClose={handleCloseQueryAgent}
         selectedToolId={selectedToolId}
         onSelectTool={handleSelectTool}
         modeCategory={modeCategory}
-        onCategoryChange={handleCategoryChange}
         queryAgentQuery={queryAgentQuery}
         onQueryChange={setQueryAgentQuery}
-        onAnalyze={handleAnalyze}
+        onSubmitQuery={handleSubmitQuery}
         isAnalyzing={isAnalyzing}
-        activeDisplayName={activeDisplayName}
-        activePresetMode={activePresetMode}
-        onViewEvidence={() => setIsEvidenceModalOpen(true)}
-        onViewOnMap={handleViewOnMap}
-        onDownloadReport={handleDownloadReport}
-        detectedFeaturesCount={activePresetMode.detectedFeaturesCount}
-        onInspectRegion={() => setIsEvidenceModalOpen(true)}
       />
 
       {/* Supporting Interactive Modals */}
@@ -296,6 +421,10 @@ export function DashboardPage() {
         isOpen={isEvidenceModalOpen}
         onClose={() => setIsEvidenceModalOpen(false)}
         confidence={activePresetMode.confidence}
+        evidenceItems={MOCK_EVIDENCE}
+        selectedEvidenceId={selectedEvidenceId}
+        onSelectEvidence={handleSelectEvidence}
+        onHighlightRegionOnMap={handleHighlightRegionOnMap}
       />
 
       <SystemStatusModal
@@ -305,4 +434,3 @@ export function DashboardPage() {
     </div>
   );
 }
-

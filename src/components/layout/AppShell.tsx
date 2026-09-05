@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Navbar } from './Navbar';
+import { SignInModal } from './SignInModal';
 import { SystemStatusModal } from '../dashboard/SystemStatusModal';
 import { useSidebar } from '../../hooks/useSidebar';
 
@@ -11,6 +12,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const { toggleMobile } = useSidebar();
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const location = useLocation();
 
   const isWorkspacePage =
@@ -24,6 +26,7 @@ export function AppShell({ children }: AppShellProps) {
       <Navbar
         onToggleMobileMenu={toggleMobile}
         onOpenSystemStatus={() => setIsStatusModalOpen(true)}
+        onSignIn={() => setIsSignInModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -41,6 +44,12 @@ export function AppShell({ children }: AppShellProps) {
       <SystemStatusModal
         isOpen={isStatusModalOpen}
         onClose={() => setIsStatusModalOpen(false)}
+      />
+
+      {/* Sign In Modal */}
+      <SignInModal
+        isOpen={isSignInModalOpen}
+        onClose={() => setIsSignInModalOpen(false)}
       />
     </div>
   );

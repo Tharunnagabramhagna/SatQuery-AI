@@ -180,17 +180,6 @@ export function QueryAndExecutionPanel({
             </div>
           )}
         </div>
-
-        {isExecutionExpanded && (
-          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/60">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">
-              Latency: <span className="font-mono text-[11px] font-medium text-slate-700 dark:text-slate-300">412ms</span>
-            </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">
-              Status: <span className="font-mono text-[11px] font-medium text-emerald-600 dark:text-emerald-400">200 OK</span>
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );

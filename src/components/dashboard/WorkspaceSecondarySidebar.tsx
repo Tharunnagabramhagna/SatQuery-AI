@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
+  Menu,
+  X,
   Plus,
   Upload,
   Bookmark,
+  History,
   ScanSearch,
   MessageSquare,
   FileText,
   GitCompare,
   MessageSquareDiff,
   Layers,
-  Sparkles,
   Bot,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -165,6 +168,7 @@ interface WorkspaceSecondarySidebarProps {
   onOpenQueryAgent: () => void;
   onNewAnalysis: () => void;
   onUploadImagery: () => void;
+  onRecentAnalyses?: () => void;
   onSavedResults: () => void;
 }
 
@@ -173,45 +177,123 @@ export function WorkspaceSecondarySidebar({
   onOpenQueryAgent,
   onNewAnalysis,
   onUploadImagery,
+  onRecentAnalyses,
   onSavedResults,
 }: WorkspaceSecondarySidebarProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click or Escape key
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
   return (
     <aside className="w-56 lg:w-60 border-r border-slate-200 dark:border-slate-800/80 bg-slate-50/60 dark:bg-[#080d1a] flex flex-col py-3 px-2 shrink-0 select-none overflow-y-auto">
-      {/* Header Pill */}
-      <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-200/70 dark:bg-slate-800/80 border border-slate-300/80 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 mb-3 shadow-sm">
-        <span className="text-xs font-bold tracking-tight">Analysis Workspace</span>
-        <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400" />
-      </div>
-
-      {/* Quick Action Links */}
-      <div className="space-y-0.5 mb-3">
+      {/* Hamburger / Menu Section for Workspace Actions */}
+      <div ref={menuContainerRef} className="relative mb-2">
         <button
-          onClick={onNewAnalysis}
-          className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/60 rounded-md transition-colors font-medium text-left"
+          type="button"
+          onClick={() => setIsMenuOpen((prev) => !prev)}
+          className={cn(
+            'w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-all duration-150 text-xs font-semibold text-left border shadow-sm',
+            isMenuOpen
+              ? 'bg-blue-600/10 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-300 border-blue-400/50 dark:border-cyan-500/40 shadow-[0_0_12px_rgba(6,182,212,0.1)]'
+              : 'bg-slate-200/70 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 border-slate-300/80 dark:border-slate-700/60 hover:bg-slate-300/60 dark:hover:bg-slate-700/70'
+          )}
+          aria-expanded={isMenuOpen}
+          aria-label="Toggle workspace actions menu"
         >
-          <Plus className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
-          <span>New Analysis</span>
+          <div className="flex items-center gap-2">
+            {isMenuOpen ? (
+              <X className="w-4 h-4 text-blue-600 dark:text-cyan-400 shrink-0" />
+            ) : (
+              <Menu className="w-4 h-4 text-slate-600 dark:text-slate-300 shrink-0" />
+            )}
+            <span className="font-semibold tracking-tight">Menu</span>
+          </div>
+
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium px-1.5 py-0.5 rounded bg-slate-300/50 dark:bg-slate-700/50">
+            {isMenuOpen ? 'Close' : 'Workspace'}
+          </span>
         </button>
 
-        <button
-          onClick={onUploadImagery}
-          className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/60 rounded-md transition-colors font-medium text-left"
-        >
-          <Upload className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-          <span>Upload Imagery</span>
-        </button>
+        {/* Expandable Workspace Actions Menu */}
+        {isMenuOpen && (
+          <div className="mt-1.5 space-y-0.5 p-1 rounded-lg bg-white/80 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-1 duration-150">
+            <button
+              type="button"
+              onClick={() => {
+                onNewAnalysis();
+                setIsMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-md transition-colors font-medium text-left"
+            >
+              <Plus className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
+              <span>New Analysis</span>
+            </button>
 
-        <button
-          onClick={onSavedResults}
-          className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/60 rounded-md transition-colors font-medium text-left"
-        >
-          <Bookmark className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-          <span>Saved Results</span>
-        </button>
+            <button
+              type="button"
+              onClick={() => {
+                onUploadImagery();
+                setIsMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-md transition-colors font-medium text-left"
+            >
+              <Upload className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+              <span>Upload Imagery</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onRecentAnalyses?.();
+                setIsMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-md transition-colors font-medium text-left"
+            >
+              <History className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+              <span>Recent Analyses</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onSavedResults();
+                setIsMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-md transition-colors font-medium text-left"
+            >
+              <Bookmark className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+              <span>Saved Results</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-slate-200 dark:bg-slate-800/80 my-2 mx-1" />
+      <div className="h-px bg-slate-200 dark:bg-slate-800/80 my-1.5 mx-1" />
 
       {/* Query Agent — Primary Analysis Workspace Trigger */}
       <button
@@ -244,6 +326,22 @@ export function WorkspaceSecondarySidebar({
           <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
         )}
       </button>
+
+      {/* Bottom Exit / Return to Analyses */}
+      {onRecentAnalyses && (
+        <div className="mt-auto pt-2 border-t border-slate-200 dark:border-slate-800/60">
+          <button
+            type="button"
+            onClick={onRecentAnalyses}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/60 transition-colors text-left"
+            title="Return to Analyses"
+            aria-label="Exit workspace"
+          >
+            <LogOut className="w-3.5 h-3.5 rotate-180 shrink-0" />
+            <span>Exit Workspace</span>
+          </button>
+        </div>
+      )}
     </aside>
   );
 }
