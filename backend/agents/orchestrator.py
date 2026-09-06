@@ -143,6 +143,10 @@ class AgentOrchestrator:
         )
         duration_step3 = (time.perf_counter() - t2) * 1000
 
+        provider = tool_result.metadata.get("provider")
+        model = tool_result.metadata.get("model")
+        provider_tag = f" [provider: {provider}, model: {model}]" if provider and model else (f" [provider: {provider}]" if provider else "")
+
         step3_status = "completed" if tool_result.status != "error" else "failed"
         if tool_result.status == "not_implemented":
             step3_detail = (
@@ -161,11 +165,11 @@ class AgentOrchestrator:
             )
         elif tool_result.status == "error":
             step3_detail = (
-                f"Tool execution failed for {tool_result.tool_name}: "
+                f"Tool execution failed for {tool_result.tool_name}{provider_tag}: "
                 f"{', '.join(tool_result.warnings)}"
             )
         else:
-            step3_detail = f"Executed {tool_result.tool_name} successfully (status: {tool_result.status})."
+            step3_detail = f"Executed {tool_result.tool_name} successfully (status: {tool_result.status}){provider_tag}."
 
         trace_step3 = ExecutionTraceStep(
             step=3,
@@ -185,11 +189,29 @@ class AgentOrchestrator:
             if w not in warnings:
                 warnings.append(w)
 
+        # Determine top-level response confidence
+        # Prioritize specialist tool confidence when the tool completed successfully with a meaningful value.
+        if tool_result.status in ("success", "completed"):
+            if tool_result.confidence is not None and isinstance(tool_result.confidence, (int, float)):
+                final_confidence = float(tool_result.confidence)
+            else:
+                final_confidence = routing_decision.routing_confidence
+        elif tool_result.status == "error":
+            final_confidence = 0.0
+        else:
+            # For input_required, clarification_needed, or placeholder tools,
+            # preserve query-understanding routing confidence when tool confidence is None
+            final_confidence = (
+                float(tool_result.confidence)
+                if (tool_result.confidence is not None and isinstance(tool_result.confidence, (int, float)))
+                else routing_decision.routing_confidence
+            )
+
         return {
             "received_query": query,
             "status": "received",
             "task": structured.intent.value,
-            "confidence": routing_decision.routing_confidence,
+            "confidence": final_confidence,
             "answer": tool_result.answer,
             "evidence": tool_result.evidence,
             "visualizations": tool_result.visualizations,

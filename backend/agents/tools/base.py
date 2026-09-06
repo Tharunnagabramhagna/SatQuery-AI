@@ -32,27 +32,7 @@ class BaseTool(ABC):
         pass
 
 
-class VQATool(BaseTool):
-    """Safe architectural placeholder for Visual Question Answering tool."""
-
-    tool_id = ToolIdentifier.VQA_TOOL
-    name = "Visual Question Answering Tool"
-    description = "Answers natural language questions about features and properties in satellite imagery."
-
-    async def execute(self, params: Dict[str, Any]) -> ToolResult:
-        return ToolResult(
-            tool_name=self.tool_id.value,
-            status=ToolStatus.NOT_IMPLEMENTED.value,
-            answer=None,
-            confidence=None,
-            evidence=[],
-            visualizations=[],
-            metadata={"capability": "VQA", "params": params},
-            warnings=[
-                "VQA specialist capability is registered as an architectural placeholder. "
-                "Remote sensing model inference is not yet connected."
-            ],
-        )
+from backend.agents.tools.vqa.tool import VQATool
 
 
 class GroundingTool(BaseTool):
