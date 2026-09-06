@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     TEST_DATABASE_URL: Optional[str] = "postgresql+psycopg://postgres:postgres@localhost:5432/satquery_test"
     CORS_ORIGINS: Optional[str] = None
 
+    # JWT Authentication configuration (secrets must be provided via environment / .env)
+    JWT_SECRET_KEY: Optional[str] = None
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

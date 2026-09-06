@@ -17,7 +17,9 @@ Covers:
 All database operations run exclusively against the isolated `satquery_test` database.
 """
 
+import datetime
 import uuid
+import jwt
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
@@ -28,7 +30,13 @@ from backend.db.base import Base
 from backend.db.models import User
 from backend.db.session import get_db
 from backend.main import app
-from backend.security import hash_password, verify_password
+from backend.security import (
+    create_access_token,
+    decode_access_token,
+    hash_password,
+    verify_password,
+)
+from backend.security.jwt import get_jwt_secret_key
 
 
 @pytest.fixture(scope="module")
@@ -271,3 +279,261 @@ def test_registration_transaction_rollback_on_error(client, test_session: Sessio
     )
     assert resp.status_code == 409
     assert "already exists" in resp.json()["detail"].lower()
+
+
+# ─── 9. Phase 4C: Login & Token Issuance ──────────────────────────────────────
+
+@pytest.fixture(autouse=True)
+def ensure_test_jwt_secret(monkeypatch):
+    """Ensure a valid test secret key is configured for all auth tests."""
+    if not settings.JWT_SECRET_KEY:
+        monkeypatch.setattr(
+            settings,
+            "JWT_SECRET_KEY",
+            "test-secret-key-32-chars-long-strictly-for-unit-tests",
+        )
+
+
+def test_successful_login_and_token_structure(client):
+    """Verify login returns 200, JWT access token, and safe user profile without credentials."""
+    email = f"login_user_{uuid.uuid4().hex[:8]}@example.com"
+    pwd = "ValidLoginPass123"
+
+    # Register user first
+    reg_resp = client.post(
+        "/api/auth/register",
+        json={"email": email, "password": pwd, "display_name": "Login Tester"},
+    )
+    assert reg_resp.status_code == 201
+    user_id_str = reg_resp.json()["id"]
+
+    # 1. Login with valid credentials
+    resp = client.post("/api/auth/login", json={"email": email, "password": pwd})
+    assert resp.status_code == 200
+    data = resp.json()
+
+    # 2. Token response structure
+    assert "access_token" in data
+    assert data["token_type"].lower() == "bearer"
+    assert data["expires_in"] == settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    assert "user" in data
+
+    # 3, 4, 5. Token claims verification
+    token = data["access_token"]
+    payload = decode_access_token(token)
+    assert payload["sub"] == user_id_str
+    assert "exp" in payload
+    assert "iat" in payload
+    assert payload["exp"] > payload["iat"]
+
+    # Profile in login response excludes password and password_hash
+    user_info = data["user"]
+    assert user_info["id"] == user_id_str
+    assert user_info["email"] == email
+    assert user_info["display_name"] == "Login Tester"
+    assert "password" not in user_info
+    assert "password_hash" not in user_info
+
+
+def test_login_wrong_password_and_unknown_email(client):
+    """Verify both incorrect password and unknown email return generic 401 Unauthorized."""
+    email = f"user_{uuid.uuid4().hex[:8]}@example.com"
+    pwd = "CorrectPassword123"
+
+    # Register
+    client.post("/api/auth/register", json={"email": email, "password": pwd})
+
+    # Case A: Wrong password
+    resp_wrong_pwd = client.post("/api/auth/login", json={"email": email, "password": "WrongPassword999"})
+    assert resp_wrong_pwd.status_code == 401
+    assert resp_wrong_pwd.headers.get("www-authenticate") == "Bearer"
+    assert resp_wrong_pwd.json()["detail"] == "Invalid email or password."
+
+    # Case B: Unknown email
+    resp_unknown_email = client.post(
+        "/api/auth/login",
+        json={"email": "nonexistent_email_404@example.com", "password": pwd},
+    )
+    assert resp_unknown_email.status_code == 401
+    assert resp_unknown_email.headers.get("www-authenticate") == "Bearer"
+    assert resp_unknown_email.json()["detail"] == "Invalid email or password."
+
+    # Verify identical error message and code to prevent account enumeration
+    assert resp_wrong_pwd.json() == resp_unknown_email.json()
+
+
+def test_login_email_normalization(client):
+    """Verify login handles case and whitespace variations identically."""
+    base_email = f"norm_login_{uuid.uuid4().hex[:6]}@example.com"
+    pwd = "NormPassword123"
+
+    client.post("/api/auth/register", json={"email": base_email, "password": pwd})
+
+    # Login with mixed case and leading/trailing whitespace
+    noisy_email = f"  {base_email.upper()}  "
+    resp = client.post("/api/auth/login", json={"email": noisy_email, "password": pwd})
+    assert resp.status_code == 200
+    assert "access_token" in resp.json()
+
+
+# ─── 10. Phase 4C: GET /api/auth/me (Current User Endpoint) ───────────────────
+
+def test_current_user_me_endpoint_success(client):
+    """Verify GET /api/auth/me returns safe profile of authenticated user."""
+    email = f"me_test_{uuid.uuid4().hex[:8]}@example.com"
+    pwd = "MySecretPass123"
+
+    reg = client.post(
+        "/api/auth/register",
+        json={"email": email, "password": pwd, "display_name": "Me User"},
+    )
+    assert reg.status_code == 201
+    user_id = reg.json()["id"]
+
+    login = client.post("/api/auth/login", json={"email": email, "password": pwd})
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+
+    # Query /api/auth/me with Bearer token
+    headers = {"Authorization": f"Bearer {token}"}
+    me_resp = client.get("/api/auth/me", headers=headers)
+    assert me_resp.status_code == 200
+
+    me_data = me_resp.json()
+    assert me_data["id"] == user_id
+    assert me_data["email"] == email
+    assert me_data["display_name"] == "Me User"
+    assert "created_at" in me_data
+    assert "password" not in me_data
+    assert "password_hash" not in me_data
+
+
+def test_current_user_me_missing_token(client):
+    """GET /api/auth/me without Authorization header returns 401."""
+    resp = client.get("/api/auth/me")
+    assert resp.status_code == 401
+    assert resp.headers.get("www-authenticate") == "Bearer"
+
+
+def test_current_user_me_invalid_scheme(client):
+    """GET /api/auth/me with non-Bearer scheme returns 401."""
+    resp = client.get("/api/auth/me", headers={"Authorization": "Basic dXNlcjpwYXNz"})
+    assert resp.status_code == 401
+    assert resp.headers.get("www-authenticate") == "Bearer"
+
+
+def test_current_user_me_malformed_token(client):
+    """GET /api/auth/me with malformed token string returns 401."""
+    resp = client.get("/api/auth/me", headers={"Authorization": "Bearer not-a-valid-jwt"})
+    assert resp.status_code == 401
+    assert resp.headers.get("www-authenticate") == "Bearer"
+
+
+def test_current_user_me_invalid_signature(client):
+    """GET /api/auth/me with token signed by a different secret returns 401."""
+    fake_token = jwt.encode(
+        {"sub": str(uuid.uuid4()), "exp": 9999999999, "iat": 1},
+        "completely-different-wrong-secret-key-12345",
+        algorithm="HS256",
+    )
+    resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {fake_token}"})
+    assert resp.status_code == 401
+    assert resp.headers.get("www-authenticate") == "Bearer"
+
+
+def test_current_user_me_expired_token(client):
+    """GET /api/auth/me with expired token returns 401."""
+    fake_id = uuid.uuid4()
+    expired_token = create_access_token(
+        fake_id,
+        expires_delta=datetime.timedelta(seconds=-60),
+    )
+    resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {expired_token}"})
+    assert resp.status_code == 401
+    assert resp.headers.get("www-authenticate") == "Bearer"
+
+
+def test_current_user_me_missing_sub_or_invalid_uuid(client):
+    """GET /api/auth/me with missing sub or non-UUID sub returns 401."""
+    secret = get_jwt_secret_key()
+
+    # Missing sub
+    token_no_sub = jwt.encode(
+        {"exp": 9999999999, "iat": 1},
+        secret,
+        algorithm="HS256",
+    )
+    resp1 = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token_no_sub}"})
+    assert resp1.status_code == 401
+
+    # Invalid UUID format in sub
+    token_bad_uuid = jwt.encode(
+        {"sub": "not-a-uuid-string", "exp": 9999999999, "iat": 1},
+        secret,
+        algorithm="HS256",
+    )
+    resp2 = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token_bad_uuid}"})
+    assert resp2.status_code == 401
+
+
+def test_current_user_me_nonexistent_user(client):
+    """GET /api/auth/me with valid token for nonexistent user returns 401."""
+    random_uuid = uuid.uuid4()
+    token = create_access_token(random_uuid)
+    resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 401
+    assert resp.headers.get("www-authenticate") == "Bearer"
+
+
+def test_jwt_secret_missing_raises_explicit_runtime_error(monkeypatch):
+    """Calling JWT operations without configured JWT_SECRET_KEY raises clear RuntimeError."""
+    monkeypatch.setattr(settings, "JWT_SECRET_KEY", None)
+    with pytest.raises(RuntimeError) as exc_info:
+        create_access_token(uuid.uuid4())
+    assert "JWT authentication is not configured" in str(exc_info.value)
+
+
+def test_unconfigured_jwt_secret_causes_server_error_not_401(monkeypatch):
+    """When JWT_SECRET_KEY is missing, auth endpoints return HTTP 500 without leaking internals."""
+    monkeypatch.setattr(settings, "JWT_SECRET_KEY", None)
+
+    # Use client with raise_server_exceptions=False to inspect HTTP 500 response payload
+    no_raise_client = TestClient(app, raise_server_exceptions=False)
+    resp = no_raise_client.get("/api/auth/me", headers={"Authorization": "Bearer some.jwt.token"})
+    assert resp.status_code == 500
+    assert resp.status_code != 401
+
+    # Security verification: ensure error response is strictly generic and leaks no internals
+    body = resp.json()
+    assert body["status"] == "error"
+    assert body["error_type"] == "internal_server_error"
+    assert body["detail"] == "An unexpected internal server error occurred."
+    assert "JWT" not in resp.text
+    assert "RuntimeError" not in resp.text
+    assert "configured" not in resp.text.lower()
+    assert "secret" not in resp.text.lower()
+
+    # Anonymous endpoints continue functioning normally without JWT secret
+    health_resp = no_raise_client.get("/api/health")
+    assert health_resp.status_code == 200
+
+
+def test_token_expiration_derived_dynamically_from_settings(client, monkeypatch):
+    """Verify TokenResponse.expires_in and JWT exp claim dynamically match configured expiration."""
+    test_minutes = 45
+    monkeypatch.setattr(settings, "JWT_ACCESS_TOKEN_EXPIRE_MINUTES", test_minutes)
+
+    email = f"dynamic_exp_{uuid.uuid4().hex[:8]}@example.com"
+    pwd = "DynamicPassword123"
+
+    client.post("/api/auth/register", json={"email": email, "password": pwd})
+    login_resp = client.post("/api/auth/login", json={"email": email, "password": pwd})
+    assert login_resp.status_code == 200
+    data = login_resp.json()
+
+    # Response expires_in must equal test_minutes * 60
+    assert data["expires_in"] == test_minutes * 60
+
+    # Token exp claim must equal iat + test_minutes * 60
+    payload = decode_access_token(data["access_token"])
+    assert payload["exp"] - payload["iat"] == test_minutes * 60

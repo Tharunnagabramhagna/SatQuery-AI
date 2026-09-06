@@ -81,3 +81,41 @@ class UserResponse(BaseModel):
     created_at: datetime.datetime = Field(..., description="Account creation timestamp")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class LoginRequest(BaseModel):
+    """User authentication login payload."""
+
+    email: str = Field(
+        ...,
+        description="User email address for authentication",
+        examples=["user@example.com"],
+    )
+    password: str = Field(
+        ...,
+        min_length=1,
+        description="Candidate plaintext password",
+        examples=["securepassword123"],
+    )
+
+    @field_validator("email")
+    @classmethod
+    def validate_and_normalize_email(cls, v: str) -> str:
+        """Trim whitespace, lowercase, and validate email syntax."""
+        if not isinstance(v, str):
+            raise ValueError("Email must be a string")
+        normalized = v.strip().lower()
+        if not normalized:
+            raise ValueError("Email cannot be empty")
+        if not EMAIL_REGEX.match(normalized):
+            raise ValueError("Invalid email format")
+        return normalized
+
+
+class TokenResponse(BaseModel):
+    """JWT bearer access token response."""
+
+    access_token: str = Field(..., description="Stateless JWT access token")
+    token_type: str = Field(default="bearer", description="Authentication token type")
+    expires_in: int = Field(..., description="Token validity duration in seconds")
+    user: UserResponse = Field(..., description="Safe authenticated user representation")

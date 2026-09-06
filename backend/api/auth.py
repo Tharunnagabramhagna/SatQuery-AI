@@ -10,10 +10,11 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from backend.config import settings
 from backend.db.models import User
 from backend.db.session import get_db
-from backend.schemas.auth import RegisterRequest, UserResponse
-from backend.security import hash_password
+from backend.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
+from backend.security import create_access_token, get_current_user, hash_password, verify_password
 
 logger = logging.getLogger("satquery.auth")
 
@@ -87,3 +88,65 @@ def register_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while creating your account. Please try again later.",
         ) from exc
+
+
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Authenticate user and return JWT access token",
+    description=(
+        "Authenticates a user via email and password. Returns a signed JWT access token "
+        "and safe user profile. Returns generic 401 on invalid credentials to prevent enumeration."
+    ),
+)
+def login_user(
+    payload: LoginRequest,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    """Authenticate user credentials and issue a stateless JWT access token.
+
+    Flow:
+        1. Validate and normalize email.
+        2. Query user record in PostgreSQL by normalized email.
+        3. Verify candidate password against stored Argon2id hash.
+        4. If user not found OR password mismatch: return HTTP 401 Unauthorized.
+        5. Generate signed JWT access token (HS256) with UUID subject and expiration.
+        6. Return access token with safe user profile representation.
+    """
+    user = db.execute(
+        select(User).where(User.email == payload.email)
+    ).scalar_one_or_none()
+
+    if user is None or not verify_password(payload.password, user.password_hash):
+        logger.info("Login failed: invalid credentials for email=%s", payload.email)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token = create_access_token(user.id)
+    expires_in = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+    logger.info("Successfully authenticated user id=%s (email=%s)", user.id, user.email)
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        expires_in=expires_in,
+        user=UserResponse.model_validate(user),
+    )
+
+
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get current authenticated user profile",
+    description="Returns the profile of the user identified by the Authorization Bearer JWT token.",
+)
+def get_me(
+    current_user: User = Depends(get_current_user),
+) -> UserResponse:
+    """Return profile representation for currently authenticated user."""
+    return UserResponse.model_validate(current_user)
