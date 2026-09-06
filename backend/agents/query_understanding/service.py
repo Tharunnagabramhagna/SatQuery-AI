@@ -10,6 +10,7 @@ import logging
 from typing import Optional
 
 from backend.agents.query_understanding.base import BaseQueryClassifier
+from backend.agents.query_understanding.gemini import GeminiQueryClassifier
 from backend.agents.query_understanding.rules import RuleBasedQueryClassifier
 from backend.schemas.query_understanding import StructuredQuery
 
@@ -20,10 +21,11 @@ class QueryUnderstandingService:
     """
     Main entry point for query analysis and intent extraction.
     Decoupled from specific classifier implementation via BaseQueryClassifier.
+    Defaults to GeminiQueryClassifier with automatic RuleBasedQueryClassifier fallback.
     """
 
     def __init__(self, classifier: Optional[BaseQueryClassifier] = None):
-        self.classifier = classifier or RuleBasedQueryClassifier()
+        self.classifier = classifier or GeminiQueryClassifier()
 
     def set_classifier(self, classifier: BaseQueryClassifier) -> None:
         """Dynamically replace the underlying classifier engine."""

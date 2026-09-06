@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     # OAuth one-time exchange code expiration (seconds)
     OAUTH_EXCHANGE_CODE_EXPIRE_SECONDS: int = 120
 
+    # Google Gemini Query Understanding configuration
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+    GEMINI_TIMEOUT_SECONDS: float = 10.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

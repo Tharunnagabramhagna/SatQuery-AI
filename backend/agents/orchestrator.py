@@ -86,8 +86,18 @@ class AgentOrchestrator:
             if structured.target_objects
             else "No specific targets identified"
         )
+        provider = structured.extracted_attributes.get("provider", "rule_based")
+        if provider == "gemini":
+            model = structured.extracted_attributes.get("model", "gemini-3.6-flash")
+            provider_tag = f" [provider: gemini, model: {model}]"
+        elif structured.extracted_attributes.get("fallback_reason"):
+            reason = structured.extracted_attributes.get("fallback_reason")
+            provider_tag = f" [provider: rule_based, fallback_reason: {reason}]"
+        else:
+            provider_tag = " [provider: rule_based]"
+
         step1_detail = (
-            f"Classified intent as {structured.intent.value} with confidence {structured.confidence:.2f}. "
+            f"Classified intent as {structured.intent.value} with confidence {structured.confidence:.2f}{provider_tag}. "
             f"{target_summary}."
         )
         if structured.is_ambiguous and structured.ambiguity_reason:
