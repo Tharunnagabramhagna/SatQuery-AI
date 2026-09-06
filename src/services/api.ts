@@ -14,9 +14,16 @@ import type {
   AnalysisRecord,
   SystemStatus,
   DemoScenario,
+  DatasetScenario,
+  DocumentationSection,
+  UserProfile,
+  UserPreferences,
 } from '../types';
 import { mockAnalyses } from '../mock/mockAnalyses';
 import { DEMO_SCENARIOS } from '../mock/mockResponses';
+import { MOCK_ANALYSIS_HISTORY } from '../mock/mockHistory';
+import { MOCK_DATASET_SCENARIOS } from '../mock/mockDatasets';
+import { MOCK_DOCUMENTATION_SECTIONS } from '../mock/mockDocumentation';
 
 // ─── Simulate network delay ─────────────────────────────────────
 
@@ -63,8 +70,12 @@ export async function submitAnalysis(request: AnalysisRequest): Promise<Analysis
 
 export async function getRecentAnalyses(): Promise<AnalysisRecord[]> {
   // In the future: GET /api/analyses?limit=10&sort=date:desc
-  await delay(300);
   return mockAnalyses;
+}
+
+export async function getAnalysisHistory(): Promise<AnalysisRecord[]> {
+  // In the future: GET /api/history
+  return MOCK_ANALYSIS_HISTORY;
 }
 
 // ─── System Health ───────────────────────────────────────────────
@@ -89,3 +100,171 @@ export function getDemoScenarios(): DemoScenario[] {
 export function getDemoScenario(id: string): DemoScenario | undefined {
   return DEMO_SCENARIOS.find((s) => s.id === id);
 }
+
+// ─── Dataset & Scenario Library ───────────────────────────────────
+
+export async function getDatasets(): Promise<DatasetScenario[]> {
+  // In the future: GET /api/datasets
+  return MOCK_DATASET_SCENARIOS;
+}
+
+export async function getDatasetScenarioById(id: string): Promise<DatasetScenario | undefined> {
+  // In the future: GET /api/datasets/:id
+  return MOCK_DATASET_SCENARIOS.find((s) => s.id === id);
+}
+
+// ─── Technical Documentation Center ───────────────────────────────
+
+export async function getDocumentationSections(): Promise<DocumentationSection[]> {
+  // In the future: GET /api/documentation/sections
+  return MOCK_DOCUMENTATION_SECTIONS;
+}
+
+export async function getDocumentationSectionById(id: string): Promise<DocumentationSection | undefined> {
+  // In the future: GET /api/documentation/sections/:id
+  return MOCK_DOCUMENTATION_SECTIONS.find((s) => s.id === id);
+}
+
+// ─── User Profile & Account Settings (Backend-Ready) ──────────────
+
+const USER_PROFILE_STORAGE_KEY = 'satquery-user';
+const USER_PREFERENCES_STORAGE_KEY = 'satquery-preferences';
+
+export const DEFAULT_USER_PROFILE: UserProfile = {
+  name: 'Stark Visions',
+  email: 'engineer@satquery.ai',
+};
+
+export const DEFAULT_USER_PREFERENCES: UserPreferences = {
+  notifications: {
+    analysisCompletion: true,
+    reportReady: true,
+    productUpdates: false,
+  },
+  analysis: {
+    rememberLastMode: true,
+    openLatestOnReturn: false,
+    preserveViewerState: true,
+    showEvidenceByDefault: true,
+  },
+};
+
+export async function getUserProfile(): Promise<UserProfile> {
+  // In the future: GET /api/user/profile
+  try {
+    const raw = localStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.name === 'string' && typeof parsed.email === 'string') {
+        return {
+          name: parsed.name,
+          email: parsed.email,
+          avatar: typeof parsed.avatar === 'string' && parsed.avatar ? parsed.avatar : undefined,
+        };
+      }
+    }
+  } catch {
+    // ignore localStorage errors
+  }
+  return DEFAULT_USER_PROFILE;
+}
+
+export async function updateUserProfile(profile: Partial<UserProfile>): Promise<UserProfile> {
+  // In the future: PUT /api/user/profile
+  const current = await getUserProfile();
+  const updated: UserProfile = {
+    ...current,
+    ...profile,
+    // Email is read-only in demo mode to protect identity binding
+    email: current.email,
+  };
+
+  // If avatar was explicitly cleared
+  if ('avatar' in profile && !profile.avatar) {
+    delete updated.avatar;
+  }
+
+  try {
+    localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('satquery-user-update', { detail: updated }));
+    }
+  } catch {
+    // ignore
+  }
+  return updated;
+}
+
+// ─── Language Preference (Backend-Ready) ──────────────────────────
+
+const LANGUAGE_STORAGE_KEY = 'satquery-language';
+
+export async function getLanguage(): Promise<string> {
+  try {
+    return localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+export async function updateLanguage(lang: string): Promise<string> {
+  try {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('satquery-language-update', { detail: lang }));
+    }
+  } catch {
+    // ignore
+  }
+  return lang;
+}
+
+export async function getUserPreferences(): Promise<UserPreferences> {
+  // In the future: GET /api/user/preferences
+  try {
+    const raw = localStorage.getItem(USER_PREFERENCES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.notifications && parsed.analysis) {
+        return {
+          notifications: {
+            ...DEFAULT_USER_PREFERENCES.notifications,
+            ...parsed.notifications,
+          },
+          analysis: {
+            ...DEFAULT_USER_PREFERENCES.analysis,
+            ...parsed.analysis,
+          },
+        };
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return DEFAULT_USER_PREFERENCES;
+}
+
+export async function updateUserPreferences(preferences: Partial<UserPreferences>): Promise<UserPreferences> {
+  // In the future: PUT /api/user/preferences
+  const current = await getUserPreferences();
+  const updated: UserPreferences = {
+    notifications: {
+      ...current.notifications,
+      ...(preferences.notifications || {}),
+    },
+    analysis: {
+      ...current.analysis,
+      ...(preferences.analysis || {}),
+    },
+  };
+  try {
+    localStorage.setItem(USER_PREFERENCES_STORAGE_KEY, JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('satquery-preferences-update', { detail: updated }));
+    }
+  } catch {
+    // ignore
+  }
+  return updated;
+}
+

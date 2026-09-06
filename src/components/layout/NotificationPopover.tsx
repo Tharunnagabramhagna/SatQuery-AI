@@ -54,15 +54,42 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
 ];
 
-export function NotificationPopover() {
-  const [isOpen, setIsOpen] = useState(false);
+interface NotificationPopoverProps {
+  isOpen?: boolean;
+  onToggle?: () => void;
+  onClose?: () => void;
+}
+
+export function NotificationPopover({
+  isOpen: externalIsOpen,
+  onToggle: externalOnToggle,
+  onClose: externalOnClose,
+}: NotificationPopoverProps = {}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  const isControlled = externalIsOpen !== undefined;
+  const isOpen = isControlled ? externalIsOpen : internalIsOpen;
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Toggle dropdown
-  const togglePopover = () => setIsOpen((prev) => !prev);
+  const togglePopover = () => {
+    if (isControlled) {
+      externalOnToggle?.();
+    } else {
+      setInternalIsOpen((prev) => !prev);
+    }
+  };
+
+  const closePopover = () => {
+    if (isControlled) {
+      externalOnClose?.();
+    } else {
+      setInternalIsOpen(false);
+    }
+  };
 
   // Close on outside click or Escape key
   useEffect(() => {
@@ -70,13 +97,13 @@ export function NotificationPopover() {
 
     const handleClickOutside = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+        closePopover();
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setIsOpen(false);
+        closePopover();
       }
     };
 
@@ -87,7 +114,7 @@ export function NotificationPopover() {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, isControlled]);
 
   // Mark all notifications as read
   const handleMarkAllAsRead = () => {

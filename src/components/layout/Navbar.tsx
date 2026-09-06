@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Menu,
@@ -8,6 +9,7 @@ import {
 import { BrandMark } from './BrandMark';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationPopover } from './NotificationPopover';
+import { ProfileDropdown } from './ProfileDropdown';
 import { cn } from '../../utils/cn';
 
 interface NavbarProps {
@@ -15,9 +17,37 @@ interface NavbarProps {
   onToggleMobileMenu?: () => void;
   onOpenSystemStatus?: () => void;
   onSignIn?: () => void;
+  isSignedIn?: boolean;
+  onSignOut?: () => void;
+  userName?: string;
+  userEmail?: string;
+  userAvatar?: string;
 }
 
-export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onSignIn, onToggleSidebar: _onToggleSidebar }: NavbarProps) {
+export function Navbar({
+  onToggleMobileMenu,
+  onOpenSystemStatus,
+  onSignIn,
+  isSignedIn = true,
+  onSignOut,
+  onToggleSidebar: _onToggleSidebar,
+  userName,
+  userEmail,
+  userAvatar,
+}: NavbarProps) {
+  const [activePopover, setActivePopover] = useState<'notifications' | 'profile' | null>(null);
+
+  const handleToggleNotifications = () => {
+    setActivePopover((prev) => (prev === 'notifications' ? null : 'notifications'));
+  };
+
+  const handleToggleProfile = () => {
+    setActivePopover((prev) => (prev === 'profile' ? null : 'profile'));
+  };
+
+  const handleClosePopovers = () => {
+    setActivePopover(null);
+  };
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 lg:px-6 bg-white dark:bg-[#070b15] border-b border-slate-200 dark:border-slate-800/90 w-full select-none transition-colors duration-150">
       {/* Left Brand Area */}
@@ -30,7 +60,15 @@ export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onSignIn, onTog
           <Menu className="w-5 h-5" />
         </button>
 
-        <BrandMark />
+        <div className="flex items-center gap-2">
+          <BrandMark />
+          <span
+            title="SatQuery AI is running in demonstration mode. Imagery and analysis results are simulated."
+            className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold tracking-wider rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-help"
+          >
+            DEMO
+          </span>
+        </div>
 
         {/* Center / Left-Center Nav Tabs */}
         <nav className="hidden md:flex items-center gap-1 ml-2">
@@ -125,16 +163,25 @@ export function Navbar({ onToggleMobileMenu, onOpenSystemStatus, onSignIn, onTog
         <ThemeToggle />
 
         {/* Notifications Popover */}
-        <NotificationPopover />
+        <NotificationPopover
+          isOpen={activePopover === 'notifications'}
+          onToggle={handleToggleNotifications}
+          onClose={handleClosePopovers}
+        />
 
-        {/* User Profile Avatar */}
+        {/* User Profile Avatar / Dropdown */}
         <div className="flex items-center gap-2 pl-1 border-l border-slate-200 dark:border-slate-800">
-          <div
-            className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 border border-slate-300 dark:border-slate-700 flex items-center justify-center text-white text-[11px] font-bold shadow-sm cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
-            title="User Profile (Stark Visions - Lead Engineer)"
-          >
-            SV
-          </div>
+          <ProfileDropdown
+            isOpen={activePopover === 'profile'}
+            onToggle={handleToggleProfile}
+            onClose={handleClosePopovers}
+            isSignedIn={isSignedIn}
+            onSignIn={onSignIn || (() => {})}
+            onSignOut={onSignOut || (() => {})}
+            userName={userName}
+            userEmail={userEmail}
+            userAvatar={userAvatar}
+          />
         </div>
       </div>
     </header>

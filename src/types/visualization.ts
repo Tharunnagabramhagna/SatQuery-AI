@@ -2,7 +2,7 @@
 
 export type LayerCategory = 'base' | 'overlay';
 export type BaseLayerType = 'rgb' | 'nir' | 'ndvi' | 'sar';
-export type OverlayLayerType = 'buildings' | 'changed_regions' | 'roads' | 'vegetation';
+export type OverlayLayerType = 'buildings' | 'changed_regions' | 'roads' | 'vegetation' | 'grounding';
 export type BandCombination = 'true_color' | 'agriculture' | 'urban' | 'water';
 
 export interface VisualizationLayer {
@@ -144,3 +144,33 @@ export interface ProcessingStage {
   status: 'completed' | 'skipped' | 'pending';
   description?: string;
 }
+
+// ─── Phase 3 Modes & Grounding Types ──────────────────────────────
+
+export type ComparisonMode = 'swipe' | 'side_by_side';
+export type OpticalSarMode = 'optical' | 'sar' | 'combined';
+
+export interface NormalizedBounds {
+  x: number;      // 0..1
+  y: number;      // 0..1
+  width: number;  // 0..1
+  height: number; // 0..1
+}
+
+export interface GroundingBox {
+  id: string;
+  label: string;
+  normalized: NormalizedBounds;
+  confidence: number; // e.g. 93 for "Demo Confidence 93%"
+  regionId: string;   // stable link to MOCK_REGIONS
+  category: 'building' | 'structure' | 'infrastructure' | 'parcel';
+  isDemo: boolean;
+}
+
+export interface ExecutionStage {
+  id: string;
+  step: number;
+  label: string;
+  status: 'pending' | 'running' | 'completed' | 'error';
+}
+

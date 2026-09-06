@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowRight, Check, ChevronUp, ChevronDown, Loader2, Bot } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { MOCK_EXECUTION_STAGES } from '../../mock/mockGrounding';
 
 interface QueryAndExecutionPanelProps {
   currentQuery: string;
@@ -24,17 +25,29 @@ export function QueryAndExecutionPanel({
   showQueryInput = true,
 }: QueryAndExecutionPanelProps) {
   const [isExecutionExpanded, setIsExecutionExpanded] = useState(true);
+  const [currentStep, setCurrentStep] = useState(11);
 
-  const executionSteps = [
-    { label: 'Query received', done: true },
-    { label: 'Input validated', done: true },
-    { label: `Task identified: ${activeModeName}`, done: true },
-    { label: 'Selecting specialist model', done: true },
-    { label: 'Processing imagery', done: true },
-    { label: 'Detecting changed regions', done: true },
-    { label: 'Generating evidence', done: true },
-    { label: 'Computing confidence', done: true },
-  ];
+  // Synchronize stage progression with analysis lifecycle (with timer cleanup)
+  useEffect(() => {
+    if (!isAnalyzing) {
+      setCurrentStep(11);
+      return;
+    }
+
+    // Step 1 immediately on analysis start
+    setCurrentStep(1);
+
+    const interval = setInterval(() => {
+      setCurrentStep((prev) => {
+        if (prev < 11) {
+          return prev + 1;
+        }
+        return prev;
+      });
+    }, 95);
+
+    return () => clearInterval(interval);
+  }, [isAnalyzing]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full">
@@ -87,7 +100,7 @@ export function QueryAndExecutionPanel({
               {isAnalyzing ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Reasoning...</span>
+                  <span>Processing...</span>
                 </>
               ) : (
                 <>
@@ -111,11 +124,14 @@ export function QueryAndExecutionPanel({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-snug">
-                AI Execution
+                AI Execution Trace
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                DEMO TRACE
+              </span>
               {!showQueryInput && (
-                <span className="ml-1.5 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                <span className="ml-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                   {activeModeName}
                 </span>
               )}
@@ -135,7 +151,7 @@ export function QueryAndExecutionPanel({
                   {isAnalyzing ? (
                     <>
                       <Loader2 className="w-3 h-3 animate-spin" />
-                      <span>Reasoning...</span>
+                      <span>Processing...</span>
                     </>
                   ) : (
                     <>
@@ -163,20 +179,51 @@ export function QueryAndExecutionPanel({
           {isExecutionExpanded && (
             <div
               className={cn(
-                'mt-2 text-[11px]',
+                'mt-2.5 text-[11px]',
                 showQueryInput
-                  ? 'grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5'
-                  : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2'
+                  ? 'grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2'
+                  : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-2.5'
               )}
             >
-              {executionSteps.map((step, idx) => (
-                <div key={idx} className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 min-w-0">
-                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                    <Check className="w-2.5 h-2.5 stroke-[2.5]" />
+              {MOCK_EXECUTION_STAGES.map((stage) => {
+                const isStepCompleted = !isAnalyzing || stage.step <= currentStep;
+                const isStepRunning = isAnalyzing && stage.step === currentStep;
+
+                return (
+                  <div key={stage.id} className="flex items-center gap-2 min-w-0">
+                    <div
+                      className={cn(
+                        'w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150',
+                        isStepCompleted
+                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                          : isStepRunning
+                          ? 'bg-blue-500/20 text-blue-600 dark:text-cyan-400'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                      )}
+                    >
+                      {isStepRunning ? (
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                      ) : isStepCompleted ? (
+                        <Check className="w-2.5 h-2.5 stroke-[2.5]" />
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+                      )}
+                    </div>
+                    <span
+                      className={cn(
+                        'truncate font-medium leading-snug',
+                        isStepCompleted
+                          ? 'text-slate-800 dark:text-slate-200'
+                          : isStepRunning
+                          ? 'text-blue-600 dark:text-cyan-400 font-semibold'
+                          : 'text-slate-400 dark:text-slate-500'
+                      )}
+                    >
+                      {stage.label}
+                    </span>
                   </div>
-                  <span className="truncate font-medium leading-snug">{step.label}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -184,3 +231,4 @@ export function QueryAndExecutionPanel({
     </div>
   );
 }
+

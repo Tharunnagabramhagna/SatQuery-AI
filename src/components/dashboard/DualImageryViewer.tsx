@@ -18,7 +18,15 @@ import {
   Move,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import type { VisualizationLayer, MapRegion } from '../../types/visualization';
+import type {
+  VisualizationLayer,
+  MapRegion,
+  ImagerySource,
+  ComparisonMode,
+  OpticalSarMode,
+  GroundingBox,
+} from '../../types/visualization';
+import { GroundingOverlay } from './GroundingOverlay';
 
 interface DualImageryViewerProps {
   modeCategory: 'single' | 'compare' | 'fusion';
@@ -33,6 +41,24 @@ interface DualImageryViewerProps {
   highlightedRegionId?: string | null;
   /** Phase 2: Callback when user clicks a region on the viewer */
   onRegionClick?: (regionId: string) => void;
+
+  /** Phase 3: Centralized imagery metadata from DashboardPage */
+  imagerySources?: {
+    t0: ImagerySource;
+    t1: ImagerySource;
+    t0Path?: string;
+    t1Path?: string;
+  };
+  /** Phase 3: Comparison mode (swipe vs side-by-side) */
+  comparisonMode?: ComparisonMode;
+  onComparisonModeChange?: (mode: ComparisonMode) => void;
+  /** Phase 3: Optical + SAR display mode */
+  opticalSarMode?: OpticalSarMode;
+  onOpticalSarModeChange?: (mode: OpticalSarMode) => void;
+  /** Phase 3: Grounding boxes */
+  groundingBoxes?: GroundingBox[];
+  selectedGroundingId?: string | null;
+  onSelectGrounding?: (groundingId: string, regionId: string) => void;
 }
 
 export function DualImageryViewer({
@@ -44,7 +70,21 @@ export function DualImageryViewer({
   regions = [],
   highlightedRegionId = null,
   onRegionClick,
+  imagerySources,
+  comparisonMode = 'swipe',
+  onComparisonModeChange,
+  opticalSarMode = 'combined',
+  onOpticalSarModeChange,
+  groundingBoxes = [],
+  selectedGroundingId = null,
+  onSelectGrounding,
 }: DualImageryViewerProps) {
+  // Centralized imagery paths & dates from props (no hardcoded dates)
+  const t0Date = imagerySources?.t0?.acquisitionDate || '2025-03-12';
+  const t1Date = imagerySources?.t1?.acquisitionDate || '2026-03-12';
+  const t0Path = imagerySources?.t0Path || '/imagery/sat_before.jpg';
+  const t1Path = imagerySources?.t1Path || '/imagery/sat_after.jpg';
+
   // Split slider position (percentage 0 to 100)
   const [sliderPosition, setSliderPosition] = useState(52);
   const [isDragging, setIsDragging] = useState(false);
@@ -411,44 +451,218 @@ export function DualImageryViewer({
             ref={stageRef}
             className="relative h-full max-w-full aspect-[1200/896] overflow-hidden flex items-center justify-center"
           >
-            {/* 1. Base After/Current Imagery Layer (Zoom transform applied HERE ONLY) */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div
-                className="w-full h-full transition-transform duration-150 ease-out origin-center"
-                style={{ transform: `scale(${zoomLevel})` }}
-              >
-                <img
-                  src="/imagery/sat_after.jpg"
-                  alt="Current Satellite Imagery (2026)"
+            {/* 0. Mode-Specific In-Stage Header: Comparison Mode Toggle (Swipe vs Side-by-Side) */}
+            {modeCategory === 'compare' && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center p-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700/80 shadow-md pointer-events-auto">
+                <button
+                  type="button"
+                  onClick={() => onComparisonModeChange?.('swipe')}
                   className={cn(
-                    'w-full h-full object-contain select-none pointer-events-none',
-                    modeCategory === 'fusion' && activeLayer === 'sar' && 'hue-rotate-180 contrast-125'
+                    'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer',
+                    comparisonMode === 'swipe'
+                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-300 hover:text-white'
                   )}
-                />
-              </div>
-            </div>
-
-            {/* 2. Compare / Split Image Layer (Clipped to sliderPosition% of viewport, zoom transform applied HERE ONLY) */}
-            {modeCategory !== 'single' && (
-              <div
-                className="absolute inset-0 overflow-hidden pointer-events-none"
-                style={{
-                  clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
-                  WebkitClipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
-                }}
-              >
-                <div
-                  className="w-full h-full transition-transform duration-150 ease-out origin-center"
-                  style={{ transform: `scale(${zoomLevel})` }}
+                  title="Swipe comparison mode"
+                  aria-label="Swipe comparison mode"
                 >
-                  <img
-                    src="/imagery/sat_before.jpg"
-                    alt={modeCategory === 'fusion' ? 'Optical Imagery' : 'Previous Satellite Imagery (2025)'}
-                    className="w-full h-full object-contain select-none pointer-events-none"
-                  />
-                </div>
+                  <SplitSquareVertical className="w-3 h-3" />
+                  <span>Swipe</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onComparisonModeChange?.('side_by_side')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer',
+                    comparisonMode === 'side_by_side'
+                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-300 hover:text-white'
+                  )}
+                  title="Side-by-side comparison mode"
+                  aria-label="Side-by-side comparison mode"
+                >
+                  <Grid className="w-3 h-3" />
+                  <span>Side-by-Side</span>
+                </button>
               </div>
             )}
+
+            {/* Mode-Specific In-Stage Header: Optical / SAR / Combined Multimodal Toggle */}
+            {modeCategory === 'fusion' && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center p-0.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700/80 shadow-md pointer-events-auto">
+                <button
+                  type="button"
+                  onClick={() => onOpticalSarModeChange?.('optical')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
+                    opticalSarMode === 'optical'
+                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-300 hover:text-white'
+                  )}
+                  title="Show Optical imagery (RGB)"
+                  aria-label="Show Optical imagery (RGB)"
+                >
+                  Optical
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpticalSarModeChange?.('sar')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
+                    opticalSarMode === 'sar'
+                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-300 hover:text-white'
+                  )}
+                  title="Show DEMO SAR visualization treatment"
+                  aria-label="Show DEMO SAR visualization treatment"
+                >
+                  SAR (Demo)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpticalSarModeChange?.('combined')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer',
+                    opticalSarMode === 'combined'
+                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-300 hover:text-white'
+                  )}
+                  title="Show Combined comparative view"
+                  aria-label="Show Combined comparative view"
+                >
+                  Combined
+                </button>
+              </div>
+            )}
+
+            {/* Mode Badge for Optical & DEMO SAR view */}
+            {modeCategory === 'fusion' && opticalSarMode === 'sar' && (
+              <div className="absolute top-12 left-3 z-20 px-2 py-0.5 rounded bg-purple-950/85 backdrop-blur-md border border-purple-700/60 text-[10px] font-mono text-purple-200 shadow-md flex items-center gap-1.5 pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                <span>DEMO SAR — Visual treatment only</span>
+              </div>
+            )}
+
+            {modeCategory === 'fusion' && opticalSarMode === 'optical' && (
+              <div className="absolute top-12 left-3 z-20 px-2 py-0.5 rounded bg-blue-950/85 backdrop-blur-md border border-blue-700/60 text-[10px] font-mono text-cyan-200 shadow-md flex items-center gap-1.5 pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                <span>OPTICAL (RGB)</span>
+              </div>
+            )}
+
+            {/* Side-by-Side Comparison Layout (Desktop/Tablet: side-by-side; Mobile: stacked) */}
+            {modeCategory === 'compare' && comparisonMode === 'side_by_side' ? (
+              <div className="w-full h-full flex flex-col md:flex-row gap-2 p-2 pt-11">
+                {/* Left: BEFORE (T0) */}
+                <div className="relative flex-1 w-full h-full rounded-lg overflow-hidden border border-slate-800 bg-[#060a14] flex items-center justify-center">
+                  <div
+                    className="w-full h-full transition-transform duration-150 ease-out origin-center flex items-center justify-center pointer-events-none"
+                    style={{ transform: `scale(${zoomLevel})` }}
+                  >
+                    <img
+                      src={t0Path}
+                      alt={`Previous Satellite Imagery (${t0Date})`}
+                      className="w-full h-full object-contain select-none pointer-events-none"
+                    />
+                  </div>
+                  <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-slate-950/85 backdrop-blur-md border border-slate-800 text-[10px] font-mono text-slate-200 pointer-events-none">
+                    BEFORE • T0 ({t0Date})
+                  </div>
+                </div>
+
+                {/* Right: AFTER (T1) with synchronized overlays */}
+                <div className="relative flex-1 w-full h-full rounded-lg overflow-hidden border border-slate-800 bg-[#060a14] flex items-center justify-center">
+                  <div
+                    className="w-full h-full transition-transform duration-150 ease-out origin-center flex items-center justify-center pointer-events-none"
+                    style={{ transform: `scale(${zoomLevel})` }}
+                  >
+                    <img
+                      src={t1Path}
+                      alt={`Current Satellite Imagery (${t1Date})`}
+                      className="w-full h-full object-contain select-none pointer-events-none"
+                    />
+                    {/* SVG Overlays in Side-by-Side After view */}
+                    {showOverlays && (
+                      <svg
+                        className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                        viewBox="0 0 800 500"
+                        preserveAspectRatio="none"
+                      >
+                        {isOverlayVisible('changed_regions') && (
+                          <g style={{ opacity: getOverlayOpacity('changed_regions') }}>
+                            {regions
+                              .filter((r) => r.type === 'changed_area' && r.polygonPoints)
+                              .map((region) => (
+                                <polygon
+                                  key={region.id}
+                                  points={region.polygonPoints}
+                                  fill={highlightedRegionId === region.id ? 'rgba(250, 204, 21, 0.4)' : 'rgba(250, 204, 21, 0.18)'}
+                                  stroke={highlightedRegionId === region.id ? '#fef08a' : '#facc15'}
+                                  strokeWidth={highlightedRegionId === region.id ? '3.5' : '2.5'}
+                                  className="cursor-pointer pointer-events-auto transition-all duration-200"
+                                  onClick={() => handleRegionClick(region.id)}
+                                />
+                              ))}
+                          </g>
+                        )}
+                        {isOverlayVisible('grounding') && (
+                          <GroundingOverlay
+                            boxes={groundingBoxes}
+                            visible={isOverlayVisible('grounding')}
+                            opacity={getOverlayOpacity('grounding')}
+                            selectedGroundingId={selectedGroundingId}
+                            highlightedRegionId={highlightedRegionId}
+                            onSelectGrounding={onSelectGrounding}
+                          />
+                        )}
+                      </svg>
+                    )}
+                  </div>
+                  <div className="absolute top-2 right-2 z-20 px-2 py-0.5 rounded bg-slate-950/85 backdrop-blur-md border border-slate-800 text-[10px] font-mono text-slate-200 pointer-events-none">
+                    AFTER • T1 ({t1Date})
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* 1. Base After/Current Imagery Layer (Zoom transform applied HERE ONLY) */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div
+                    className="w-full h-full transition-transform duration-150 ease-out origin-center"
+                    style={{ transform: `scale(${zoomLevel})` }}
+                  >
+                    <img
+                      src={t1Path}
+                      alt={`Satellite Imagery (${t1Date})`}
+                      className={cn(
+                        'w-full h-full object-contain select-none pointer-events-none',
+                        modeCategory === 'fusion' && opticalSarMode === 'sar' && 'grayscale contrast-150 brightness-95'
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Compare / Split Image Layer (Clipped to sliderPosition% of viewport, zoom transform applied HERE ONLY) */}
+                {modeCategory !== 'single' && !(modeCategory === 'fusion' && (opticalSarMode === 'optical' || opticalSarMode === 'sar')) && (
+                  <div
+                    className="absolute inset-0 overflow-hidden pointer-events-none"
+                    style={{
+                      clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
+                      WebkitClipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
+                    }}
+                  >
+                    <div
+                      className="w-full h-full transition-transform duration-150 ease-out origin-center"
+                      style={{ transform: `scale(${zoomLevel})` }}
+                    >
+                      <img
+                        src={modeCategory === 'fusion' ? t0Path : t0Path}
+                        alt={modeCategory === 'fusion' ? 'Optical Imagery' : `Previous Satellite Imagery (${t0Date})`}
+                        className="w-full h-full object-contain select-none pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                )}
 
             {/* 3. SVG Overlays & Evidence Highlights (Zoom transform applied HERE so overlays remain 100% aligned!) */}
             {showOverlays && (
@@ -532,6 +746,18 @@ export function DualImageryViewer({
                       </g>
                     )}
 
+                    {/* Phase 3 Grounding Boxes Overlay (shares exact coordinate system and zoom scale) */}
+                    {isOverlayVisible('grounding') && (
+                      <GroundingOverlay
+                        boxes={groundingBoxes}
+                        visible={isOverlayVisible('grounding')}
+                        opacity={getOverlayOpacity('grounding')}
+                        selectedGroundingId={selectedGroundingId}
+                        highlightedRegionId={highlightedRegionId}
+                        onSelectGrounding={onSelectGrounding}
+                      />
+                    )}
+
                     {/* Highlighted region pulse ring */}
                     {highlightedRegionId && (() => {
                       const hl = regions.find(r => r.id === highlightedRegionId);
@@ -557,7 +783,7 @@ export function DualImageryViewer({
             )}
 
             {/* 4. Interactive Split Divider & Drag Handle (Fixed on stageRef, NOT scaled) */}
-            {modeCategory !== 'single' && (
+            {modeCategory !== 'single' && !(modeCategory === 'compare' && comparisonMode === 'side_by_side') && !(modeCategory === 'fusion' && (opticalSarMode === 'optical' || opticalSarMode === 'sar')) && (
               <div
                 className="absolute top-0 bottom-0 z-20"
                 style={{ left: `${sliderPosition}%` }}
@@ -579,18 +805,28 @@ export function DualImageryViewer({
               </div>
             )}
 
-            {/* 5. Fixed Temporal Labels (Fixed on stageRef, NOT scaled) */}
-            {modeCategory !== 'single' && (
+            {/* 5. Fixed Temporal & Modal Labels (Fixed on stageRef, NOT scaled) */}
+            {modeCategory !== 'single' && !(modeCategory === 'compare' && comparisonMode === 'side_by_side') && (
               <>
                 <div className="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-200 shadow-md pointer-events-none">
-                  {modeCategory === 'fusion' ? 'Sentinel-2 Optical (2026)' : 'Previous Image (2025-03-12)'}
+                  {modeCategory === 'fusion' ? 'Optical Imagery (RGB)' : `Previous Image (${t0Date})`}
                 </div>
                 <div className="absolute bottom-3 right-3 z-20 px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-200 shadow-md pointer-events-none">
-                  {modeCategory === 'fusion' ? 'Sentinel-1 SAR C-Band (2026)' : 'Current Image (2026-03-12)'}
+                  {modeCategory === 'fusion' ? 'DEMO SAR (Visual treatment)' : `Current Image (${t1Date})`}
                 </div>
               </>
             )}
-          </div>
+
+            {/* Multimodal Observation Banner for Optical + SAR mode */}
+            {modeCategory === 'fusion' && (
+              <div className="absolute bottom-11 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-md bg-slate-950/90 backdrop-blur-md border border-slate-800 text-[10px] font-mono text-slate-300 shadow-md pointer-events-none text-center whitespace-nowrap max-w-[90%] truncate">
+                <span className="text-cyan-400 font-semibold mr-1.5">[DEMO MULTIMODAL]</span>
+                <span>Comparative multimodal view: Optical and SAR views presented together for comparative analysis.</span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
           {/* 6. Fixed Floating Map Navigation Controls (Fixed on canvas, NOT scaled) */}
           <div className="absolute top-4 left-3 z-20 flex flex-col rounded-lg bg-slate-900/85 backdrop-blur-md border border-slate-700/80 p-1 shadow-lg text-slate-200 divide-y divide-slate-800">
@@ -780,7 +1016,7 @@ export function DualImageryViewer({
               {/* Bottom Inset Caption */}
               <div className="relative z-20 flex items-center justify-between px-2 py-1 rounded bg-slate-950/85 backdrop-blur-md border border-slate-800/90 text-[10px] text-slate-300 font-mono">
                 <span>ROI Alpha (Sub-pixel 0.5m)</span>
-                <span className="text-emerald-400 font-semibold">100% Coherence</span>
+                <span className="text-emerald-400 font-semibold">High Coherence (Demo)</span>
               </div>
             </div>
           </div>

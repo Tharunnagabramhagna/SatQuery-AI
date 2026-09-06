@@ -78,6 +78,16 @@ export const DEFAULT_OVERLAY_LAYERS: VisualizationLayer[] = [
     description: 'Digitized road centerlines and corridors',
   },
   {
+    id: 'overlay_grounding',
+    name: 'Grounding Boxes',
+    category: 'overlay',
+    type: 'grounding',
+    visible: true,
+    opacity: 90,
+    color: '#38bdf8', // sky-400
+    description: 'AI localized bounding boxes & object tags (Demo)',
+  },
+  {
     id: 'overlay_vegetation',
     name: 'Vegetation Mask',
     category: 'overlay',

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   WorkspaceSecondarySidebar,
   WORKSPACE_MODES,
@@ -17,11 +17,22 @@ import { EvidenceModal } from '../components/dashboard/EvidenceModal';
 import { SystemStatusModal } from '../components/dashboard/SystemStatusModal';
 import { QueryAgentOverlay } from '../components/dashboard/QueryAgentOverlay';
 
-// Phase 2: Centralized Mock Data & Types
+// Phase 2 & 4: Centralized Mock Data & Types
 import { DEFAULT_BASE_LAYERS, DEFAULT_OVERLAY_LAYERS, BAND_COMBINATIONS } from '../mock/mockLayers';
 import { MOCK_REGIONS, MOCK_EVIDENCE } from '../mock/mockEvidence';
-import { MOCK_CONFIDENCE, MOCK_STATISTICS, MOCK_PROCESSING_STAGES } from '../mock/mockAnalysisResults';
-import type { VisualizationLayer, BandCombination } from '../types/visualization';
+import {
+  MOCK_CONFIDENCE,
+  MOCK_STATISTICS,
+  MOCK_PROCESSING_STAGES,
+  MOCK_IMAGERY_SOURCE_T0,
+  MOCK_IMAGERY_SOURCE_T1,
+} from '../mock/mockAnalysisResults';
+import { MOCK_GROUNDING_BOXES } from '../mock/mockGrounding';
+import { findHistoryRecord } from '../mock/mockHistory';
+import { findDatasetScenario } from '../mock/mockDatasets';
+import { getUserPreferences } from '../services/api';
+import type { VisualizationLayer, BandCombination, ComparisonMode, OpticalSarMode } from '../types/visualization';
+import { exportReport, type ReportData } from '../utils/reportExport';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -61,6 +72,134 @@ export function DashboardPage() {
   const [selectedEvidenceId, setSelectedEvidenceId] = useState<string | null>('evidence-1');
   const [highlightedRegionId, setHighlightedRegionId] = useState<string | null>('region-1');
 
+  // ─── Phase 3: Centralized Comparison, Optical/SAR & Grounding State ─
+  const [comparisonMode, setComparisonMode] = useState<ComparisonMode>('swipe');
+  const [opticalSarMode, setOpticalSarMode] = useState<OpticalSarMode>('combined');
+  const [selectedGroundingId, setSelectedGroundingId] = useState<string | null>('grounding-1');
+
+  // ─── Phase 4: Restore Analysis from History Navigation ───────────
+  const location = useLocation();
+
+  useEffect(() => {
+    const navState = location.state as {
+      analysisId?: string;
+      scenarioId?: string;
+      analysisMode?: string;
+      toolId?: string;
+    } | null;
+
+    if (navState?.scenarioId) {
+      const scenario = findDatasetScenario(navState.scenarioId);
+      if (scenario) {
+        // Map mode to category: 'single_image' -> 'single', 'compare_images' -> 'compare', 'optical_sar' -> 'fusion'
+        const category: 'single' | 'compare' | 'fusion' =
+          scenario.mode === 'single_image'
+            ? 'single'
+            : scenario.mode === 'compare_images'
+            ? 'compare'
+            : 'fusion';
+        setModeCategory(category);
+
+        const targetToolId = navState.toolId || scenario.toolId || scenario.capability;
+        const matchingMode =
+          WORKSPACE_MODES.find((m) => m.id === targetToolId) ||
+          WORKSPACE_MODES.find((m) => m.id === scenario.capability) ||
+          WORKSPACE_MODES.find((m) => m.category === category) ||
+          WORKSPACE_MODES[0];
+
+        if (matchingMode) {
+          setActivePresetMode({
+            ...matchingMode,
+            prompt: scenario.query || matchingMode.prompt,
+            answerSummary: scenario.expectedOutput || matchingMode.answerSummary,
+            confidence: scenario.confidence && scenario.confidence > 0 ? scenario.confidence : matchingMode.confidence,
+            evidencePoints: scenario.sampleEvidence && scenario.sampleEvidence.length > 0 ? scenario.sampleEvidence : matchingMode.evidencePoints,
+          });
+          setSelectedToolId(matchingMode.id);
+        }
+
+        if (scenario.capability === 'grounding' || category === 'single') {
+          setSelectedGroundingId('grounding-1');
+          setOverlayLayers((prev) =>
+            prev.map((l) => (l.type === 'grounding' ? { ...l, visible: true } : l))
+          );
+        }
+
+        if (category === 'compare') {
+          setComparisonMode('swipe');
+        } else if (category === 'fusion') {
+          setOpticalSarMode('combined');
+        }
+      }
+
+      // Clear navigation state so refresh or back/forward doesn't re-trigger
+      navigate(location.pathname, { replace: true, state: {} });
+    } else if (navState?.analysisId) {
+      const record = findHistoryRecord(navState.analysisId);
+      if (record) {
+        // Map mode to category: 'single_image' -> 'single', 'compare_images' -> 'compare', 'optical_sar' -> 'fusion'
+        const category: 'single' | 'compare' | 'fusion' =
+          record.mode === 'single_image'
+            ? 'single'
+            : record.mode === 'compare_images'
+            ? 'compare'
+            : 'fusion';
+        setModeCategory(category);
+
+        // Find best matching preset mode
+        const matchingMode =
+          WORKSPACE_MODES.find((m) => m.id === record.capability) ||
+          WORKSPACE_MODES.find((m) => m.category === category) ||
+          WORKSPACE_MODES[0];
+
+        if (matchingMode) {
+          setActivePresetMode({
+            ...matchingMode,
+            prompt: record.query || matchingMode.prompt,
+            answerSummary: record.resultSummary || matchingMode.answerSummary,
+            confidence: record.confidence && record.confidence > 0 ? record.confidence : matchingMode.confidence,
+          });
+          setSelectedToolId(matchingMode.id);
+        }
+
+        if (record.capability === 'grounding' || category === 'single') {
+          setSelectedGroundingId('grounding-1');
+          setOverlayLayers((prev) =>
+            prev.map((l) => (l.type === 'grounding' ? { ...l, visible: true } : l))
+          );
+        }
+
+        if (category === 'compare') {
+          setComparisonMode('swipe');
+        } else if (category === 'fusion') {
+          setOpticalSarMode('combined');
+        }
+      }
+
+      // Clear navigation state so refresh or back/forward doesn't re-trigger
+      navigate(location.pathname, { replace: true, state: {} });
+    } else {
+      // Check user preferences to restore last analysis mode if enabled
+      getUserPreferences().then((prefs) => {
+        if (prefs.analysis.rememberLastMode) {
+          try {
+            const savedModeId = localStorage.getItem('satquery-last-mode');
+            if (savedModeId) {
+              const matchingMode = WORKSPACE_MODES.find((m) => m.id === savedModeId);
+              if (matchingMode) {
+                setActivePresetMode(matchingMode);
+                setSelectedToolId(matchingMode.id);
+                setModeCategory(matchingMode.category);
+              }
+            }
+          } catch {
+            // ignore localStorage error
+          }
+        }
+      });
+    }
+  }, [location.state, location.pathname, navigate]);
+
   const isQueryAgent = selectedToolId === 'query_agent';
   const displayedQuery = isQueryAgent ? queryAgentQuery : activePresetMode.prompt;
   const activeDisplayName = isQueryAgent ? 'Query Agent' : activePresetMode.name;
@@ -95,20 +234,39 @@ export function DashboardPage() {
     setActiveBandCombo(combo);
   };
 
-  // Evidence ↔ Viewer interaction handlers
+  // Evidence ↔ Viewer interaction handlers (null-safe)
   const handleSelectEvidence = (evidenceId: string) => {
     setSelectedEvidenceId(evidenceId);
     const item = MOCK_EVIDENCE.find((e) => e.id === evidenceId);
     if (item?.regionId) {
       setHighlightedRegionId(item.regionId);
+      const matchingGrounding = MOCK_GROUNDING_BOXES.find((b) => b.regionId === item.regionId);
+      if (matchingGrounding) {
+        setSelectedGroundingId(matchingGrounding.id);
+      }
     }
   };
 
+  // Grounding selection handler (null-safe evidence linking)
+  const handleSelectGrounding = (groundingId: string, regionId: string) => {
+    setSelectedGroundingId(groundingId);
+    setHighlightedRegionId(regionId);
+    const matchingEvidence = MOCK_EVIDENCE.find((e) => e.regionId === regionId);
+    if (matchingEvidence) {
+      setSelectedEvidenceId(matchingEvidence.id);
+    }
+  };
+
+  // Region click handler (null-safe evidence & grounding linking)
   const handleRegionClick = (regionId: string) => {
     setHighlightedRegionId(regionId);
-    const item = MOCK_EVIDENCE.find((e) => e.regionId === regionId);
-    if (item) {
-      setSelectedEvidenceId(item.id);
+    const matchingGrounding = MOCK_GROUNDING_BOXES.find((b) => b.regionId === regionId);
+    if (matchingGrounding) {
+      setSelectedGroundingId(matchingGrounding.id);
+    }
+    const matchingEvidence = MOCK_EVIDENCE.find((e) => e.regionId === regionId);
+    if (matchingEvidence) {
+      setSelectedEvidenceId(matchingEvidence.id);
     }
   };
 
@@ -140,6 +298,22 @@ export function DashboardPage() {
     if (mode) {
       setActivePresetMode(mode);
       setModeCategory(mode.category);
+      try {
+        localStorage.setItem('satquery-last-mode', mode.id);
+      } catch {
+        // ignore
+      }
+      if (tool.id === 'grounding') {
+        setOverlayLayers((prev) =>
+          prev.map((l) => (l.type === 'grounding' ? { ...l, visible: true } : l))
+        );
+        setSelectedGroundingId('grounding-1');
+        handleSelectGrounding('grounding-1', 'region-1');
+      } else if (tool.id === 'change_analysis' || tool.id === 'change_vqa') {
+        setComparisonMode('swipe');
+      } else if (tool.id === 'optical_sar') {
+        setOpticalSarMode('combined');
+      }
     }
   };
 
@@ -180,12 +354,13 @@ export function DashboardPage() {
     }, 2500);
   };
 
-  // Download Report action
-  const handleDownloadReport = () => {
-    const reportData = {
+  // Download Report action supporting JSON, TXT, and PDF from unified report data
+  const handleDownloadReport = async (format: 'json' | 'txt' | 'pdf' = 'json') => {
+    const reportData: ReportData = {
       project: 'SatQuery AI - Space Intelligence',
       problemStatement: 'SIH26167 - Multimodal Remote Sensing',
       task: activeDisplayName,
+      taskId: selectedToolId,
       imageryMode: modeCategory,
       timestamp: new Date().toISOString(),
       imagery: {
@@ -193,25 +368,21 @@ export function DashboardPage() {
         resolution: '10m GSD',
         crs: 'EPSG:4326',
         coordinates: '28.6139° N, 77.2090° E',
+        temporalRange: MOCK_STATISTICS.temporalRange,
       },
       query: isQueryAgent ? (queryAgentQuery || 'Autonomous Query Agent Satellite Analysis') : activePresetMode.prompt,
       confidence: `${activePresetMode.confidence}% (Demo)`,
+      confidenceScore: MOCK_CONFIDENCE,
       answer: activePresetMode.answerSummary,
       evidence: activePresetMode.evidencePoints,
+      evidenceItems: MOCK_EVIDENCE,
       detectedFeatures: activePresetMode.detectedFeaturesCount,
+      statistics: MOCK_STATISTICS,
+      processingStages: MOCK_PROCESSING_STAGES,
+      isDemo: true,
     };
 
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `SatQuery_Intelligence_Report_${selectedToolId}_${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    await exportReport(reportData, format);
   };
 
   // Preset loading handler
@@ -284,6 +455,17 @@ export function DashboardPage() {
       if (matchedMode) {
         setActivePresetMode(matchedMode);
         setModeCategory(matchedMode.category);
+        if (matchedMode.id === 'grounding') {
+          setOverlayLayers((prev) =>
+            prev.map((l) => (l.type === 'grounding' ? { ...l, visible: true } : l))
+          );
+          setSelectedGroundingId('grounding-1');
+          handleSelectGrounding('grounding-1', 'region-1');
+        } else if (matchedMode.id === 'change_analysis' || matchedMode.id === 'change_vqa') {
+          setComparisonMode('swipe');
+        } else if (matchedMode.id === 'optical_sar') {
+          setOpticalSarMode('combined');
+        }
       }
     }
 
@@ -347,6 +529,19 @@ export function DashboardPage() {
                   regions={MOCK_REGIONS}
                   highlightedRegionId={highlightedRegionId}
                   onRegionClick={handleRegionClick}
+                  imagerySources={{
+                    t0: MOCK_IMAGERY_SOURCE_T0,
+                    t1: MOCK_IMAGERY_SOURCE_T1,
+                    t0Path: '/imagery/sat_before.jpg',
+                    t1Path: '/imagery/sat_after.jpg',
+                  }}
+                  comparisonMode={comparisonMode}
+                  onComparisonModeChange={setComparisonMode}
+                  opticalSarMode={opticalSarMode}
+                  onOpticalSarModeChange={setOpticalSarMode}
+                  groundingBoxes={MOCK_GROUNDING_BOXES}
+                  selectedGroundingId={selectedGroundingId}
+                  onSelectGrounding={handleSelectGrounding}
                 />
               </div>
 

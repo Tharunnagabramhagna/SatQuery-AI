@@ -111,6 +111,14 @@ export interface AnalysisRecord {
   modality: string;
   isDemo: boolean;
   response?: AnalysisResponse;
+  /** Phase 4: Rich history display fields */
+  title?: string;
+  resultSummary?: string;
+  confidence?: number;
+  thumbnail?: string;
+  evidenceCount?: number;
+  imageryType?: 'optical' | 'sar' | 'optical_sar';
+  comparisonDates?: { t0: string; t1: string };
 }
 
 // ─── Demo ────────────────────────────────────────────────────────
@@ -124,6 +132,64 @@ export interface DemoScenario {
   query: string;
   imageLabels: string[];
   mockResponse: AnalysisResponse;
+}
+
+// ─── Dataset & Scenario Library (Backend-Ready) ───────────────────
+
+export interface DatasetScenario {
+  id: string;
+  title: string;
+  description: string;
+  capability: AnalysisCapability;
+  mode: AnalysisMode;
+  toolId?: string;
+  thumbnail: string;
+  modality: string;
+  query: string;
+  datasetName?: string;
+  isDemo: boolean;
+  confidence?: number;
+  featuresCount?: number;
+  expectedOutput: string;
+  sampleEvidence: string[];
+  metadata?: {
+    sensor?: string;
+    resolution?: string;
+    coordinates?: string;
+    crs?: string;
+    temporalDelta?: string;
+  };
+}
+
+// ─── Technical Documentation Center (Backend-Ready) ───────────────
+
+export interface DocumentationCallout {
+  type: 'note' | 'tip' | 'warning' | 'info';
+  text: string;
+}
+
+export interface DocumentationSubsection {
+  id: string;
+  title: string;
+  content: string[];
+  codeBlock?: {
+    language: string;
+    code: string;
+  };
+  callout?: DocumentationCallout;
+}
+
+export interface DocumentationSection {
+  id: string;
+  title: string;
+  shortDescription: string;
+  category: 'core' | 'agent' | 'workspace' | 'intelligence' | 'engineering';
+  icon: string;
+  isDemo?: boolean;
+  isPlanned?: boolean;
+  content: string[];
+  subsections?: DocumentationSubsection[];
+  flowDiagram?: string[];
 }
 
 // ─── Error ───────────────────────────────────────────────────────
@@ -169,3 +235,30 @@ export interface AnalysisWorkflowState {
   isDemo: boolean;
   response: AnalysisResponse | null;
 }
+
+// ─── Account Settings (Backend-Ready) ───────────────────────────
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+export interface NotificationPreferences {
+  analysisCompletion: boolean;
+  reportReady: boolean;
+  productUpdates: boolean;
+}
+
+export interface AnalysisPreferences {
+  rememberLastMode: boolean;
+  openLatestOnReturn: boolean;
+  preserveViewerState: boolean;
+  showEvidenceByDefault: boolean;
+}
+
+export interface UserPreferences {
+  notifications: NotificationPreferences;
+  analysis: AnalysisPreferences;
+}
+

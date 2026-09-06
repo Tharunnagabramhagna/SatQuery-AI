@@ -9,13 +9,13 @@ export function WorkspaceFooter() {
           <span>React, TypeScript, Tailwind CSS</span>
         </div>
         <span className="text-slate-300 dark:text-slate-700">|</span>
-        <span className="hidden sm:inline text-slate-500 dark:text-slate-400">
-          Realistic mock data through MapLibre GL JS-style visualizations
+        <span className="hidden sm:inline text-amber-600/90 dark:text-amber-400/90 font-medium">
+          Demo Mode — Sample imagery and simulated analysis
         </span>
       </div>
 
       <div className="text-slate-500 dark:text-slate-400 font-mono text-[10px]">
-        Tailored for 1440px desktop display
+        SIH26167 · Tailored for 1440px desktop display
       </div>
     </footer>
   );
