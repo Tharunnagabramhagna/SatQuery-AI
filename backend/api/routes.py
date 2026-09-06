@@ -4,15 +4,20 @@ import logging
 import os
 import shutil
 import tempfile
+import uuid as uuid_module
 from typing import Optional
 
-from fastapi import APIRouter, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 from backend.agents.orchestrator import orchestrator
+from backend.db.models import Analysis, User
+from backend.db.session import get_db
 from backend.schemas.frontend import FrontendAnalysisResponse
 from backend.schemas.health import HealthResponse
 from backend.schemas.query import QueryRequest, QueryResponse
+from backend.security import get_optional_current_user
 
 logger = logging.getLogger("satquery.api")
 
@@ -110,7 +115,8 @@ async def _save_upload_to_temp(file: UploadFile, temp_dir: str, prefix: str) -> 
     description=(
         "Accepts multipart/form-data with image file uploads for frontend integration. "
         "Routes through the existing Query Understanding → Agent Router → Tool Executor pipeline. "
-        "Returns a camelCase response matching the frontend AnalysisResponse type."
+        "Returns a camelCase response matching the frontend AnalysisResponse type. "
+        "Supports optional JWT Bearer authentication for analysis persistence."
     ),
 )
 async def frontend_analysis_endpoint(
@@ -119,16 +125,27 @@ async def frontend_analysis_endpoint(
     capability: Optional[str] = Form(default=None, description="Frontend capability hint (e.g. change_detection)"),
     before_image: Optional[UploadFile] = None,
     after_image: Optional[UploadFile] = None,
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db),
 ) -> JSONResponse:
     """
-    Frontend-compatible analysis endpoint.
+    Frontend-compatible analysis endpoint with optional authentication.
 
     Accepts multipart file uploads, saves to temp directory, runs through
     the existing orchestrator pipeline, and returns a camelCase response.
 
+    Authentication behavior:
+        - No Authorization header: anonymous analysis, no persistence.
+        - Valid Bearer token: analysis persisted with user ownership.
+        - Invalid Bearer token: HTTP 401 (not silently anonymous).
+
+    Persistence failure behavior:
+        - If DB commit fails for an authenticated request, HTTP 500 is returned.
+        - The client does NOT receive a successful analysisId that doesn't exist in the DB.
+
     Flow:
         POST /api/analysis (multipart) → temp file save → orchestrator.process_query()
-        → FrontendAnalysisResponse adapter → camelCase JSON
+        → FrontendAnalysisResponse adapter → persist if authenticated → camelCase JSON
     """
     # Validate query is not empty
     query_stripped = query.strip()
@@ -160,9 +177,40 @@ async def frontend_analysis_endpoint(
 
         # Transform to frontend-compatible response
         frontend_response = FrontendAnalysisResponse.from_orchestrator_result(result)
-        return JSONResponse(
-            content=frontend_response.model_dump(by_alias=True),
-        )
+        response_dict = frontend_response.model_dump(by_alias=True)
+
+        # Persist analysis for authenticated users
+        if current_user is not None:
+            try:
+                analysis_record = Analysis(
+                    id=uuid_module.UUID(frontend_response.analysis_id),
+                    user_id=current_user.id,
+                    query=query_stripped,
+                    mode=mode,
+                    capability=capability,
+                    status=frontend_response.status,
+                    response_json=response_dict,
+                )
+                db.add(analysis_record)
+                db.commit()
+                logger.info(
+                    "Persisted analysis id=%s for user id=%s",
+                    frontend_response.analysis_id,
+                    current_user.id,
+                )
+            except Exception as exc:
+                db.rollback()
+                logger.error(
+                    "Failed to persist analysis for user id=%s: %s",
+                    current_user.id,
+                    type(exc).__name__,
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Analysis completed but could not be saved. Please try again.",
+                ) from exc
+
+        return JSONResponse(content=response_dict)
 
     except HTTPException:
         raise

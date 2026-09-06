@@ -25,6 +25,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from backend.api.analyses import router as analyses_router
 from backend.api.auth import router as auth_router
 from backend.api.routes import router as api_router
 
@@ -124,6 +125,7 @@ async def root():
 # Mount API Routers
 app.include_router(api_router)
 app.include_router(auth_router)
+app.include_router(analyses_router)
 
 
 if __name__ == "__main__":
