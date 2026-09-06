@@ -67,6 +67,8 @@ async def process_query_endpoint(request: QueryRequest) -> QueryResponse:
             before_image=request.before_image,
             after_image=request.after_image,
             parameters=request.parameters,
+            before_image_modality=request.before_image_modality,
+            after_image_modality=request.after_image_modality,
         )
         return QueryResponse(**result)
     except HTTPException:
@@ -125,6 +127,8 @@ async def frontend_analysis_endpoint(
     capability: Optional[str] = Form(default=None, description="Frontend capability hint (e.g. change_detection)"),
     before_image: Optional[UploadFile] = None,
     after_image: Optional[UploadFile] = None,
+    before_modality: Optional[str] = Form(default=None, description="Modality hint for baseline image (optical | sar | unknown)"),
+    after_modality: Optional[str] = Form(default=None, description="Modality hint for follow-up image (optical | sar | unknown)"),
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
@@ -173,6 +177,8 @@ async def frontend_analysis_endpoint(
             before_image=before_path,
             after_image=after_path,
             parameters=None,
+            before_image_modality=before_modality,
+            after_image_modality=after_modality,
         )
 
         # Transform to frontend-compatible response

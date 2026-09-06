@@ -37,6 +37,14 @@ class QueryRequest(BaseModel):
         description="Path, URI, or base64 string for follow-up (T2) satellite image.",
         examples=["tests/data/sat_after.jpg"],
     )
+    before_image_modality: Optional[str] = Field(
+        default=None,
+        description="Optional sensor modality for baseline image ('optical' | 'sar' | 'unknown').",
+    )
+    after_image_modality: Optional[str] = Field(
+        default=None,
+        description="Optional sensor modality for follow-up image ('optical' | 'sar' | 'unknown').",
+    )
     parameters: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Optional tool-specific execution parameters (e.g. sensitivity, coregistration_threshold).",

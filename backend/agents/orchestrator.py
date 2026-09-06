@@ -63,6 +63,8 @@ class AgentOrchestrator:
         before_image: Optional[str] = None,
         after_image: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None,
+        before_image_modality: Optional[str] = None,
+        after_image_modality: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Process an incoming natural-language query through the agent pipeline.
@@ -72,6 +74,8 @@ class AgentOrchestrator:
             before_image: Optional path or base64 data for baseline (T1) image.
             after_image: Optional path or base64 data for follow-up (T2) image.
             parameters: Optional dictionary of tool-specific parameters.
+            before_image_modality: Optional modality for baseline image ('optical' | 'sar' | 'unknown').
+            after_image_modality: Optional modality for follow-up image ('optical' | 'sar' | 'unknown').
 
         Returns:
             Dictionary matching QueryResponse data structure.
@@ -135,6 +139,10 @@ class AgentOrchestrator:
             extra_params["before_image"] = before_image
         if after_image:
             extra_params["after_image"] = after_image
+        if before_image_modality:
+            extra_params["before_image_modality"] = before_image_modality
+        if after_image_modality:
+            extra_params["after_image_modality"] = after_image_modality
 
         tool_result = await self.tool_executor.execute(
             routing_decision=routing_decision,

@@ -82,31 +82,24 @@ def test_unregistered_tool_raises_error():
 # -----------------------------------------------------------------------------
 
 def test_placeholder_tools_return_not_implemented():
-    """Verify specialist placeholder tools return not_implemented rather than fabricated answers."""
+    """Verify specialist tools enforce input requirements rather than fabricating AI outputs."""
     executor = ToolExecutor()
 
-    # Test remaining placeholder tools (Comparison)
-    tools_to_test = [
-        (ToolIdentifier.COMPARISON_TOOL, QueryIntent.COMPARISON),
-    ]
-
-    for tool_id, intent in tools_to_test:
-        rd = RoutingDecision(
-            selected_tool=tool_id,
-            intent=intent,
-            routing_confidence=0.90,
-            reason="Test routing",
-            requires_clarification=False,
-            parameters={"test_param": "val"},
-        )
-        res = asyncio.run(executor.execute(rd))
-        assert res.status == ToolStatus.NOT_IMPLEMENTED.value
-        assert res.answer is None  # CRITICAL: No fake answers
-        assert res.confidence is None  # CRITICAL: No fake confidence
-        assert len(res.evidence) == 0  # CRITICAL: No fake evidence
-        assert len(res.visualizations) == 0  # CRITICAL: No fake bounding boxes / masks
-        assert len(res.warnings) >= 1
-        assert "placeholder" in res.warnings[0].lower() or "not yet connected" in res.warnings[0].lower()
+    # COMPARISON_TOOL is now a real tool, returning input_required when imagery is omitted
+    rd_comp = RoutingDecision(
+        selected_tool=ToolIdentifier.COMPARISON_TOOL,
+        intent=QueryIntent.COMPARISON,
+        routing_confidence=0.90,
+        reason="Test routing",
+        requires_clarification=False,
+        parameters={},
+    )
+    res_comp = asyncio.run(executor.execute(rd_comp))
+    assert res_comp.status == ToolStatus.INPUT_REQUIRED.value
+    assert "requires two satellite images" in res_comp.answer.lower()
+    assert res_comp.confidence is None
+    assert len(res_comp.evidence) == 0
+    assert len(res_comp.visualizations) == 0
 
     # VQA_TOOL is now a real tool, returning input_required when imagery is omitted
     rd_vqa = RoutingDecision(

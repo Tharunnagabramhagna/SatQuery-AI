@@ -40,27 +40,7 @@ from backend.agents.tools.grounding.tool import GroundingTool
 from backend.agents.tools.change_detection.tool import ChangeDetectionTool
 
 
-class ComparisonTool(BaseTool):
-    """Safe architectural placeholder for Optical-SAR Comparison tool."""
-
-    tool_id = ToolIdentifier.COMPARISON_TOOL
-    name = "Multimodal Comparison Tool"
-    description = "Compares multimodal optical and SAR imagery or dual-sensor acquisitions."
-
-    async def execute(self, params: Dict[str, Any]) -> ToolResult:
-        return ToolResult(
-            tool_name=self.tool_id.value,
-            status=ToolStatus.NOT_IMPLEMENTED.value,
-            answer=None,
-            confidence=None,
-            evidence=[],
-            visualizations=[],
-            metadata={"capability": "COMPARISON", "params": params},
-            warnings=[
-                "Multimodal Comparison specialist capability is registered as an architectural placeholder. "
-                "Cross-sensor inference is not yet connected."
-            ],
-        )
+from backend.agents.tools.comparison.tool import ComparisonTool
 
 
 class ClarificationTool(BaseTool):
