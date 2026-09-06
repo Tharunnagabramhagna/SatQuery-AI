@@ -85,9 +85,8 @@ def test_placeholder_tools_return_not_implemented():
     """Verify specialist placeholder tools return not_implemented rather than fabricated answers."""
     executor = ToolExecutor()
 
-    # Test remaining placeholder tools (Grounding, Comparison)
+    # Test remaining placeholder tools (Comparison)
     tools_to_test = [
-        (ToolIdentifier.GROUNDING_TOOL, QueryIntent.GROUNDING),
         (ToolIdentifier.COMPARISON_TOOL, QueryIntent.COMPARISON),
     ]
 
@@ -121,6 +120,19 @@ def test_placeholder_tools_return_not_implemented():
     res_vqa = asyncio.run(executor.execute(rd_vqa))
     assert res_vqa.status == ToolStatus.INPUT_REQUIRED.value
     assert "requires a satellite image" in res_vqa.answer.lower()
+
+    # GROUNDING_TOOL is now a real tool, returning input_required when imagery is omitted
+    rd_grounding = RoutingDecision(
+        selected_tool=ToolIdentifier.GROUNDING_TOOL,
+        intent=QueryIntent.GROUNDING,
+        routing_confidence=0.90,
+        reason="Test routing",
+        requires_clarification=False,
+        parameters={},
+    )
+    res_grounding = asyncio.run(executor.execute(rd_grounding))
+    assert res_grounding.status == ToolStatus.INPUT_REQUIRED.value
+    assert "requires a satellite image" in res_grounding.answer.lower()
 
     # CHANGE_DETECTION_TOOL is a real tool in Block 5, returning input_required when imagery is omitted
     rd_cd = RoutingDecision(

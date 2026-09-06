@@ -35,27 +35,7 @@ class BaseTool(ABC):
 from backend.agents.tools.vqa.tool import VQATool
 
 
-class GroundingTool(BaseTool):
-    """Safe architectural placeholder for Text-Guided Grounding tool."""
-
-    tool_id = ToolIdentifier.GROUNDING_TOOL
-    name = "Visual Grounding Tool"
-    description = "Detects and localizes target entities with bounding box coordinates."
-
-    async def execute(self, params: Dict[str, Any]) -> ToolResult:
-        return ToolResult(
-            tool_name=self.tool_id.value,
-            status=ToolStatus.NOT_IMPLEMENTED.value,
-            answer=None,
-            confidence=None,
-            evidence=[],
-            visualizations=[],
-            metadata={"capability": "GROUNDING", "params": params},
-            warnings=[
-                "Visual Grounding specialist capability is registered as an architectural placeholder. "
-                "Remote sensing model inference is not yet connected."
-            ],
-        )
+from backend.agents.tools.grounding.tool import GroundingTool
 
 from backend.agents.tools.change_detection.tool import ChangeDetectionTool
 
