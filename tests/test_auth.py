@@ -37,6 +37,23 @@ from backend.security import (
     verify_password,
 )
 from backend.security.jwt import get_jwt_secret_key
+from backend.services.email import InMemoryEmailSender, get_email_sender, set_email_sender
+
+
+@pytest.fixture(autouse=True)
+def setup_email_sender():
+    sender = InMemoryEmailSender()
+    set_email_sender(sender)
+    yield sender
+
+
+def _verify_user(client: TestClient, email: str) -> None:
+    """Helper to verify a newly registered user using the mock email sender."""
+    code = get_email_sender().get_last_code_for(email)
+    if code:
+        resp = client.post("/api/auth/verify-email", json={"email": email, "code": code})
+        assert resp.status_code == 200
+
 
 
 @pytest.fixture(scope="module")
@@ -307,6 +324,8 @@ def test_successful_login_and_token_structure(client):
     assert reg_resp.status_code == 201
     user_id_str = reg_resp.json()["id"]
 
+    _verify_user(client, email)
+
     # 1. Login with valid credentials
     resp = client.post("/api/auth/login", json={"email": email, "password": pwd})
     assert resp.status_code == 200
@@ -368,6 +387,7 @@ def test_login_email_normalization(client):
     pwd = "NormPassword123"
 
     client.post("/api/auth/register", json={"email": base_email, "password": pwd})
+    _verify_user(client, base_email)
 
     # Login with mixed case and leading/trailing whitespace
     noisy_email = f"  {base_email.upper()}  "
@@ -389,6 +409,8 @@ def test_current_user_me_endpoint_success(client):
     )
     assert reg.status_code == 201
     user_id = reg.json()["id"]
+
+    _verify_user(client, email)
 
     login = client.post("/api/auth/login", json={"email": email, "password": pwd})
     assert login.status_code == 200
@@ -527,6 +549,7 @@ def test_token_expiration_derived_dynamically_from_settings(client, monkeypatch)
     pwd = "DynamicPassword123"
 
     client.post("/api/auth/register", json={"email": email, "password": pwd})
+    _verify_user(client, email)
     login_resp = client.post("/api/auth/login", json={"email": email, "password": pwd})
     assert login_resp.status_code == 200
     data = login_resp.json()

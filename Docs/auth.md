@@ -1,13 +1,55 @@
 # SatQuery AI — Authentication & Analysis API Documentation
 
-## User Registration
+## Table of Contents
+1. [Authentication Architecture & Security Guarantees](#authentication-architecture--security-guarantees)
+2. [Local Registration & Email Verification Flow](#local-registration--email-verification-flow)
+   - [`POST /api/auth/register`](#post-apiauthregister)
+   - [`POST /api/auth/verify-email`](#post-apiauthverify-email)
+   - [`POST /api/auth/resend-verification`](#post-apiauthresend-verification)
+   - [`POST /api/auth/login`](#post-apiauthlogin)
+   - [`GET /api/auth/me`](#get-apiauthme)
+3. [Social Authentication (Google & Facebook OAuth 2.0)](#social-authentication-google--facebook-oauth-20)
+   - [`GET /api/auth/google`](#get-apiauthgoogle)
+   - [`GET /api/auth/google/callback`](#get-apiauthgooglecallback)
+   - [`GET /api/auth/facebook`](#get-apiauthfacebook)
+   - [`GET /api/auth/facebook/callback`](#get-apiauthfacebookcallback)
+   - [`POST /api/auth/oauth/exchange`](#post-apiauthoauthexchange)
+4. [Account Linking Rules & Protections](#account-linking-rules--protections)
+5. [Analysis Endpoints & History (Unchanged Core)](#analysis-endpoints--history)
+   - [`POST /api/analysis`](#post-apianalysis)
+   - [`GET /api/analyses`](#get-apianalyses)
+   - [`GET /api/analyses/{analysis_id}`](#get-apianalysesanalysis_id)
+6. [Environment Variables & Configuration](#environment-variables--configuration)
+7. [Frontend Integration Contract](#frontend-integration-contract)
+
+---
+
+## Authentication Architecture & Security Guarantees
+
+SatQuery AI employs a multi-layered, zero-trust authentication design:
+
+1. **Password Security**: Passwords hashed with **Argon2id** (`time_cost=3`, `memory_cost=64MB`, `parallelism=4`). Plaintext passwords and `password_hash` are never exposed or logged.
+2. **Email OTP Verification**:
+   - 6-digit cryptographically secure numeric codes (`secrets.choice`).
+   - 15-minute expiration window.
+   - Maximum 5 attempts per code before invalidation.
+   - 60-second resend cooldown.
+   - **Database stores only SHA-256 `code_hash`**; plaintext OTPs are never stored in the database.
+   - **Zero OTP Logging**: Verification codes, client secrets, and passwords are never logged in application logs.
+   - **One-Time Verification**: Verification is required once during account creation; subsequent logins require only email and password without OTP prompts.
+3. **OAuth 2.0 & OIDC Flow**:
+   - **JWT is NEVER placed in redirect URLs or fragments**: OAuth redirects provide only a short-lived (120s), single-use `oauth_code`.
+   - **OAuth Exchange Endpoint**: The frontend exchanges `oauth_code` for the SatQuery JWT via `POST /api/auth/oauth/exchange`. The code is invalidated immediately.
+   - **CSRF State Tokens**: 32-byte cryptographic random state tokens stored as SHA-256 hashes with 10-minute expiry; strictly validated and consumed upon provider callback.
+   - **Strict Account Linking**: Social accounts only automatically link to existing local accounts if **both** the provider email and local account email are verified. Unverified accounts reject silent merging.
+
+---
+
+## Local Registration & Email Verification Flow
 
 ### `POST /api/auth/register`
 
-Creates a new user account with secure **Argon2id** password hashing.
-
-#### Request Headers
-- `Content-Type: application/json`
+Creates an unverified account (`email_verified=False`), generates a 6-digit OTP, records its SHA-256 hash, and dispatches a verification email.
 
 #### Request Body
 ```json
@@ -18,50 +60,81 @@ Creates a new user account with secure **Argon2id** password hashing.
 }
 ```
 
-| Field | Type | Required | Constraints / Validation |
+| Field | Type | Required | Constraints |
 |---|---|---|---|
-| `email` | `string` | **Yes** | Valid RFC email syntax; automatically trimmed of whitespace and converted to lowercase. |
-| `password` | `string` | **Yes** | Minimum 8 characters; never logged or exposed in plaintext. |
-| `display_name` | `string` | No | Maximum 100 characters; whitespace trimmed. |
+| `email` | `string` | **Yes** | Valid RFC email format; whitespace-trimmed and lowercased. |
+| `password` | `string` | **Yes** | Minimum 8 characters. |
+| `display_name` | `string` | No | Optional full name/display name. |
 
-#### Responses
-
-##### `201 Created`
-Returned upon successful account creation.
+#### Response (`201 Created`)
 ```json
 {
   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
   "email": "user@example.com",
   "display_name": "Earth Observation Analyst",
-  "created_at": "2026-09-06T00:00:00.000000Z"
+  "email_verified": false,
+  "auth_provider": "local",
+  "avatar_url": null,
+  "created_at": "2026-09-06T10:00:00Z"
 }
 ```
-*Note: Neither `password` nor `password_hash` is ever returned in responses.*
-
-##### `409 Conflict`
-Returned when an account with the specified normalized email address already exists.
-```json
-{
-  "detail": "An account with this email already exists."
-}
-```
-
-##### `422 Unprocessable Content`
-Returned when validation fails (e.g. password shorter than 8 characters, invalid email format, or missing required fields).
-
-##### `500 Internal Server Error`
-Returned on unexpected database failure. Transactions are rolled back automatically. No SQL errors or stack traces are leaked.
 
 ---
 
-## User Authentication (Login)
+### `POST /api/auth/verify-email`
+
+Submits the 6-digit OTP code to verify an account.
+
+#### Request Body
+```json
+{
+  "email": "user@example.com",
+  "code": "123456"
+}
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "message": "Email verified successfully. You may now sign in.",
+  "email": "user@example.com",
+  "email_verified": true
+}
+```
+
+#### Error Responses
+- `400 Bad Request`: Code invalid, expired, already verified, or maximum attempts exceeded.
+
+---
+
+### `POST /api/auth/resend-verification`
+
+Requests a fresh 6-digit OTP code if the previous one expired.
+
+#### Request Body
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "message": "A new verification code has been sent to your email address.",
+  "email": "user@example.com",
+  "email_verified": false
+}
+```
+
+#### Error Responses
+- `429 Too Many Requests`: Triggered if requested within the 60-second cooldown window (includes `Retry-After` header).
+
+---
 
 ### `POST /api/auth/login`
 
-Authenticates a user with email and password, issuing a signed, stateless **JWT access token**.
-
-#### Request Headers
-- `Content-Type: application/json`
+Authenticates a verified user with email and password.
 
 #### Request Body
 ```json
@@ -71,15 +144,9 @@ Authenticates a user with email and password, issuing a signed, stateless **JWT 
 }
 ```
 
-| Field | Type | Required | Constraints / Validation |
-|---|---|---|---|
-| `email` | `string` | **Yes** | User email address; automatically trimmed of whitespace and lowercased. |
-| `password` | `string` | **Yes** | Candidate plaintext password. |
-
 #### Responses
 
-##### `200 OK`
-Returned upon successful authentication.
+##### `200 OK` (Verified User)
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -89,262 +156,222 @@ Returned upon successful authentication.
     "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "email": "user@example.com",
     "display_name": "Earth Observation Analyst",
-    "created_at": "2026-09-06T00:00:00.000000Z"
+    "email_verified": true,
+    "auth_provider": "local",
+    "avatar_url": null,
+    "created_at": "2026-09-06T10:00:00Z"
   }
 }
 ```
 
-##### `401 Unauthorized`
-Returned when either the email does not exist or the password does not match. Generic message prevents account enumeration attacks.
+##### `403 Forbidden` (Unverified User)
 ```json
 {
-  "detail": "Invalid email or password."
+  "detail": "EMAIL_NOT_VERIFIED: Please verify your email address before signing in."
 }
 ```
-*Headers: `WWW-Authenticate: Bearer`*
+
+##### `401 Unauthorized` (Invalid Credentials or Social-Only Account)
+- Password mismatch: `{"detail": "Invalid email or password."}`
+- Social-only account attempting password login: `{"detail": "This account was created with social login. Please sign in with Google or Facebook."}`
 
 ---
 
-## Current User Profile
-
 ### `GET /api/auth/me`
 
-Retrieves the authenticated user's profile using the stateless JWT bearer token.
+Returns the profile of the currently authenticated user from the JWT Bearer token.
 
 #### Request Headers
 - `Authorization: Bearer <access_token>`
 
-#### Responses
-
-##### `200 OK`
-Returned upon successful token validation and user retrieval.
+#### Response (`200 OK`)
 ```json
 {
   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
   "email": "user@example.com",
   "display_name": "Earth Observation Analyst",
-  "created_at": "2026-09-06T00:00:00.000000Z"
+  "email_verified": true,
+  "auth_provider": "local",
+  "avatar_url": null,
+  "created_at": "2026-09-06T10:00:00Z"
 }
 ```
-*Note: Credentials (`password`, `password_hash`) are never exposed.*
-
-##### `401 Unauthorized`
-Returned when the Authorization header is missing, token is malformed/expired, signature is invalid, or the user does not exist.
-```json
-{
-  "detail": "Could not validate credentials."
-}
-```
-*Headers: `WWW-Authenticate: Bearer`*
 
 ---
 
-## Analysis Endpoint (with Optional Authentication)
+## Social Authentication (Google & Facebook OAuth 2.0)
 
-### `POST /api/analysis`
+### Flow Overview
+1. User clicks **Continue with Google** / **Continue with Facebook**.
+2. Frontend opens `GET /api/auth/google` or `GET /api/auth/facebook`.
+3. Backend generates cryptographically random CSRF `state`, stores its SHA-256 hash with 10m expiry, and redirects to provider's consent screen.
+4. User authenticates with provider; provider redirects back to backend callback endpoint with `code` and `state`.
+5. Backend validates `state` (rejects missing, mismatched, expired, or reused state).
+6. Backend exchanges authorization code with provider server-side.
+7. Backend validates identity (verifies issuer, audience, and verified email status).
+8. Backend links or creates the SatQuery user according to strict account linking rules.
+9. Backend creates a 120-second single-use exchange code (`oauth_code`), stores its SHA-256 hash, and redirects to:
+   ```
+   ${FRONTEND_URL}/dashboard?oauth_code=<one_time_code>
+   ```
+   *(JWT is NEVER exposed in the URL, browser history, or logs)*.
+10. Frontend extracts `oauth_code` from query params and calls `POST /api/auth/oauth/exchange`.
+11. Backend validates and consumes `oauth_code` immediately, returning standard SatQuery JWT `TokenResponse`.
 
-Runs satellite image analysis through the full pipeline (Query Understanding → Agent Router → Tool Executor → Specialist Tool). Supports optional JWT Bearer authentication for analysis persistence.
+---
 
-#### Request Headers
-- `Content-Type: multipart/form-data`
-- `Authorization: Bearer <access_token>` *(optional)*
+### `GET /api/auth/google`
+Redirects the user to Google OAuth 2.0 consent screen.
 
-#### Multipart Form Fields
+### `GET /api/auth/google/callback`
+Validates Google OIDC response, creates/links user, and redirects to frontend with `oauth_code`.
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `query` | `string` | **Yes** | Natural language query for satellite analysis. |
-| `mode` | `string` | No | Frontend analysis mode hint (e.g. `compare_images`, `single_image`). |
-| `capability` | `string` | No | Frontend capability hint (e.g. `change_detection`, `vqa`). |
-| `before_image` | `file` | No | Before/first satellite image upload (JPEG, PNG, TIFF). |
-| `after_image` | `file` | No | After/second satellite image upload (JPEG, PNG, TIFF). |
+### `GET /api/auth/facebook`
+Redirects the user to Facebook OAuth dialog.
 
-#### Authentication Behavior
+### `GET /api/auth/facebook/callback`
+Validates Facebook Graph API identity with `appsecret_proof`, creates/links user, and redirects to frontend with `oauth_code`.
 
-| Authorization Header | Behavior |
-|---|---|
-| Not present | Anonymous analysis. No persistence. Response returned directly. |
-| Valid Bearer token | Analysis persisted to PostgreSQL with user ownership. |
-| Invalid/expired/malformed token | HTTP 401 returned. Analysis does **not** run. |
+---
 
-#### Persistence Behavior (Authenticated Requests)
+### `POST /api/auth/oauth/exchange`
 
-When a valid Bearer token is supplied:
-1. The analysis pipeline runs normally.
-2. The structured camelCase response is built.
-3. The analysis result is persisted to the `analyses` table with the authenticated user's UUID.
-4. The `analysisId` in the HTTP response matches the database record `id`.
-5. If the database commit fails, the transaction is rolled back and **HTTP 500** is returned. The client does not receive a successful `analysisId` that doesn't exist in the database.
+Exchanges the single-use OAuth code for a full SatQuery JWT access token.
+
+#### Request Body
+```json
+{
+  "oauth_code": "4Fk9xQ_..."
+}
+```
+*(Accepts either `"oauth_code"` or `"code"`).*
 
 #### Response (`200 OK`)
 ```json
 {
-  "analysisId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "status": "completed",
-  "task": "change_detection",
-  "answer": "Analysis result text...",
-  "confidence": 0.85,
-  "evidence": [...],
-  "visualizations": [...],
-  "executionTrace": [...],
-  "warnings": [],
-  "isDemo": false
-}
-```
-
----
-
-## Analysis History
-
-### `GET /api/analyses`
-
-Returns all analyses belonging to the authenticated user, ordered by creation date (newest first).
-
-#### Request Headers
-- `Authorization: Bearer <access_token>` **(required)**
-
-#### Responses
-
-##### `200 OK`
-```json
-[
-  {
-    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "query": "What changed between 2023 and 2025?",
-    "mode": "compare_images",
-    "capability": "change_detection",
-    "status": "completed",
-    "date": "2026-09-06T10:30:00+00:00",
-    "isDemo": false
-  }
-]
-```
-
-| Field | Type | Description |
-|---|---|---|
-| `id` | `string` | Analysis UUID. |
-| `query` | `string` | Original natural language query. |
-| `mode` | `string \| null` | Analysis mode (e.g. `compare_images`, `single_image`). |
-| `capability` | `string \| null` | Analysis capability (e.g. `change_detection`, `vqa`). |
-| `status` | `string` | Analysis outcome (`completed`, `error`). |
-| `date` | `string` | ISO 8601 creation timestamp. |
-| `isDemo` | `boolean` | Always `false` for persisted analyses. |
-
-> **Note:** The `modality` field is **not** provided by the backend. The frontend should derive display-level modality labels from the `mode` field (e.g. `compare_images` → "Bi-temporal Optical").
-
-**Ordering:** Newest first (`created_at DESC`).
-
-**Pagination:** Not currently implemented. All user analyses are returned.
-
-##### `401 Unauthorized`
-Returned when the Authorization header is missing or the token is invalid.
-
----
-
-## Single Analysis Retrieval
-
-### `GET /api/analyses/{analysis_id}`
-
-Retrieves a single analysis record including the complete response payload.
-
-#### Request Headers
-- `Authorization: Bearer <access_token>` **(required)**
-
-#### Path Parameters
-
-| Parameter | Type | Description |
-|---|---|---|
-| `analysis_id` | `string` | UUID of the analysis to retrieve. |
-
-#### Responses
-
-##### `200 OK`
-```json
-{
-  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "query": "What changed between 2023 and 2025?",
-  "mode": "compare_images",
-  "capability": "change_detection",
-  "status": "completed",
-  "date": "2026-09-06T10:30:00+00:00",
-  "isDemo": false,
-  "response": {
-    "analysisId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "status": "completed",
-    "task": "change_detection",
-    "answer": "...",
-    "confidence": 0.85,
-    "evidence": [...],
-    "visualizations": [...],
-    "executionTrace": [...],
-    "warnings": [],
-    "isDemo": false
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": "e47bc10b-58cc-4372-a567-0e02b2c3d480",
+    "email": "user@gmail.com",
+    "display_name": "Google User",
+    "email_verified": true,
+    "auth_provider": "google",
+    "avatar_url": "https://lh3.googleusercontent.com/...",
+    "created_at": "2026-09-06T10:05:00Z"
   }
 }
 ```
 
-The `response` field contains the complete structured analysis result payload as originally returned by `POST /api/analysis`.
+#### Error Responses
+- `400 Bad Request`: Code invalid, expired, or already used.
 
-##### `401 Unauthorized`
-Returned when the Authorization header is missing or the token is invalid.
+---
 
-##### `404 Not Found`
-Returned when:
-- The `analysis_id` is not a valid UUID.
-- The analysis does not exist.
-- The analysis belongs to another user (no information leakage).
+## Account Linking Rules & Protections
 
-```json
-{
-  "detail": "Analysis not found."
-}
+When an OAuth user logs in, the backend links or creates accounts according to this strict precedence:
+
+1. **Provider ID Match**:
+   - If `user.google_id == provider_id` or `user.facebook_id == provider_id`:
+   - Returns existing user immediately (no duplicate users).
+2. **Verified Email Match**:
+   - If provider email is marked verified AND an existing local user has `email_verified == True`:
+   - Safely links `google_id` / `facebook_id` to the existing local user.
+3. **Unverified Local Account Guard (Anti-Hijacking)**:
+   - If an existing local user has `email_verified == False`, social linking is **strictly rejected**.
+   - Callback redirects to `${FRONTEND_URL}/login?error=email_not_verified`.
+   - Prevents an attacker from registering an unverified account with someone else's email to capture their social login.
+4. **New User Creation**:
+   - If no provider ID or email matches, creates a new user with `email_verified=True`, `auth_provider="google"|"facebook"`, and `password_hash=None`.
+
+---
+
+## Analysis Endpoints & History
+
+The core satellite analysis endpoints and persistence contracts remain unchanged:
+
+- `POST /api/analysis`: Supports optional JWT Bearer token. Authenticated requests persist analysis results to PostgreSQL with user ownership. Anonymous requests run analysis without persistence.
+- `GET /api/analyses`: Returns authenticated user's analysis history (`200 OK`).
+- `GET /api/analyses/{analysis_id}`: Retrieves full persisted analysis details (`200 OK` or `404 Not Found`).
+
+---
+
+## Environment Variables & Configuration
+
+The following variables configure the authentication subsystem in `.env`:
+
+```ini
+# Core Configuration
+ENVIRONMENT=development
+BACKEND_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:5173
+
+# JWT Settings
+JWT_SECRET_KEY=your_secure_random_jwt_secret_key_here
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+# Email Verification (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your_email@gmail.com
+SMTP_PASSWORD=your_smtp_app_password
+SMTP_FROM_EMAIL=no-reply@satquery.com
+SMTP_FROM_NAME=SatQuery AI
+SMTP_USE_TLS=true
+SMTP_USE_SSL=false
+EMAIL_VERIFY_EXPIRE_MINUTES=15
+EMAIL_RESEND_COOLDOWN_SECONDS=60
+
+# Google OAuth 2.0
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
+
+# Facebook OAuth 2.0
+FACEBOOK_APP_ID=your_facebook_app_id
+FACEBOOK_APP_SECRET=your_facebook_app_secret
+FACEBOOK_REDIRECT_URI=http://localhost:8000/api/auth/facebook/callback
 ```
 
 ---
 
-## Security Specifications
-- **Password Hashing**: Argon2id via `argon2-cffi` (`PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4)`).
-- **Token Signing**: HMAC SHA-256 (`HS256`) via `PyJWT`.
-- **JWT Claims**:
-  - `sub`: User UUID string
-  - `iat`: UTC epoch timestamp of issuance
-  - `exp`: UTC epoch timestamp of expiration
-- **Configuration**:
-  - `JWT_SECRET_KEY`: Provided via environment variable or `.env` (never hardcoded in source code).
-  - `JWT_ALGORITHM`: Default `HS256`.
-  - `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`: Default `60` (3600 seconds).
-- **Enumeration Prevention**: Generic HTTP 401 error message for non-existent users and wrong passwords.
-- **Relational Integrity**: `users.email` is protected by application-level duplicate checks and PostgreSQL unique index constraint (`ix_users_email`).
-- **Analysis Ownership**: Users can only access their own analyses. Cross-user access returns 404 (no information leakage).
+## Frontend Integration Contract
 
----
+### 1. Registration Flow
+1. Call `POST /api/auth/register` with `{ email, password, display_name }`.
+2. Transition UI to "Verify Email" screen.
+3. Prompt user for the 6-digit code.
+4. Call `POST /api/auth/verify-email` with `{ email, code }`.
+5. Upon 200 OK, transition to login or automatically log in.
+6. Provide a "Resend Code" button calling `POST /api/auth/resend-verification`.
 
-## Frontend Integration Notes
+### 2. Login Flow
+1. Call `POST /api/auth/login` with `{ email, password }`.
+2. If status is `403 Forbidden` (`EMAIL_NOT_VERIFIED`):
+   - Direct user to enter verification code.
+3. If status is `200 OK`:
+   - Store `access_token`.
 
-The following changes are needed in the frontend when integrating with the real backend API:
-
-### 1. Analysis Submission
-- Replace mock `submitAnalysis()` with a real `POST /api/analysis` request.
-- If the user is logged in, attach `Authorization: Bearer <token>` header to the multipart request.
-- The response shape matches the existing `AnalysisResponse` type.
-- The `analysisId` from an authenticated response is a real UUID persisted in the database.
-
-### 2. Analysis History
-- Replace mock `getRecentAnalyses()` with `GET /api/analyses`.
-- Attach `Authorization: Bearer <token>` header.
-- The response is an array of analysis summary objects.
-- **`modality` is not provided by the backend.** The frontend should derive its own display label from the `mode` field (e.g. `compare_images` → "Bi-temporal Optical", `optical_sar` → "Optical + SAR", `single_image` → "Optical").
-- Map `date` to the existing `AnalysisRecord.date` field.
-- Map `id` to the existing `AnalysisRecord.id` field.
-
-### 3. Single Analysis Retrieval
-- Use `GET /api/analyses/{analysis_id}` to fetch full analysis details.
-- The `response` field contains the complete `AnalysisResponse` payload.
-- Handle 404 for analyses that no longer exist.
-
-### 4. Authentication Flow
-- Register via `POST /api/auth/register`.
-- Login via `POST /api/auth/login` to obtain JWT.
-- Store the `access_token` in the frontend (e.g. localStorage or state).
-- Attach `Authorization: Bearer <token>` to all authenticated API calls.
-- `GET /api/auth/me` to verify/refresh user profile.
+### 3. Google & Facebook OAuth Flow
+1. Render "Sign in with Google" button linking to:
+   ```
+   http://localhost:8000/api/auth/google
+   ```
+2. Render "Sign in with Facebook" button linking to:
+   ```
+   http://localhost:8000/api/auth/facebook
+   ```
+3. After authorization, browser redirects to:
+   ```
+   http://localhost:5173/dashboard?oauth_code=<one_time_code>
+   ```
+4. Frontend router checks for `oauth_code` in query parameters.
+5. If present, immediately POSTs to:
+   ```json
+   POST /api/auth/oauth/exchange
+   { "oauth_code": "<one_time_code>" }
+   ```
+6. Stores returned `access_token` and redirects to `/dashboard` without query params.

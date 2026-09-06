@@ -27,6 +27,7 @@ from fastapi.responses import JSONResponse
 
 from backend.api.analyses import router as analyses_router
 from backend.api.auth import router as auth_router
+from backend.api.oauth import router as oauth_router
 from backend.api.routes import router as api_router
 
 # Configure logging
@@ -126,6 +127,7 @@ async def root():
 app.include_router(api_router)
 app.include_router(auth_router)
 app.include_router(analyses_router)
+app.include_router(oauth_router)
 
 
 if __name__ == "__main__":

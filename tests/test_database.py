@@ -60,8 +60,9 @@ def test_user_table_metadata():
     # Primary key must be id (UUID)
     assert table.c.id.primary_key is True
     assert table.c.email.nullable is False
-    assert table.c.password_hash.nullable is False
+    assert table.c.password_hash.nullable is True  # nullable to support OAuth social signups
     assert table.c.display_name.nullable is True
+    assert table.c.email_verified.nullable is False
 
     # Unique constraint or index on email
     email_unique = any(
