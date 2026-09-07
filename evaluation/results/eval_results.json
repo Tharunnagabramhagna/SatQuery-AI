@@ -1,0 +1,1517 @@
+{
+  "timestamp": "2026-09-07T10:07:22.663047+00:00",
+  "execution_time_seconds": 16.27,
+  "suite_summary": {
+    "total_cases": 60,
+    "passed_cases": 50,
+    "failed_cases": 10,
+    "overall_success_rate": 0.8333
+  },
+  "metrics": {
+    "classification": {
+      "accuracy": 0.7833,
+      "macro_precision": 0.7745,
+      "macro_recall": 0.8089,
+      "macro_f1": 0.771,
+      "weighted_f1": 0.7875,
+      "per_class": {
+        "CHANGE_DETECTION": {
+          "precision": 1.0,
+          "recall": 0.7778,
+          "f1": 0.875,
+          "support": 18
+        },
+        "COMPARISON": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 2
+        },
+        "GROUNDING": {
+          "precision": 0.8,
+          "recall": 0.6,
+          "f1": 0.6857,
+          "support": 20
+        },
+        "UNKNOWN": {
+          "precision": 0.3333,
+          "recall": 0.6667,
+          "f1": 0.4444,
+          "support": 3
+        },
+        "VQA": {
+          "precision": 0.7391,
+          "recall": 1.0,
+          "f1": 0.85,
+          "support": 17
+        }
+      },
+      "total_samples": 60
+    },
+    "routing": {
+      "routing_accuracy": 0.7167,
+      "wrong_tool_rate": 0.2833,
+      "fallback_rate": 0.2833,
+      "total_cases": 60,
+      "correct_routings": 43
+    },
+    "change_detection": {
+      "binary_accuracy": 1.0,
+      "binary_precision": 1.0,
+      "binary_recall": 1.0,
+      "binary_f1": 1.0,
+      "mean_pct_delta": 19.6987,
+      "total_cases": 3,
+      "pct_evaluated_cases": 3
+    },
+    "vqa": {
+      "mean_keyword_recall": 0.3333,
+      "mean_token_f1": 0.0,
+      "mean_exact_match": 0.0,
+      "total_cases": 2
+    },
+    "grounding": {
+      "mean_semantic_match": 0.0,
+      "mean_iou": 0.0,
+      "total_cases": 2,
+      "iou_evaluated_cases": 0
+    }
+  },
+  "error_analysis": {
+    "total_errors": 10,
+    "error_taxonomy": {
+      "misclassification": 5,
+      "ambiguity_fallback": 2,
+      "ood_misclassification": 1,
+      "routing_fallback": 2
+    },
+    "detailed_failures": [
+      {
+        "case_id": "QU_GR_004",
+        "query": "Identify all solar panels installed on building rooftops.",
+        "category": "query_understanding",
+        "expected_capability": "GROUNDING",
+        "predicted_intent": "VQA",
+        "expected_intent": "GROUNDING",
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "expected_tool": "grounding_tool",
+        "failure_category": "misclassification",
+        "failure_reason": "Intent mismatch: expected GROUNDING, got VQA"
+      },
+      {
+        "case_id": "QU_AMB_001",
+        "query": "buildings",
+        "category": "query_understanding",
+        "expected_capability": "CLARIFICATION",
+        "predicted_intent": "UNKNOWN",
+        "expected_intent": "GROUNDING",
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "expected_tool": "clarification_tool",
+        "failure_category": "ambiguity_fallback",
+        "failure_reason": "Intent mismatch: expected GROUNDING, got UNKNOWN"
+      },
+      {
+        "case_id": "QU_AMB_002",
+        "query": "aircraft",
+        "category": "query_understanding",
+        "expected_capability": "CLARIFICATION",
+        "predicted_intent": "UNKNOWN",
+        "expected_intent": "GROUNDING",
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "expected_tool": "clarification_tool",
+        "failure_category": "ambiguity_fallback",
+        "failure_reason": "Intent mismatch: expected GROUNDING, got UNKNOWN"
+      },
+      {
+        "case_id": "QU_OOD_001",
+        "query": "What is the best recipe for baking chocolate cake?",
+        "category": "query_understanding",
+        "expected_capability": "UNKNOWN",
+        "predicted_intent": "VQA",
+        "expected_intent": "UNKNOWN",
+        "predicted_tool": "VQA_TOOL",
+        "expected_tool": "clarification_tool",
+        "failure_category": "ood_misclassification",
+        "failure_reason": "Intent mismatch: expected UNKNOWN, got VQA"
+      },
+      {
+        "case_id": "AR_CD_001",
+        "query": "Detect changes between before and after images of the landslide.",
+        "category": "agent_routing",
+        "expected_capability": "CHANGE_DETECTION",
+        "predicted_intent": "CHANGE_DETECTION",
+        "expected_intent": "CHANGE_DETECTION",
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "expected_tool": "change_detection_tool",
+        "failure_category": "routing_fallback",
+        "failure_reason": "Routing mismatch: expected change_detection_tool, selected CLARIFICATION_TOOL"
+      },
+      {
+        "case_id": "QU_GR_009",
+        "query": "Outline the perimeter of the freshwater lake in the center of the image.",
+        "category": "query_understanding",
+        "expected_capability": "GROUNDING",
+        "predicted_intent": "VQA",
+        "expected_intent": "GROUNDING",
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "expected_tool": "grounding_tool",
+        "failure_category": "misclassification",
+        "failure_reason": "Intent mismatch: expected GROUNDING, got VQA"
+      },
+      {
+        "case_id": "QU_CD_006",
+        "query": "Detect differences in snow cover on the mountain peaks between January and April.",
+        "category": "query_understanding",
+        "expected_capability": "CHANGE_DETECTION",
+        "predicted_intent": "GROUNDING",
+        "expected_intent": "CHANGE_DETECTION",
+        "predicted_tool": "GROUNDING_TOOL",
+        "expected_tool": "change_detection_tool",
+        "failure_category": "misclassification",
+        "failure_reason": "Intent mismatch: expected CHANGE_DETECTION, got GROUNDING"
+      },
+      {
+        "case_id": "QU_CD_007",
+        "query": "Identify newly cleared areas of forest land since last spring.",
+        "category": "query_understanding",
+        "expected_capability": "CHANGE_DETECTION",
+        "predicted_intent": "VQA",
+        "expected_intent": "CHANGE_DETECTION",
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "expected_tool": "change_detection_tool",
+        "failure_category": "misclassification",
+        "failure_reason": "Intent mismatch: expected CHANGE_DETECTION, got VQA"
+      },
+      {
+        "case_id": "QU_CD_010",
+        "query": "Detect new road paving and highway expansion over the past two years.",
+        "category": "query_understanding",
+        "expected_capability": "CHANGE_DETECTION",
+        "predicted_intent": "GROUNDING",
+        "expected_intent": "CHANGE_DETECTION",
+        "predicted_tool": "GROUNDING_TOOL",
+        "expected_tool": "change_detection_tool",
+        "failure_category": "misclassification",
+        "failure_reason": "Intent mismatch: expected CHANGE_DETECTION, got GROUNDING"
+      },
+      {
+        "case_id": "AR_GR_002",
+        "query": "Identify the bounding coordinates of the oil refinery storage tanks.",
+        "category": "agent_routing",
+        "expected_capability": "GROUNDING",
+        "predicted_intent": "VQA",
+        "expected_intent": "GROUNDING",
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "expected_tool": "grounding_tool",
+        "failure_category": "routing_fallback",
+        "failure_reason": "Routing mismatch: expected grounding_tool, selected CLARIFICATION_TOOL"
+      }
+    ]
+  },
+  "case_results": [
+    {
+      "case_id": "QU_VQA_001",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "Is there an airport or runway visible in this scene?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.71,
+        "extracted_entities": [
+          "runway"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.71,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_VQA_002",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "What type of land cover dominates the southern sector of the image?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.89,
+        "extracted_entities": [],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_VQA_003",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "How many cargo ships are docked in the harbor?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.95,
+        "extracted_entities": [
+          "ships"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_VQA_004",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "Is there visible flooding or standing water on the agricultural fields?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.71,
+        "extracted_entities": [
+          "agricultural"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.71,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_VQA_005",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "What is the approximate cloud cover percentage across this satellite tile?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.89,
+        "extracted_entities": [],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_GR_001",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Locate all commercial aircraft parked at the terminal gates.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.89,
+        "extracted_entities": [
+          "aircraft"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_GR_002",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Detect and outline all oil storage tanks in the industrial facility.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
+        "extracted_entities": [
+          "storage tanks"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_GR_003",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Find the bridge crossing the river in the eastern district.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
+        "extracted_entities": [
+          "bridge",
+          "river"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_GR_004",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Identify all solar panels installed on building rooftops.",
+      "passed": false,
+      "failure_reason": "Intent mismatch: expected GROUNDING, got VQA",
+      "failure_category": "misclassification",
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.5,
+        "extracted_entities": [
+          "building",
+          "solar panels"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.5,
+        "requires_clarification": true,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_GR_005",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Highlight all road segments connecting the highway to the port.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
+        "extracted_entities": [
+          "road",
+          "highway"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CD_001",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Detect new building construction between 2021 and 2023.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.72,
+        "extracted_entities": [
+          "building"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.72,
+        "requires_clarification": true,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CD_002",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "What changed in forest cover after the wildfire?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.89,
+        "extracted_entities": [
+          "forest"
+        ],
+        "predicted_tool": "CHANGE_DETECTION_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CD_003",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Identify changes in the coastline following the hurricane.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.95,
+        "extracted_entities": [
+          "coastline"
+        ],
+        "predicted_tool": "CHANGE_DETECTION_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CD_004",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Show differences in water reservoir levels before and after the drought.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.95,
+        "extracted_entities": [
+          "reservoir"
+        ],
+        "predicted_tool": "CHANGE_DETECTION_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CD_005",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Track urban expansion around the city center from 2018 to 2024.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.95,
+        "extracted_entities": [],
+        "predicted_tool": "CHANGE_DETECTION_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CMP_001",
+      "category": "query_understanding",
+      "capability": "COMPARISON",
+      "evaluation_type": "manually_curated",
+      "query": "Compare the optical Sentinel-2 imagery with the SAR Sentinel-1 imagery.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "COMPARISON",
+        "intent_confidence": 0.83,
+        "extracted_entities": [],
+        "predicted_tool": "COMPARISON_TOOL",
+        "routing_confidence": 0.83,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_CMP_002",
+      "category": "query_understanding",
+      "capability": "COMPARISON",
+      "evaluation_type": "manually_curated",
+      "query": "Compare radar reflectance against optical multispectral bands for this scene.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "COMPARISON",
+        "intent_confidence": 0.83,
+        "extracted_entities": [],
+        "predicted_tool": "COMPARISON_TOOL",
+        "routing_confidence": 0.83,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_AMB_001",
+      "category": "query_understanding",
+      "capability": "CLARIFICATION",
+      "evaluation_type": "synthetic_unit",
+      "query": "buildings",
+      "passed": false,
+      "failure_reason": "Intent mismatch: expected GROUNDING, got UNKNOWN",
+      "failure_category": "ambiguity_fallback",
+      "details": {
+        "predicted_intent": "UNKNOWN",
+        "intent_confidence": 0.35,
+        "extracted_entities": [
+          "buildings"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.35,
+        "requires_clarification": true,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_AMB_002",
+      "category": "query_understanding",
+      "capability": "CLARIFICATION",
+      "evaluation_type": "synthetic_unit",
+      "query": "aircraft",
+      "passed": false,
+      "failure_reason": "Intent mismatch: expected GROUNDING, got UNKNOWN",
+      "failure_category": "ambiguity_fallback",
+      "details": {
+        "predicted_intent": "UNKNOWN",
+        "intent_confidence": 0.35,
+        "extracted_entities": [
+          "aircraft"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.35,
+        "requires_clarification": true,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_OOD_001",
+      "category": "query_understanding",
+      "capability": "UNKNOWN",
+      "evaluation_type": "manually_curated",
+      "query": "What is the best recipe for baking chocolate cake?",
+      "passed": false,
+      "failure_reason": "Intent mismatch: expected UNKNOWN, got VQA",
+      "failure_category": "ood_misclassification",
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.89,
+        "extracted_entities": [],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_OOD_002",
+      "category": "query_understanding",
+      "capability": "UNKNOWN",
+      "evaluation_type": "manually_curated",
+      "query": "Who won the FIFA World Cup in 2022?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "UNKNOWN",
+        "intent_confidence": 0.95,
+        "extracted_entities": [],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": true,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "AR_VQA_001",
+      "category": "agent_routing",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "Are there cargo containers visible in the port area?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.71,
+        "extracted_entities": [],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.71,
+        "requires_clarification": false
+      }
+    },
+    {
+      "case_id": "AR_GR_001",
+      "category": "agent_routing",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Detect and localize all ships in the harbor bay.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.95,
+        "extracted_entities": [
+          "ships"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": false
+      }
+    },
+    {
+      "case_id": "AR_CD_001",
+      "category": "agent_routing",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Detect changes between before and after images of the landslide.",
+      "passed": false,
+      "failure_reason": "Routing mismatch: expected change_detection_tool, selected CLARIFICATION_TOOL",
+      "failure_category": "routing_fallback",
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.72,
+        "extracted_entities": [],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.72,
+        "requires_clarification": true
+      }
+    },
+    {
+      "case_id": "AR_CLR_001",
+      "category": "agent_routing",
+      "capability": "CLARIFICATION",
+      "evaluation_type": "synthetic_unit",
+      "query": "storage tanks",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "UNKNOWN",
+        "intent_confidence": 0.35,
+        "extracted_entities": [
+          "storage tanks"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.35,
+        "requires_clarification": true
+      }
+    },
+    {
+      "case_id": "CD_REAL_001",
+      "category": "change_detection",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "real_annotated",
+      "query": "Detect surface changes between before and after acquisitions.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.72,
+        "extracted_entities": [],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.72,
+        "requires_clarification": true,
+        "tool_status": "success",
+        "metadata": {
+          "capability": "CHANGE_DETECTION",
+          "changed_pixels": 5535,
+          "total_pixels": 16384,
+          "change_percentage": 33.78,
+          "mean_difference_intensity": 0.2181,
+          "co_registration_score": 0.3807,
+          "co_registration_status": "verified",
+          "co_registration_verified": true,
+          "sensitivity": 0.25,
+          "image_dimensions": {
+            "before": {
+              "width": 1200,
+              "height": 896
+            },
+            "after": {
+              "width": 1200,
+              "height": 896
+            }
+          },
+          "detected_clusters_count": 2,
+          "coordinate_format": "normalized [ymin, xmin, ymax, xmax]"
+        },
+        "changed_pixels": 5535,
+        "change_percentage": 33.78
+      }
+    },
+    {
+      "case_id": "CD_IDEN_001",
+      "category": "change_detection",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "synthetic_unit",
+      "query": "Check for changes between identical satellite captures.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.95,
+        "extracted_entities": [],
+        "predicted_tool": "CHANGE_DETECTION_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": false,
+        "tool_status": "success",
+        "metadata": {
+          "capability": "CHANGE_DETECTION",
+          "changed_pixels": 0,
+          "total_pixels": 16384,
+          "change_percentage": 0.0,
+          "mean_difference_intensity": 0.0,
+          "co_registration_score": 1.0,
+          "co_registration_status": "verified",
+          "co_registration_verified": true,
+          "sensitivity": 0.25,
+          "image_dimensions": {
+            "before": {
+              "width": 1200,
+              "height": 896
+            },
+            "after": {
+              "width": 1200,
+              "height": 896
+            }
+          },
+          "detected_clusters_count": 0,
+          "coordinate_format": "normalized [ymin, xmin, ymax, xmax]"
+        },
+        "changed_pixels": 0,
+        "change_percentage": 0.0
+      }
+    },
+    {
+      "case_id": "CD_MISS_001",
+      "category": "change_detection",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "synthetic_unit",
+      "query": "Find changes in this area.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.72,
+        "extracted_entities": [],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.72,
+        "requires_clarification": true,
+        "tool_status": "input_required",
+        "metadata": {
+          "capability": "CHANGE_DETECTION",
+          "required_inputs": [
+            "before_image",
+            "after_image"
+          ],
+          "missing_inputs": [
+            "after_image"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "VQA_REAL_001",
+      "category": "vqa",
+      "capability": "VQA",
+      "evaluation_type": "real_annotated",
+      "query": "Is there a runway visible in the satellite image?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.92,
+        "extracted_entities": [
+          "runway"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.92,
+        "requires_clarification": false,
+        "tool_status": "completed",
+        "answer": "yes",
+        "keyword_recall": 0.3333,
+        "exact_match": 1.0,
+        "token_f1": 1.0
+      }
+    },
+    {
+      "case_id": "VQA_MISS_001",
+      "category": "vqa",
+      "capability": "VQA",
+      "evaluation_type": "synthetic_unit",
+      "query": "What objects are visible here?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.71,
+        "extracted_entities": [],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.71,
+        "requires_clarification": false,
+        "tool_status": "input_required",
+        "answer": "A satellite image is required for Visual Question Answering."
+      }
+    },
+    {
+      "case_id": "GR_SEM_001",
+      "category": "grounding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Locate airplanes parked near the terminal.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.89,
+        "extracted_entities": [
+          "airplanes"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "tool_status": "completed",
+        "answer": "Grounding target assessment: no"
+      }
+    },
+    {
+      "case_id": "QU_VQA_006",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "Does the forest canopy show signs of seasonal defoliation?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.71,
+        "extracted_entities": [
+          "forest"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.71,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_VQA_007",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "Are there any ships or barges navigating the river channel?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.92,
+        "extracted_entities": [
+          "river",
+          "ships"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.92,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_VQA_008",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "Is the athletic stadium roof open or closed?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.71,
+        "extracted_entities": [
+          "roof"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.71,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_VQA_009",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "What color is the predominant soil in the open agricultural field?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.92,
+        "extracted_entities": [
+          "agricultural"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.92,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_VQA_010",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "Can you see any smoke plumes originating from the industrial zone?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.89,
+        "extracted_entities": [],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_GR_006",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Segment all forested areas across the northern mountain ridge.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.83,
+        "extracted_entities": [],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.83,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_GR_007",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Detect residential housing footprints in the suburban development.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
+        "extracted_entities": [],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_GR_008",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Find all wind turbines installed offshore along the coastline.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
+        "extracted_entities": [
+          "coastline",
+          "wind turbines"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_GR_009",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Outline the perimeter of the freshwater lake in the center of the image.",
+      "passed": false,
+      "failure_reason": "Intent mismatch: expected GROUNDING, got VQA",
+      "failure_category": "misclassification",
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.5,
+        "extracted_entities": [
+          "lake"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.5,
+        "requires_clarification": true,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_GR_010",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Locate railway tracks passing through the western industrial district.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.89,
+        "extracted_entities": [
+          "railway"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CD_006",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Detect differences in snow cover on the mountain peaks between January and April.",
+      "passed": false,
+      "failure_reason": "Intent mismatch: expected CHANGE_DETECTION, got GROUNDING",
+      "failure_category": "misclassification",
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
+        "extracted_entities": [],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_CD_007",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Identify newly cleared areas of forest land since last spring.",
+      "passed": false,
+      "failure_reason": "Intent mismatch: expected CHANGE_DETECTION, got VQA",
+      "failure_category": "misclassification",
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.5,
+        "extracted_entities": [
+          "forest"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.5,
+        "requires_clarification": true,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CD_008",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Find what changed along the harbor shoreline after construction of the pier.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.72,
+        "extracted_entities": [],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.72,
+        "requires_clarification": true,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_CD_009",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Measure the reduction in glacial surface area from 2010 to 2020.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.8,
+        "extracted_entities": [],
+        "predicted_tool": "CHANGE_DETECTION_TOOL",
+        "routing_confidence": 0.8,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_CD_010",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Detect new road paving and highway expansion over the past two years.",
+      "passed": false,
+      "failure_reason": "Intent mismatch: expected CHANGE_DETECTION, got GROUNDING",
+      "failure_category": "misclassification",
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
+        "extracted_entities": [
+          "road",
+          "highway"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "AR_VQA_002",
+      "category": "agent_routing",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "How many aircraft are visible on the airfield tarmac?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.95,
+        "extracted_entities": [
+          "aircraft"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": false
+      }
+    },
+    {
+      "case_id": "AR_GR_002",
+      "category": "agent_routing",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Identify the bounding coordinates of the oil refinery storage tanks.",
+      "passed": false,
+      "failure_reason": "Routing mismatch: expected grounding_tool, selected CLARIFICATION_TOOL",
+      "failure_category": "routing_fallback",
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.5,
+        "extracted_entities": [
+          "storage tanks"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.5,
+        "requires_clarification": true
+      }
+    },
+    {
+      "case_id": "AR_CD_002",
+      "category": "agent_routing",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Show changes between the pre-flood image and post-flood image.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.95,
+        "extracted_entities": [],
+        "predicted_tool": "CHANGE_DETECTION_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": false
+      }
+    },
+    {
+      "case_id": "AR_CLR_002",
+      "category": "agent_routing",
+      "capability": "CLARIFICATION",
+      "evaluation_type": "synthetic_unit",
+      "query": "ships",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "UNKNOWN",
+        "intent_confidence": 0.35,
+        "extracted_entities": [
+          "ships"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.35,
+        "requires_clarification": true
+      }
+    },
+    {
+      "case_id": "AR_CLR_003",
+      "category": "agent_routing",
+      "capability": "CLARIFICATION",
+      "evaluation_type": "manually_curated",
+      "query": "What is the capital of Australia?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "UNKNOWN",
+        "intent_confidence": 0.95,
+        "extracted_entities": [],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": true
+      }
+    },
+    {
+      "case_id": "CD_SYNTH_001",
+      "category": "change_detection",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "synthetic_unit",
+      "query": "Detect simulated square modification in satellite capture.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
+        "extracted_entities": [],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
+        "tool_status": "success",
+        "metadata": {
+          "capability": "CHANGE_DETECTION",
+          "changed_pixels": 4150,
+          "total_pixels": 16384,
+          "change_percentage": 25.33,
+          "mean_difference_intensity": 0.2181,
+          "co_registration_score": 0.3807,
+          "co_registration_status": "uncertain",
+          "co_registration_verified": false,
+          "sensitivity": 0.3,
+          "image_dimensions": {
+            "before": {
+              "width": 1200,
+              "height": 896
+            },
+            "after": {
+              "width": 1200,
+              "height": 896
+            }
+          },
+          "detected_clusters_count": 2,
+          "coordinate_format": "normalized [ymin, xmin, ymax, xmax]"
+        },
+        "changed_pixels": 4150,
+        "change_percentage": 25.33
+      }
+    },
+    {
+      "case_id": "VQA_REAL_002",
+      "category": "vqa",
+      "capability": "VQA",
+      "evaluation_type": "real_annotated",
+      "query": "Are there buildings or built-up structures visible in this scene?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.71,
+        "extracted_entities": [
+          "buildings",
+          "structures",
+          "built-up"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.71,
+        "requires_clarification": false,
+        "tool_status": "completed",
+        "answer": "yes",
+        "keyword_recall": 0.3333,
+        "exact_match": 1.0,
+        "token_f1": 1.0
+      }
+    },
+    {
+      "case_id": "GR_SEM_002",
+      "category": "grounding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Identify the primary road artery leading into the city.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.5,
+        "extracted_entities": [
+          "road"
+        ],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.5,
+        "requires_clarification": true,
+        "tool_status": "completed",
+        "answer": "Grounding target assessment: road"
+      }
+    },
+    {
+      "case_id": "QU_VQA_011",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "Is the airport tarmac wet or dry?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.71,
+        "extracted_entities": [],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.71,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_VQA_012",
+      "category": "query_understanding",
+      "capability": "VQA",
+      "evaluation_type": "manually_curated",
+      "query": "What is the dominant orientation of the runways in this airport scene?",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.89,
+        "extracted_entities": [
+          "runways"
+        ],
+        "predicted_tool": "VQA_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_GR_011",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Detect all shipping containers stacked in the freight yard.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
+        "extracted_entities": [],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
+        "entity_match_score": 1.0
+      }
+    },
+    {
+      "case_id": "QU_GR_012",
+      "category": "query_understanding",
+      "capability": "GROUNDING",
+      "evaluation_type": "manually_curated",
+      "query": "Locate every bridge along the coastal highway.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.89,
+        "extracted_entities": [
+          "highway",
+          "bridge"
+        ],
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.89,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CD_011",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Map changes in the shoreline erosion between 2019 and 2022.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.95,
+        "extracted_entities": [],
+        "predicted_tool": "CHANGE_DETECTION_TOOL",
+        "routing_confidence": 0.95,
+        "requires_clarification": false,
+        "entity_match_score": 0.0
+      }
+    },
+    {
+      "case_id": "QU_CD_012",
+      "category": "query_understanding",
+      "capability": "CHANGE_DETECTION",
+      "evaluation_type": "manually_curated",
+      "query": "Detect any new deforestation patches since the dry season began.",
+      "passed": true,
+      "failure_reason": null,
+      "failure_category": null,
+      "details": {
+        "predicted_intent": "CHANGE_DETECTION",
+        "intent_confidence": 0.72,
+        "extracted_entities": [],
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.72,
+        "requires_clarification": true,
+        "entity_match_score": 0.0
+      }
+    }
+  ]
+}
