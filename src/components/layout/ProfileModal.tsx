@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
@@ -30,9 +31,8 @@ import { cn } from '../../utils/cn';
 import {
   getUserProfile,
   updateUserProfile,
-  getLanguage,
-  updateLanguage,
 } from '../../services/api';
+import { SUPPORTED_LANGUAGES, type SupportedLanguage, useTranslation } from '../../i18n';
 
 // ─── Avatar Resizing & Processing Helper ──────────────────────────────────────
 
@@ -72,16 +72,16 @@ export function processAvatarFile(file: File): Promise<string> {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          return resolve(e.target?.result as string);
+          return reject(new Error('Canvas context initialization failed.'));
         }
         ctx.drawImage(img, 0, 0, width, height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
         resolve(dataUrl);
       };
-      img.onerror = () => reject(new Error('Failed to parse selected image.'));
+      img.onerror = () => reject(new Error('Failed to load selected image.'));
       img.src = e.target?.result as string;
     };
-    reader.onerror = () => reject(new Error('Failed to read file from disk.'));
+    reader.onerror = () => reject(new Error('Failed to read file.'));
     reader.readAsDataURL(file);
   });
 }
@@ -102,23 +102,6 @@ function getPasswordStrength(password: string): { label: string; level: 0 | 1 | 
   return { label: 'Strong', level: 3, color: 'bg-emerald-500' };
 }
 
-// ─── Supported Languages Catalog ─────────────────────────────────────────────
-
-interface LanguageOption {
-  code: string;
-  name: string;
-  nativeName: string;
-  isSupported: boolean;
-}
-
-const LANGUAGES: LanguageOption[] = [
-  { code: 'en', name: 'English', nativeName: 'English', isSupported: true },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', isSupported: false },
-  { code: 'fr', name: 'French', nativeName: 'Français', isSupported: false },
-  { code: 'de', name: 'German', nativeName: 'Deutsch', isSupported: false },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', isSupported: false },
-  { code: 'ja', name: 'Japanese', nativeName: '日本語', isSupported: false },
-];
 
 // ─── Component Props ─────────────────────────────────────────────────────────
 
@@ -146,6 +129,7 @@ export function ProfileModal({
   userAvatar,
 }: ProfileModalProps) {
   const navigate = useNavigate();
+  const { language, setLanguage, t } = useTranslation();
   const [activeView, setActiveView] = useState<ProfileModalView>('menu');
 
   // Local state for user details
@@ -163,7 +147,6 @@ export function ProfileModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Language State
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [languageNotice, setLanguageNotice] = useState<string | null>(null);
 
   // Security Form State
@@ -194,10 +177,6 @@ export function ProfileModal({
           setEditName(profile.name);
           setEditAvatar(profile.avatar);
         }
-      });
-
-      getLanguage().then((lang) => {
-        setSelectedLanguage(lang || 'en');
       });
     }
   }, [isOpen, userName, userAvatar]);
@@ -301,15 +280,9 @@ export function ProfileModal({
 
   // ─── Language Handler ──────────────────────────────────────────────────────
 
-  const handleSelectLanguage = async (code: string) => {
-    if (code === 'en') {
-      setSelectedLanguage('en');
-      await updateLanguage('en');
-      setLanguageNotice(null);
-    } else {
-      setLanguageNotice(`Localization for this language is in development.`);
-      setTimeout(() => setLanguageNotice(null), 3000);
-    }
+  const handleSelectLanguage = async (code: SupportedLanguage) => {
+    await setLanguage(code);
+    setLanguageNotice(null);
   };
 
   // ─── Security Handlers ─────────────────────────────────────────────────────
@@ -369,19 +342,21 @@ export function ProfileModal({
   const getViewTitle = () => {
     switch (activeView) {
       case 'edit-profile':
-        return 'Edit Profile';
+        return t('profileModal.editProfile');
       case 'language':
-        return 'Language';
+        return t('profileModal.language');
       case 'help-support':
-        return 'Help & Support';
+        return t('profileModal.helpSupport');
       case 'privacy-security':
-        return 'Privacy & Security';
+        return t('profileModal.privacySecurity');
       default:
-        return 'Profile Information';
+        return t('profileModal.menuTitle');
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150 select-none"
       onClick={(e) => {
@@ -470,10 +445,10 @@ export function ProfileModal({
                     </div>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-cyan-400 transition-colors truncate">
-                        Edit Profile
+                        {t('profileModal.editProfile')}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                        Update your profile information
+                        {t('profileModal.updateProfileDesc')}
                       </div>
                     </div>
                   </div>
@@ -492,16 +467,16 @@ export function ProfileModal({
                     </div>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-cyan-400 transition-colors truncate">
-                        Language
+                        {t('profileModal.language')}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                        Choose your preferred language
+                        {t('profileModal.chooseLanguage')}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-3">
                     <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                      {LANGUAGES.find((l) => l.code === selectedLanguage)?.name || 'English'}
+                      {SUPPORTED_LANGUAGES.find((l) => l.code === language)?.name || 'English'}
                     </span>
                     <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 group-hover:translate-x-0.5 transition-all" />
                   </div>
@@ -519,10 +494,10 @@ export function ProfileModal({
                     </div>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-cyan-400 transition-colors truncate">
-                        Help & Support
+                        {t('profileModal.helpSupport')}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                        Get help using SatQuery AI
+                        {t('profileModal.helpSupportDesc')}
                       </div>
                     </div>
                   </div>
@@ -541,10 +516,10 @@ export function ProfileModal({
                     </div>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-cyan-400 transition-colors truncate">
-                        Privacy & Security
+                        {t('profileModal.privacySecurity')}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                        Manage your privacy and security
+                        {t('profileModal.privacySecurityDesc')}
                       </div>
                     </div>
                   </div>
@@ -562,7 +537,7 @@ export function ProfileModal({
               {/* Avatar Uploader Section */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 space-y-3">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Profile Avatar
+                  {t('profileModal.avatarLabel')}
                 </label>
 
                 <div className="flex items-center gap-4">
@@ -606,7 +581,7 @@ export function ProfileModal({
                       )}
                     </div>
                     <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                      PNG, JPG, or WEBP. Compact client-side preview.
+                      {t('profileModal.avatarHint')}
                     </span>
                   </div>
                 </div>
@@ -676,7 +651,7 @@ export function ProfileModal({
                 </div>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
                   <Info className="w-3 h-3 shrink-0" />
-                  <span>Email is bound to the demo session identity and cannot be edited.</span>
+                  <span>{t('profileModal.emailHint')}</span>
                 </p>
               </div>
 
@@ -684,7 +659,7 @@ export function ProfileModal({
               {editSuccessNotice && (
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-1.5 animate-in fade-in">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>Profile updated successfully.</span>
+                  <span>{t('profileModal.profileUpdated')}</span>
                 </div>
               )}
 
@@ -695,14 +670,14 @@ export function ProfileModal({
                   disabled={isEditSaving}
                   className="flex-1 py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 text-xs sm:text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                 >
-                  {isEditSaving ? 'Saving...' : 'Save Changes'}
+                  {isEditSaving ? t('profileModal.saving') : t('profileModal.saveChanges')}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelEdit}
                   className="py-2 px-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-medium transition-colors"
                 >
-                  Cancel
+                  {t('profileModal.cancel')}
                 </button>
               </div>
             </form>
@@ -714,7 +689,7 @@ export function ProfileModal({
           {activeView === 'language' && (
             <div className="space-y-3">
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Choose your preferred interface language for SatQuery AI.
+                {t('profileModal.chooseLanguage')}
               </p>
 
               {languageNotice && (
@@ -725,8 +700,8 @@ export function ProfileModal({
               )}
 
               <div className="divide-y divide-slate-100 dark:divide-slate-800/70 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-                {LANGUAGES.map((lang) => {
-                  const isSelected = selectedLanguage === lang.code;
+                {SUPPORTED_LANGUAGES.map((lang) => {
+                  const isSelected = language === lang.code;
                   return (
                     <button
                       key={lang.code}
@@ -749,31 +724,20 @@ export function ProfileModal({
                           </span>
                         </div>
                         <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                          {lang.isSupported ? 'Current supported language' : 'Localization in progress'}
+                          {t('profileModal.currentSupported')}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {lang.isSupported ? (
+                        {isSelected && (
                           <span className="p-1 rounded-full bg-blue-600 dark:bg-cyan-500 text-white dark:text-slate-950">
                             <Check className="w-3 h-3 stroke-[3]" />
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700">
-                            Coming Soon
                           </span>
                         )}
                       </div>
                     </button>
                   );
                 })}
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex items-start gap-2">
-                <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                <span>
-                  SatQuery AI is currently available in English. Additional language localizations will be added in upcoming updates.
-                </span>
               </div>
             </div>
           )}
@@ -857,10 +821,10 @@ export function ProfileModal({
               {/* Local Storage Controls */}
               <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 space-y-2">
                 <h5 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                  Local Sandbox Data
+                  {t('profileModal.localSandbox')}
                 </h5>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Customized profile names, avatars, and workspace preferences are stored locally in browser storage.
+                  {t('profileModal.localSandboxDesc')}
                 </p>
                 <div className="flex items-center gap-2 pt-1">
                   <button
@@ -869,11 +833,11 @@ export function ProfileModal({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Reset Local Demo Data</span>
+                    <span>{t('profileModal.resetLocalData')}</span>
                   </button>
                   {clearDataNotice && (
                     <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold animate-in fade-in">
-                      Demo data reset to defaults.
+                      {t('profileModal.demoResetSuccess')}
                     </span>
                   )}
                 </div>
@@ -891,7 +855,7 @@ export function ProfileModal({
                     htmlFor="privacy-current-password"
                     className="block text-xs font-medium text-slate-700 dark:text-slate-300"
                   >
-                    Current Password
+                    {t('profileModal.currentPassword')}
                   </label>
                   <div className="relative">
                     <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -927,7 +891,7 @@ export function ProfileModal({
                     htmlFor="privacy-new-password"
                     className="block text-xs font-medium text-slate-700 dark:text-slate-300"
                   >
-                    New Password
+                    {t('profileModal.newPassword')}
                   </label>
                   <div className="relative">
                     <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -977,7 +941,7 @@ export function ProfileModal({
                     htmlFor="privacy-confirm-password"
                     className="block text-xs font-medium text-slate-700 dark:text-slate-300"
                   >
-                    Confirm New Password
+                    {t('profileModal.confirmNewPassword')}
                   </label>
                   <div className="relative">
                     <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1019,7 +983,7 @@ export function ProfileModal({
                   type="submit"
                   className="w-full py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 text-xs font-semibold shadow-sm transition-all"
                 >
-                  Verify & Update Password
+                  {t('profileModal.updatePassword')}
                 </button>
               </form>
             </div>
@@ -1039,7 +1003,7 @@ export function ProfileModal({
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500/40"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Sign Out</span>
+                <span>{t('profileMenu.signOut')}</span>
               </button>
             ) : (
               <button
@@ -1051,12 +1015,13 @@ export function ProfileModal({
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-blue-600 dark:text-cyan-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Sign In</span>
+                <span>{t('profileMenu.signIn')}</span>
               </button>
             )}
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

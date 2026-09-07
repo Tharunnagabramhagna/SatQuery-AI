@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   Database,
@@ -20,11 +21,13 @@ import type { DatasetScenario, AnalysisMode } from '../types';
 import { Button } from '../components/common/Button';
 import { EmptyState } from '../components/common/EmptyState';
 import { LoadingState } from '../components/common/LoadingState';
+import { useTranslation } from '../hooks/useTranslation';
 import { cn } from '../utils/cn';
 
 type ModeFilter = 'all' | AnalysisMode;
 
 export function DatasetsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [scenarios, setScenarios] = useState<DatasetScenario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -104,11 +107,11 @@ export function DatasetsPage() {
   const getModeLabel = (mode: AnalysisMode) => {
     switch (mode) {
       case 'single_image':
-        return 'Single Image';
+        return t('viewer.singleImage');
       case 'compare_images':
-        return 'Compare Images';
+        return t('viewer.compareImages');
       case 'optical_sar':
-        return 'Optical + SAR';
+        return t('viewer.opticalSar');
       default:
         return mode;
     }
@@ -117,17 +120,17 @@ export function DatasetsPage() {
   const getCapabilityLabel = (cap: string) => {
     switch (cap) {
       case 'grounding':
-        return 'Object Grounding';
+        return t('datasets.capGrounding');
       case 'vqa':
-        return 'VQA Pipeline';
+        return t('datasets.capVqa');
       case 'change_detection':
-        return 'Change Detection';
+        return t('datasets.capChangeDetection');
       case 'change_vqa':
-        return 'Change VQA';
+        return t('datasets.capChangeVqa');
       case 'multimodal_analysis':
-        return 'Multimodal Fusion';
+        return t('datasets.capMultimodalFusion');
       case 'captioning':
-        return 'Scene Captioning';
+        return t('datasets.capCaptioning');
       default:
         return cap.replace('_', ' ');
     }
@@ -141,17 +144,17 @@ export function DatasetsPage() {
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
               <Database className="w-6 h-6 text-cyan-500" aria-hidden="true" />
-              Dataset & Scenario Library
+              {t('datasets.title')}
             </h1>
             <span
               title="SatQuery AI is running in demonstration mode. Scenarios use simulated remote-sensing datasets."
               className="px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-help"
             >
-              DEMO
+              {t('common.demo')}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Explore pre-loaded demo scenarios for satellite image analysis.
+            {t('datasets.subtitle')}
           </p>
         </div>
 
@@ -162,7 +165,7 @@ export function DatasetsPage() {
             onClick={() => navigate('/dashboard')}
             icon={<Sparkles className="w-3.5 h-3.5 text-cyan-500" />}
           >
-            Open Workspace
+            {t('datasets.openWorkspace')}
           </Button>
         </div>
       </div>
@@ -177,7 +180,7 @@ export function DatasetsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search scenarios by title, capability, or benchmark..."
+              placeholder={t('datasets.searchPlaceholder')}
               className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950/70 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-cyan-500"
               aria-label="Search scenarios"
             />
@@ -186,7 +189,7 @@ export function DatasetsPage() {
           {/* Mode Filters */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
             <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1 pl-1 pr-1">
-              <Filter className="w-3 h-3" /> Mode:
+              <Filter className="w-3 h-3" /> {t('history.filterMode')}
             </span>
             {(['all', 'single_image', 'compare_images', 'optical_sar'] as const).map((mode) => (
               <button
@@ -199,7 +202,7 @@ export function DatasetsPage() {
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'
                 )}
               >
-                {mode === 'all' ? 'All' : getModeLabel(mode)}
+                {mode === 'all' ? t('datasets.all') : getModeLabel(mode)}
               </button>
             ))}
           </div>
@@ -208,14 +211,14 @@ export function DatasetsPage() {
         {/* Results Count & Clear Button */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-slate-500 dark:text-slate-400">
           <div>
-            Showing <span className="font-semibold text-slate-700 dark:text-slate-300">{filteredScenarios.length}</span> of {scenarios.length} curated demonstration scenarios
+            {t('common.showing')} <span className="font-semibold text-slate-700 dark:text-slate-300">{filteredScenarios.length}</span> {t('common.of')} {scenarios.length} {t('datasets.curatedScenarios')}
           </div>
           {(searchQuery || modeFilter !== 'all') && (
             <button
               onClick={resetFilters}
               className="inline-flex items-center gap-1 text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
             >
-              <RotateCcw className="w-3 h-3" /> Clear filters
+              <RotateCcw className="w-3 h-3" /> {t('datasets.clearFilters')}
             </button>
           )}
         </div>
@@ -224,23 +227,23 @@ export function DatasetsPage() {
       {/* ─── Scenario Cards Grid ─────────────────────────────────── */}
       {isLoading ? (
         <LoadingState
-          message="Loading demonstration scenarios..."
-          subMessage="Fetching curated satellite testbeds and query configurations"
+          message={t('datasets.loadingScenarios')}
+          subMessage={t('datasets.loadingSubMessage')}
           variant="card"
           className="py-16"
         />
       ) : filteredScenarios.length === 0 ? (
         <EmptyState
           icon={Search}
-          title="No scenarios found"
+          title={t('datasets.noScenariosFound')}
           description={
             searchQuery
-              ? `No scenarios match "${searchQuery}" with the selected mode filter.`
-              : 'No scenarios found for this mode filter.'
+              ? t('datasets.noScenariosMatch').replace('{query}', searchQuery)
+              : t('datasets.noScenariosMode')
           }
-          actionLabel="Clear Filters"
+          actionLabel={t('datasets.clearFilters')}
           onAction={resetFilters}
-          secondaryActionLabel="Open Workspace"
+          secondaryActionLabel={t('datasets.openWorkspace')}
           onSecondaryAction={() => navigate('/dashboard')}
           className="py-16"
         />
@@ -314,7 +317,7 @@ export function DatasetsPage() {
                     onClick={() => setSelectedScenario(scenario)}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 dark:text-cyan-400 group-hover:text-cyan-500 hover:underline cursor-pointer"
                   >
-                    <span>Open Scenario</span>
+                    <span>{t('datasets.viewDetails')}</span>
                     <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 </div>
@@ -325,7 +328,7 @@ export function DatasetsPage() {
       )}
 
       {/* ─── Scenario Detail Modal ───────────────────────────────── */}
-      {selectedScenario && (
+      {selectedScenario && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
@@ -344,7 +347,7 @@ export function DatasetsPage() {
                   {getCapabilityLabel(selectedScenario.capability)}
                 </span>
                 <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  DEMO SCENARIO
+                  {t('datasets.demoScenario')}
                 </span>
               </div>
 
@@ -383,14 +386,14 @@ export function DatasetsPage() {
               {/* Description & Dataset Reference */}
               <div>
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
-                  Scenario Overview
+                  {t('datasets.scenarioOverview')}
                 </h4>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                   {selectedScenario.description}
                 </p>
                 {selectedScenario.datasetName && (
                   <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 italic">
-                    Source: {selectedScenario.datasetName}
+                    {t('datasets.source')}: {selectedScenario.datasetName}
                   </p>
                 )}
               </div>
@@ -399,18 +402,18 @@ export function DatasetsPage() {
               {selectedScenario.metadata && (
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
                   <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2 flex items-center gap-1.5">
-                    <FileCode2 className="w-3.5 h-3.5 text-cyan-500" /> Platform & Sensor Metadata
+                    <FileCode2 className="w-3.5 h-3.5 text-cyan-500" /> {t('datasets.platformSensorMetadata')}
                   </h4>
                   <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
                     {selectedScenario.metadata.sensor && (
                       <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Sensor Platform</span>
+                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">{t('datasets.sensorPlatform')}</span>
                         <span className="font-medium text-slate-800 dark:text-slate-200">{selectedScenario.metadata.sensor}</span>
                       </div>
                     )}
                     {selectedScenario.metadata.resolution && (
                       <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Spatial Resolution</span>
+                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">{t('datasets.spatialResolution')}</span>
                         <span className="font-medium text-slate-800 dark:text-slate-200">{selectedScenario.metadata.resolution}</span>
                       </div>
                     )}
@@ -418,7 +421,7 @@ export function DatasetsPage() {
                       <div className="flex items-start gap-1">
                         <MapPin className="w-3 h-3 text-cyan-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Geo-Coordinates</span>
+                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">{t('datasets.geoCoordinates')}</span>
                           <span className="font-mono text-[11px] text-slate-800 dark:text-slate-200">{selectedScenario.metadata.coordinates}</span>
                         </div>
                       </div>
@@ -427,7 +430,7 @@ export function DatasetsPage() {
                       <div className="flex items-start gap-1">
                         <Clock className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Temporal Acquisition</span>
+                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">{t('datasets.temporalAcquisition')}</span>
                           <span className="font-mono text-[11px] text-slate-800 dark:text-slate-200">{selectedScenario.metadata.temporalDelta}</span>
                         </div>
                       </div>
@@ -439,7 +442,7 @@ export function DatasetsPage() {
               {/* Demonstration Query */}
               <div className="p-3.5 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 block mb-1">
-                  Demonstration Query Prompt
+                  {t('datasets.demoQueryPrompt')}
                 </span>
                 <p className="text-xs font-mono text-slate-800 dark:text-slate-200 leading-relaxed">
                   "{selectedScenario.query}"
@@ -449,7 +452,7 @@ export function DatasetsPage() {
               {/* Expected Output */}
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">
-                  Expected Intelligence Observation
+                  {t('datasets.expectedObservation')}
                 </span>
                 <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900/40 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
                   {selectedScenario.expectedOutput}
@@ -460,7 +463,7 @@ export function DatasetsPage() {
               {selectedScenario.sampleEvidence && selectedScenario.sampleEvidence.length > 0 && (
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1.5">
-                    Pre-Calculated Evidence Verification
+                    {t('datasets.preCalculatedEvidence')}
                   </span>
                   <div className="space-y-1">
                     {selectedScenario.sampleEvidence.map((ev, i) => (
@@ -481,7 +484,7 @@ export function DatasetsPage() {
                 size="sm"
                 onClick={() => setSelectedScenario(null)}
               >
-                Close
+                {t('common.close')}
               </Button>
               <Button
                 variant="primary"
@@ -489,11 +492,12 @@ export function DatasetsPage() {
                 onClick={() => handleLaunchAnalysis(selectedScenario)}
                 icon={<Play className="w-3.5 h-3.5 fill-current" />}
               >
-                Launch Analysis
+                {t('datasets.launchAnalysis')}
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

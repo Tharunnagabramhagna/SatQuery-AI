@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   ShieldCheck,
@@ -10,6 +11,7 @@ import {
   Crosshair,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { EvidenceItem, EvidenceType } from '../../types/visualization';
 import { MOCK_EVIDENCE } from '../../mock/mockEvidence';
 
@@ -32,6 +34,7 @@ export function EvidenceModal({
   onSelectEvidence,
   onHighlightRegionOnMap,
 }: EvidenceModalProps) {
+  const { t } = useTranslation();
   const [internalSelectedId, setInternalSelectedId] = useState<string>(
     selectedEvidenceId || evidenceItems[0]?.id || 'evidence-1'
   );
@@ -82,7 +85,9 @@ export function EvidenceModal({
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-[#0a0f1e] border border-slate-300 dark:border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
@@ -94,14 +99,14 @@ export function EvidenceModal({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Evidence Verification & Grounding Trace
+                  {t('modals.evidenceTitle')}
                 </h3>
                 <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  DEMO EVIDENCE
+                  {t('evidence.demoEvidence')}
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Multi-criteria analytical evidence linked to satellite imagery detections
+                {t('evidence.subtitle')}
               </p>
             </div>
           </div>
@@ -115,7 +120,7 @@ export function EvidenceModal({
 
         {/* Filter bar */}
         <div className="flex items-center gap-1 px-6 py-2 bg-slate-50 dark:bg-[#070c17] border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 overflow-x-auto">
-          <span className="text-[11px] font-medium text-slate-400 mr-2 shrink-0">Filter by type:</span>
+          <span className="text-[11px] font-medium text-slate-400 mr-2 shrink-0">{t('evidence.filterByType')}</span>
           {(['all', 'spectral', 'spatial', 'temporal', 'structural'] as const).map((type) => (
             <button
               key={type}
@@ -127,7 +132,7 @@ export function EvidenceModal({
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
               )}
             >
-              {type}
+              {type === 'all' ? t('evidence.all') : type}
             </button>
           ))}
         </div>
@@ -137,7 +142,7 @@ export function EvidenceModal({
           {/* Left Column: Evidence List */}
           <div className="md:col-span-5 p-4 overflow-y-auto space-y-2.5">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
-              Detected Evidence Points ({filteredItems.length})
+              {t('evidence.detectedPoints').replace('{count}', String(filteredItems.length))}
             </div>
 
             {filteredItems.map((item) => {
@@ -174,10 +179,10 @@ export function EvidenceModal({
 
                   <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-slate-100 dark:border-slate-800/50">
                     <span className="text-slate-400 font-mono">
-                      Region: <strong className="text-slate-600 dark:text-slate-300">{item.regionId}</strong>
+                      {t('evidence.regionLabel')}: <strong className="text-slate-600 dark:text-slate-300">{item.regionId}</strong>
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-slate-400">Conf:</span>
+                      <span className="text-slate-400">{t('evidence.confLabel')}:</span>
                       <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-emerald-500 rounded-full"
@@ -208,7 +213,7 @@ export function EvidenceModal({
                       )}
                     >
                       {getTypeIcon(activeItem.type)}
-                      {activeItem.type} Evidence
+                      {activeItem.type} {t('evidence.evidenceLabel')}
                     </span>
                     <span className="text-xs text-slate-400 font-mono">ID: {activeItem.id}</span>
                   </div>
@@ -223,7 +228,7 @@ export function EvidenceModal({
                 {/* Before / After Thumbnail Comparison */}
                 <div>
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 flex items-center justify-between">
-                    <span>Bi-Temporal Verification Preview (Demo)</span>
+                    <span>{t('evidence.biTemporalPreview')}</span>
                     <span className="font-mono text-[9px] text-slate-400">10m GSD</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -234,7 +239,7 @@ export function EvidenceModal({
                         className="w-full h-32 object-cover"
                       />
                       <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-mono text-slate-200 backdrop-blur-xs">
-                        T0 Baseline (2025)
+                        {t('evidence.t0Baseline')}
                       </div>
                     </div>
                     <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 relative group">
@@ -244,7 +249,7 @@ export function EvidenceModal({
                         className="w-full h-32 object-cover"
                       />
                       <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-emerald-950/80 text-[9px] font-mono text-emerald-300 border border-emerald-500/30 backdrop-blur-xs">
-                        T1 Observation (2026)
+                        {t('evidence.t1Observation')}
                       </div>
                     </div>
                   </div>
@@ -253,28 +258,28 @@ export function EvidenceModal({
                 {/* Analytical Metadata Grid */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#080d1a] border border-slate-200 dark:border-slate-800">
-                    <div className="text-[10px] text-slate-400 font-medium">Source Model</div>
+                    <div className="text-[10px] text-slate-400 font-medium">{t('evidence.sourceModel')}</div>
                     <div className="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
                       {activeItem.source}
                     </div>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#080d1a] border border-slate-200 dark:border-slate-800">
-                    <div className="text-[10px] text-slate-400 font-medium">Spectral Band Used</div>
+                    <div className="text-[10px] text-slate-400 font-medium">{t('evidence.spectralBand')}</div>
                     <div className="font-mono font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
                       {activeItem.band}
                     </div>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#080d1a] border border-slate-200 dark:border-slate-800">
-                    <div className="text-[10px] text-slate-400 font-medium">Detection Method</div>
+                    <div className="text-[10px] text-slate-400 font-medium">{t('evidence.detectionMethod')}</div>
                     <div className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-0.5">
                       {activeItem.detectionMethod}
                     </div>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#080d1a] border border-slate-200 dark:border-slate-800">
-                    <div className="text-[10px] text-slate-400 font-medium">Demonstration Confidence</div>
+                    <div className="text-[10px] text-slate-400 font-medium">{t('evidence.demoConfidence')}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div
@@ -295,7 +300,7 @@ export function EvidenceModal({
                     <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
                     <div>
                       <span className="font-semibold text-slate-800 dark:text-slate-200">
-                        Linked Spatial Region:
+                        {t('evidence.linkedSpatialRegion')}
                       </span>{' '}
                       <span className="font-mono text-blue-600 dark:text-cyan-400 font-medium">
                         {activeItem.regionId}
@@ -308,12 +313,12 @@ export function EvidenceModal({
                     className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold transition-colors shadow-xs"
                   >
                     <Crosshair className="w-3 h-3" />
-                    <span>Focus in Viewer</span>
+                    <span>{t('evidence.focusInViewer')}</span>
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="text-center text-slate-400 py-12">Select an evidence point to inspect details</div>
+              <div className="text-center text-slate-400 py-12">{t('evidence.selectToInspect')}</div>
             )}
           </div>
         </div>
@@ -321,18 +326,19 @@ export function EvidenceModal({
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#070c17] text-xs shrink-0">
           <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-            <span>Audit ID: <strong className="font-mono text-slate-700 dark:text-slate-300">EV-20260312-91</strong></span>
+            <span>{t('evidence.auditId')} <strong className="font-mono text-slate-700 dark:text-slate-300">EV-20260312-91</strong></span>
             <span>•</span>
-            <span className="font-mono text-amber-500">All metrics simulated demonstration data</span>
+            <span className="font-mono text-amber-500">{t('evidence.metricsSimulated')}</span>
           </div>
           <button
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-slate-900 text-white dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 font-semibold transition-colors text-xs"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

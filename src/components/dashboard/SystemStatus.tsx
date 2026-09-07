@@ -3,8 +3,10 @@ import { ShieldCheck, Cpu, HardDrive, Network, RefreshCw } from 'lucide-react';
 import { getSystemStatus } from '../../services/api';
 import type { SystemStatus as SystemStatusType } from '../../types';
 import { Badge } from '../common/Badge';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function SystemStatus() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<SystemStatusType | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -24,14 +26,14 @@ export function SystemStatus() {
     <div className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0f1e]/60 p-6 transition-colors duration-150">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">System Architecture Status</h2>
-          <Badge variant="demo" className="text-[9px]">DEMO</Badge>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">{t('systemStatusSection.title')}</h2>
+          <Badge variant="demo" className="text-[9px]">{t('common.demo')}</Badge>
         </div>
         <button
           onClick={fetchStatus}
           disabled={refreshing}
           className="p-1 rounded text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-          title="Refresh status"
+          title={t('systemStatusSection.refreshStatus')}
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-blue-600 dark:text-blue-400' : ''}`} />
         </button>
@@ -44,11 +46,11 @@ export function SystemStatus() {
             <Cpu className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Model Router</div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">Vision-Language</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{t('systemStatusSection.modelRouter')}</div>
+            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">{t('systemStatusSection.visionLanguage')}</div>
             <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1 mt-0.5 font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Ready (Mock)</span>
+              <span>{t('systemStatusSection.readyMock')}</span>
             </div>
           </div>
         </div>
@@ -59,11 +61,11 @@ export function SystemStatus() {
             <HardDrive className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Sensor Ingestion</div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">GeoTIFF / SAR</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{t('systemStatusSection.sensorIngestion')}</div>
+            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">{t('systemStatusSection.geoTiffSar')}</div>
             <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1 mt-0.5 font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Active</span>
+              <span>{t('systemStatusSection.active')}</span>
             </div>
           </div>
         </div>
@@ -74,11 +76,11 @@ export function SystemStatus() {
             <Network className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Agent Pipeline</div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">Trace Engine</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{t('systemStatusSection.agentPipeline')}</div>
+            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">{t('systemStatusSection.traceEngine')}</div>
             <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1 mt-0.5 font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Operational</span>
+              <span>{t('systemStatusSection.operational')}</span>
             </div>
           </div>
         </div>
@@ -89,19 +91,19 @@ export function SystemStatus() {
             <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Evidence Validator</div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">Grounding / Mask</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{t('systemStatusSection.evidenceValidator')}</div>
+            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">{t('systemStatusSection.groundingMask')}</div>
             <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1 mt-0.5 font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Calibrated</span>
+              <span>{t('systemStatusSection.calibrated')}</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="mt-4 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between border-t border-slate-200 dark:border-slate-800/60 pt-3">
-        <span>Environment: <span className="font-mono text-slate-700 dark:text-slate-300">Demo Prototype (SIH26167)</span></span>
-        <span>Last Ping: <span className="font-mono text-slate-700 dark:text-slate-300">{status ? new Date(status.lastChecked).toLocaleTimeString() : '...'}</span></span>
+        <span>{t('systemStatusSection.environment')} <span className="font-mono text-slate-700 dark:text-slate-300">Demo Prototype (SIH26167)</span></span>
+        <span>{t('systemStatusSection.lastPing')} <span className="font-mono text-slate-700 dark:text-slate-300">{status ? new Date(status.lastChecked).toLocaleTimeString() : '...'}</span></span>
       </div>
     </div>
   );

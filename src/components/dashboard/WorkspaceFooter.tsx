@@ -1,6 +1,8 @@
 import { Atom } from 'lucide-react';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function WorkspaceFooter() {
+  const { t } = useTranslation();
   return (
     <footer className="w-full h-9 px-4 border-t border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#070b15] flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 select-none shrink-0">
       <div className="flex items-center gap-2">
@@ -10,7 +12,7 @@ export function WorkspaceFooter() {
         </div>
         <span className="text-slate-300 dark:text-slate-700">|</span>
         <span className="hidden sm:inline text-amber-600/90 dark:text-amber-400/90 font-medium">
-          Demo Mode — Sample imagery and simulated analysis
+          {t('dashboard.demoFooter')}
         </span>
       </div>
 

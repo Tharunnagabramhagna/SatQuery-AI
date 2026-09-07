@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, UploadCloud, CheckCircle2, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface NewAnalysisModalProps {
   isOpen: boolean;
@@ -9,6 +11,7 @@ interface NewAnalysisModalProps {
 }
 
 export function NewAnalysisModal({ isOpen, onClose, onLoadPreset }: NewAnalysisModalProps) {
+  const { t } = useTranslation();
   const [selectedPreset, setSelectedPreset] = useState<string>('change');
 
   if (!isOpen) return null;
@@ -49,7 +52,9 @@ export function NewAnalysisModal({ isOpen, onClose, onLoadPreset }: NewAnalysisM
     onClose();
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="relative w-full max-w-xl bg-white dark:bg-[#0a0f1e] border border-slate-300 dark:border-slate-700 rounded-2xl p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
@@ -59,10 +64,10 @@ export function NewAnalysisModal({ isOpen, onClose, onLoadPreset }: NewAnalysisM
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Start New Satellite Analysis
+                {t('newAnalysis.title')}
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Upload remote-sensing imagery or select a calibrated space scenario
+                {t('newAnalysis.subtitle')}
               </p>
             </div>
           </div>
@@ -80,17 +85,17 @@ export function NewAnalysisModal({ isOpen, onClose, onLoadPreset }: NewAnalysisM
             <UploadCloud className="w-5 h-5" />
           </div>
           <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-            Drag and drop your GeoTIFF or satellite imagery
+            {t('newAnalysis.dragDrop')}
           </div>
           <p className="text-[10px] text-slate-400 mt-0.5">
-            Supports GeoTIFF, PNG, JPG, or multispectral bands up to 100MB
+            {t('newAnalysis.supportedFormats')}
           </p>
         </div>
 
         {/* Presets Grid */}
         <div className="mb-4">
           <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-            Or select calibrated benchmark scenario:
+            {t('newAnalysis.selectBenchmark')}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {presets.map((p) => {
@@ -124,7 +129,7 @@ export function NewAnalysisModal({ isOpen, onClose, onLoadPreset }: NewAnalysisM
                   {isSelected && (
                     <div className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-cyan-400 font-semibold mt-2 pt-1 border-t border-blue-200/50 dark:border-blue-500/20">
                       <CheckCircle2 className="w-3 h-3" />
-                      <span>Ready to load</span>
+                      <span>{t('newAnalysis.readyToLoad')}</span>
                     </div>
                   )}
                 </div>
@@ -139,16 +144,17 @@ export function NewAnalysisModal({ isOpen, onClose, onLoadPreset }: NewAnalysisM
             onClick={onClose}
             className="px-3 py-1.5 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleApply}
             className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/20 transition-colors"
           >
-            Load into Workspace
+            {t('newAnalysis.startAnalysis')}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,7 +1,23 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, Check, ChevronUp, ChevronDown, Loader2, Bot } from 'lucide-react';
+import { ArrowRight, Check, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useTranslation } from '../../hooks/useTranslation';
+import { QueryAgentLogo } from '../common/QueryAgentLogo';
 import { MOCK_EXECUTION_STAGES } from '../../mock/mockGrounding';
+
+const STAGE_LABEL_KEYS: Record<string, string> = {
+  'Request Received': 'executionStages.requestReceived',
+  'Input Validated': 'executionStages.inputValidated',
+  'Query Understood': 'executionStages.queryUnderstood',
+  'Task Identified': 'executionStages.taskIdentified',
+  'Workflow Selected': 'executionStages.workflowSelected',
+  'Specialist Capability Selected': 'executionStages.specialistCapabilitySelected',
+  'Imagery Processed': 'executionStages.imageryProcessed',
+  'Result Validated': 'executionStages.resultValidated',
+  'Evidence Extracted': 'executionStages.evidenceExtracted',
+  'Confidence Estimated': 'executionStages.confidenceEstimated',
+  'Response Generated': 'executionStages.responseGenerated',
+};
 
 interface QueryAndExecutionPanelProps {
   currentQuery: string;
@@ -24,6 +40,7 @@ export function QueryAndExecutionPanel({
   activeModeName,
   showQueryInput = true,
 }: QueryAndExecutionPanelProps) {
+  const { t } = useTranslation();
   const [isExecutionExpanded, setIsExecutionExpanded] = useState(true);
   const [currentStep, setCurrentStep] = useState(11);
 
@@ -56,8 +73,8 @@ export function QueryAndExecutionPanel({
         <div className="lg:col-span-7 flex flex-col justify-between rounded-xl border border-slate-300 dark:border-slate-800/90 bg-white dark:bg-[#0a0f1e]/90 p-4 shadow-sm">
           <div>
             <div className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-2 leading-snug">
-              <Bot className="w-4 h-4 text-blue-600 dark:text-cyan-400 shrink-0" />
-              <span>Query Agent</span>
+              <QueryAgentLogo className="w-5 h-5 rounded shrink-0" />
+              <span>{t('sidebar.queryAgent')}</span>
             </div>
 
             <div className="relative">
@@ -66,7 +83,7 @@ export function QueryAndExecutionPanel({
                 onChange={(e) => onQueryChange(e.target.value)}
                 rows={2}
                 className="w-full px-3 py-2 text-[12.5px] leading-relaxed text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-[#070b15] border border-slate-300 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium resize-none transition-colors"
-                placeholder="Ask questions about your satellite imagery using natural language..."
+                placeholder={t('queryAgent.placeholder')}
               />
             </div>
           </div>
@@ -75,7 +92,7 @@ export function QueryAndExecutionPanel({
           <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
             <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 py-0.5">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium shrink-0">
-                Suggestions:
+                {t('execution.suggestions')}
               </span>
               {suggestions.map((s, idx) => (
                 <button
@@ -100,11 +117,11 @@ export function QueryAndExecutionPanel({
               {isAnalyzing ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Processing...</span>
+                  <span>{t('execution.processing')}</span>
                 </>
               ) : (
                 <>
-                  <span>Analyze</span>
+                  <span>{t('execution.analyze')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </>
               )}
@@ -124,7 +141,7 @@ export function QueryAndExecutionPanel({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-snug">
-                AI Execution Trace
+                {t('execution.title')}
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
               <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
@@ -151,11 +168,11 @@ export function QueryAndExecutionPanel({
                   {isAnalyzing ? (
                     <>
                       <Loader2 className="w-3 h-3 animate-spin" />
-                      <span>Processing...</span>
+                      <span>{t('execution.processing')}</span>
                     </>
                   ) : (
                     <>
-                      <span>Analyze</span>
+                      <span>{t('execution.analyze')}</span>
                       <ArrowRight className="w-3 h-3" />
                     </>
                   )}
@@ -165,7 +182,7 @@ export function QueryAndExecutionPanel({
               <button
                 onClick={() => setIsExecutionExpanded(!isExecutionExpanded)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
-                aria-label={isExecutionExpanded ? 'Collapse execution panel' : 'Expand execution panel'}
+                aria-label={isExecutionExpanded ? t('viewer.collapsePanel') : t('viewer.expandPanel')}
               >
                 {isExecutionExpanded ? (
                   <ChevronUp className="w-4 h-4" />
@@ -188,6 +205,8 @@ export function QueryAndExecutionPanel({
               {MOCK_EXECUTION_STAGES.map((stage) => {
                 const isStepCompleted = !isAnalyzing || stage.step <= currentStep;
                 const isStepRunning = isAnalyzing && stage.step === currentStep;
+                const stageTranslationKey = STAGE_LABEL_KEYS[stage.label];
+                const stageTranslatedLabel = stageTranslationKey ? t(stageTranslationKey) : stage.label;
 
                 return (
                   <div key={stage.id} className="flex items-center gap-2 min-w-0">
@@ -219,7 +238,7 @@ export function QueryAndExecutionPanel({
                           : 'text-slate-400 dark:text-slate-500'
                       )}
                     >
-                      {stage.label}
+                      {stageTranslatedLabel}
                     </span>
                   </div>
                 );

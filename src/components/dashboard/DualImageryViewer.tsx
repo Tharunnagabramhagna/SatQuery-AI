@@ -18,6 +18,7 @@ import {
   Move,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useTranslation } from '../../hooks/useTranslation';
 import type {
   VisualizationLayer,
   MapRegion,
@@ -79,6 +80,7 @@ export function DualImageryViewer({
   selectedGroundingId = null,
   onSelectGrounding,
 }: DualImageryViewerProps) {
+  const { t } = useTranslation();
   // Centralized imagery paths & dates from props (no hardcoded dates)
   const t0Date = imagerySources?.t0?.acquisitionDate || '2025-03-12';
   const t1Date = imagerySources?.t1?.acquisitionDate || '2026-03-12';
@@ -281,7 +283,7 @@ export function DualImageryViewer({
   return (
     <div
       className={cn(
-        'flex flex-col gap-2.5 w-full select-none',
+        'flex flex-col gap-2.5 w-full select-none isolate',
         isMaximized && 'fixed inset-0 z-40 bg-[#060a14] p-3 sm:p-5 h-screen w-screen overflow-hidden'
       )}
     >
@@ -299,7 +301,7 @@ export function DualImageryViewer({
             )}
           >
             <span className="w-3.5 h-3.5 border border-current rounded-sm flex items-center justify-center text-[9px]">■</span>
-            <span>Single Image</span>
+            <span>{t('viewer.singleImage')}</span>
           </button>
 
           <button
@@ -312,7 +314,7 @@ export function DualImageryViewer({
             )}
           >
             <SplitSquareVertical className="w-3.5 h-3.5" />
-            <span>Compare Images</span>
+            <span>{t('viewer.compareImages')}</span>
           </button>
 
           <button
@@ -325,7 +327,7 @@ export function DualImageryViewer({
             )}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Optical + SAR</span>
+            <span>{t('viewer.opticalSar')}</span>
           </button>
         </div>
 
@@ -334,15 +336,15 @@ export function DualImageryViewer({
           {isMaximized && (
             <span className="text-[11px] font-mono text-cyan-400 font-semibold px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 mr-1 hidden sm:inline-flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              FULLSCREEN WORKSPACE
+              {t('viewer.fullscreenWorkspace')}
             </span>
           )}
 
           <button
             onClick={() => setSliderPosition(50)}
             className="p-1.5 rounded-md hover:bg-slate-200/70 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
-            title="Split 50/50"
-            aria-label="Split 50/50"
+            title={t('viewer.split50')}
+            aria-label={t('viewer.split50')}
           >
             <SplitSquareVertical className="w-4 h-4" />
           </button>
@@ -353,8 +355,8 @@ export function DualImageryViewer({
               'p-1.5 rounded-md hover:bg-slate-200/70 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 transition-colors',
               isMeasuring && 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
             )}
-            title={isMeasuring ? 'Disable Measure Tool (Demo)' : 'Measure Distance (Demo)'}
-            aria-label="Toggle measure tool"
+            title={isMeasuring ? t('viewer.measureToolDisable') : t('viewer.measureTool')}
+            aria-label={t('viewer.measureTool')}
           >
             <Ruler className="w-4 h-4" />
           </button>
@@ -362,8 +364,8 @@ export function DualImageryViewer({
           <button
             onClick={handleScreenshot}
             className="p-1.5 rounded-md hover:bg-slate-200/70 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
-            title="Capture Viewport Screenshot (Demo)"
-            aria-label="Capture screenshot"
+            title={t('viewer.screenshot')}
+            aria-label={t('viewer.screenshot')}
           >
             <Camera className="w-4 h-4" />
           </button>
@@ -374,8 +376,8 @@ export function DualImageryViewer({
               'p-1.5 rounded-md hover:bg-slate-200/70 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 transition-colors',
               activeLayer === 'sar' && 'text-blue-600 dark:text-cyan-400'
             )}
-            title="Toggle SAR Spectral Mode"
-            aria-label="Toggle SAR Spectral Mode"
+            title={t('viewer.toggleSarSpectral')}
+            aria-label={t('viewer.toggleSarSpectral')}
           >
             <SlidersHorizontal className="w-4 h-4" />
           </button>
@@ -383,8 +385,8 @@ export function DualImageryViewer({
           <button
             onClick={handleResetZoom}
             className="p-1.5 rounded-md hover:bg-slate-200/70 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
-            title="Reset Map View (1.0x)"
-            aria-label="Reset Map View"
+            title={t('viewer.resetView')}
+            aria-label={t('viewer.resetView')}
           >
             <RotateCcw className="w-4 h-4" />
           </button>
@@ -395,8 +397,8 @@ export function DualImageryViewer({
               'p-1.5 rounded-md hover:bg-slate-200/70 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 transition-colors',
               showOverlays ? 'text-blue-600 dark:text-cyan-400' : 'text-slate-400'
             )}
-            title="Toggle Polygon Overlays"
-            aria-label="Toggle Polygon Overlays"
+            title={t('viewer.togglePolygonOverlays')}
+            aria-label={t('viewer.togglePolygonOverlays')}
           >
             <Layers className="w-4 h-4" />
           </button>
@@ -409,8 +411,8 @@ export function DualImageryViewer({
                 ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 hover:bg-cyan-500/30'
                 : 'hover:bg-slate-200/70 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
             )}
-            title={isMaximized ? 'Exit Fullscreen (Esc)' : 'Maximize Viewport (Fullscreen)'}
-            aria-label={isMaximized ? 'Exit Fullscreen' : 'Maximize Viewport'}
+            title={isMaximized ? t('viewer.exitFullscreen') : t('viewer.maximizeViewport')}
+            aria-label={isMaximized ? t('viewer.exitFullscreen') : t('viewer.maximizeViewport')}
           >
             {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -419,11 +421,11 @@ export function DualImageryViewer({
             <button
               onClick={() => setIsMaximized(false)}
               className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition-colors shadow-sm ml-1"
-              title="Exit Fullscreen (Esc)"
-              aria-label="Exit Fullscreen"
+              title={t('viewer.exitFullscreen')}
+              aria-label={t('viewer.exitFullscreen')}
             >
               <X className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Exit Fullscreen</span>
+              <span className="hidden sm:inline">{t('viewer.fullscreen')}</span>
             </button>
           )}
         </div>
@@ -440,7 +442,7 @@ export function DualImageryViewer({
         <div
           ref={containerRef}
           className={cn(
-            'relative rounded-xl border border-slate-300 dark:border-slate-800 bg-[#060a14] overflow-hidden shadow-md flex items-center justify-center group select-none',
+            'relative isolate rounded-xl border border-slate-300 dark:border-slate-800 bg-[#060a14] overflow-hidden shadow-md flex items-center justify-center group select-none',
             isMaximized ? 'flex-1 w-full h-full min-h-0' : 'xl:col-span-8 h-[340px] sm:h-[380px] lg:h-[400px]'
           )}
           style={{ cursor: isMeasuring ? 'crosshair' : isDragging ? 'col-resize' : 'default' }}
@@ -449,7 +451,7 @@ export function DualImageryViewer({
           {/* Aspect-Ratio Preserving Imagery Stage (1200 x 896 intrinsic ratio) */}
           <div
             ref={stageRef}
-            className="relative h-full max-w-full aspect-[1200/896] overflow-hidden flex items-center justify-center"
+            className="relative isolate h-full max-w-full aspect-[1200/896] overflow-hidden flex items-center justify-center"
           >
             {/* 0. Mode-Specific In-Stage Header: Comparison Mode Toggle (Swipe vs Side-by-Side) */}
             {modeCategory === 'compare' && (
@@ -463,11 +465,11 @@ export function DualImageryViewer({
                       ? 'bg-blue-600 text-white shadow-sm font-semibold'
                       : 'text-slate-300 hover:text-white'
                   )}
-                  title="Swipe comparison mode"
-                  aria-label="Swipe comparison mode"
+                  title={t('viewer.swipe')}
+                  aria-label={t('viewer.swipe')}
                 >
                   <SplitSquareVertical className="w-3 h-3" />
-                  <span>Swipe</span>
+                  <span>{t('viewer.swipe')}</span>
                 </button>
                 <button
                   type="button"
@@ -478,11 +480,11 @@ export function DualImageryViewer({
                       ? 'bg-blue-600 text-white shadow-sm font-semibold'
                       : 'text-slate-300 hover:text-white'
                   )}
-                  title="Side-by-side comparison mode"
-                  aria-label="Side-by-side comparison mode"
+                  title={t('viewer.sideBySide')}
+                  aria-label={t('viewer.sideBySide')}
                 >
                   <Grid className="w-3 h-3" />
-                  <span>Side-by-Side</span>
+                  <span>{t('viewer.sideBySide')}</span>
                 </button>
               </div>
             )}
@@ -499,10 +501,10 @@ export function DualImageryViewer({
                       ? 'bg-blue-600 text-white shadow-sm font-semibold'
                       : 'text-slate-300 hover:text-white'
                   )}
-                  title="Show Optical imagery (RGB)"
-                  aria-label="Show Optical imagery (RGB)"
+                  title={t('viewer.optical')}
+                  aria-label={t('viewer.optical')}
                 >
-                  Optical
+                  {t('viewer.optical')}
                 </button>
                 <button
                   type="button"
@@ -513,10 +515,10 @@ export function DualImageryViewer({
                       ? 'bg-blue-600 text-white shadow-sm font-semibold'
                       : 'text-slate-300 hover:text-white'
                   )}
-                  title="Show DEMO SAR visualization treatment"
-                  aria-label="Show DEMO SAR visualization treatment"
+                  title={t('viewer.sarDemo')}
+                  aria-label={t('viewer.sarDemo')}
                 >
-                  SAR (Demo)
+                  {t('viewer.sarDemo')}
                 </button>
                 <button
                   type="button"
@@ -527,10 +529,10 @@ export function DualImageryViewer({
                       ? 'bg-blue-600 text-white shadow-sm font-semibold'
                       : 'text-slate-300 hover:text-white'
                   )}
-                  title="Show Combined comparative view"
-                  aria-label="Show Combined comparative view"
+                  title={t('viewer.combined')}
+                  aria-label={t('viewer.combined')}
                 >
-                  Combined
+                  {t('viewer.combined')}
                 </button>
               </div>
             )}
@@ -539,14 +541,14 @@ export function DualImageryViewer({
             {modeCategory === 'fusion' && opticalSarMode === 'sar' && (
               <div className="absolute top-12 left-3 z-20 px-2 py-0.5 rounded bg-purple-950/85 backdrop-blur-md border border-purple-700/60 text-[10px] font-mono text-purple-200 shadow-md flex items-center gap-1.5 pointer-events-none">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                <span>DEMO SAR — Visual treatment only</span>
+                <span>{t('viewer.demoSarBadge')}</span>
               </div>
             )}
 
             {modeCategory === 'fusion' && opticalSarMode === 'optical' && (
               <div className="absolute top-12 left-3 z-20 px-2 py-0.5 rounded bg-blue-950/85 backdrop-blur-md border border-blue-700/60 text-[10px] font-mono text-cyan-200 shadow-md flex items-center gap-1.5 pointer-events-none">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                <span>OPTICAL (RGB)</span>
+                <span>{t('viewer.opticalBadge')}</span>
               </div>
             )}
 
@@ -566,7 +568,7 @@ export function DualImageryViewer({
                     />
                   </div>
                   <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded bg-slate-950/85 backdrop-blur-md border border-slate-800 text-[10px] font-mono text-slate-200 pointer-events-none">
-                    BEFORE • T0 ({t0Date})
+                    {t('viewer.beforeT0')} ({t0Date})
                   </div>
                 </div>
 
@@ -619,7 +621,7 @@ export function DualImageryViewer({
                     )}
                   </div>
                   <div className="absolute top-2 right-2 z-20 px-2 py-0.5 rounded bg-slate-950/85 backdrop-blur-md border border-slate-800 text-[10px] font-mono text-slate-200 pointer-events-none">
-                    AFTER • T1 ({t1Date})
+                    {t('viewer.afterT1')} ({t1Date})
                   </div>
                 </div>
               </div>
@@ -796,7 +798,7 @@ export function DualImageryViewer({
                   onMouseDown={handleMouseDown}
                   onTouchStart={handleTouchStart}
                   className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-900/90 text-white border-2 border-white shadow-xl flex items-center justify-center cursor-col-resize hover:scale-110 active:scale-95 transition-transform"
-                  title="Drag to compare before & after satellite imagery"
+                  title={t('viewer.dragToCompare')}
                 >
                   <span className="text-[10px] font-bold tracking-tighter select-none flex items-center justify-center">
                     &lt;&gt;
@@ -809,10 +811,10 @@ export function DualImageryViewer({
             {modeCategory !== 'single' && !(modeCategory === 'compare' && comparisonMode === 'side_by_side') && (
               <>
                 <div className="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-200 shadow-md pointer-events-none">
-                  {modeCategory === 'fusion' ? 'Optical Imagery (RGB)' : `Previous Image (${t0Date})`}
+                  {modeCategory === 'fusion' ? t('viewer.opticalRgb') : `${t('viewer.previousImage')} (${t0Date})`}
                 </div>
                 <div className="absolute bottom-3 right-3 z-20 px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-200 shadow-md pointer-events-none">
-                  {modeCategory === 'fusion' ? 'DEMO SAR (Visual treatment)' : `Current Image (${t1Date})`}
+                  {modeCategory === 'fusion' ? t('viewer.demoSarLabel') : `${t('viewer.currentImage')} (${t1Date})`}
                 </div>
               </>
             )}
@@ -820,8 +822,8 @@ export function DualImageryViewer({
             {/* Multimodal Observation Banner for Optical + SAR mode */}
             {modeCategory === 'fusion' && (
               <div className="absolute bottom-11 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-md bg-slate-950/90 backdrop-blur-md border border-slate-800 text-[10px] font-mono text-slate-300 shadow-md pointer-events-none text-center whitespace-nowrap max-w-[90%] truncate">
-                <span className="text-cyan-400 font-semibold mr-1.5">[DEMO MULTIMODAL]</span>
-                <span>Comparative multimodal view: Optical and SAR views presented together for comparative analysis.</span>
+                <span className="text-cyan-400 font-semibold mr-1.5">{t('viewer.multimodalBanner')}</span>
+                <span>{t('viewer.multimodalDesc')}</span>
               </div>
             )}
           </>
@@ -833,40 +835,40 @@ export function DualImageryViewer({
             <button
               onClick={handleZoomIn}
               className="p-1.5 hover:bg-slate-800 hover:text-white rounded transition-colors"
-              title="Zoom in (+)"
-              aria-label="Zoom in"
+              title={t('viewer.zoomIn')}
+              aria-label={t('viewer.zoomIn')}
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleZoomOut}
               className="p-1.5 hover:bg-slate-800 hover:text-white rounded transition-colors"
-              title="Zoom out (-)"
-              aria-label="Zoom out"
+              title={t('viewer.zoomOut')}
+              aria-label={t('viewer.zoomOut')}
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleResetZoom}
               className="p-1.5 hover:bg-slate-800 hover:text-white rounded transition-colors"
-              title="Reset View (1.0x)"
-              aria-label="Reset View"
+              title={t('viewer.resetView')}
+              aria-label={t('viewer.resetView')}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleFitToImage}
               className="p-1.5 hover:bg-slate-800 hover:text-white rounded transition-colors"
-              title="Fit to Image"
-              aria-label="Fit to Image"
+              title={t('viewer.fitToImage')}
+              aria-label={t('viewer.fitToImage')}
             >
               <Search className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setShowOverlays(!showOverlays)}
               className="p-1.5 hover:bg-slate-800 hover:text-red-400 rounded transition-colors"
-              title="Toggle masks / overlays"
-              aria-label="Toggle masks"
+              title={t('viewer.toggleMasks')}
+              aria-label={t('viewer.toggleMasks')}
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -877,24 +879,24 @@ export function DualImageryViewer({
             <button
               onClick={() => onInspectRegion?.('region-1')}
               className="p-1.5 hover:bg-slate-800 hover:text-cyan-400 rounded transition-colors"
-              title="Target locator"
-              aria-label="Target locator"
+              title={t('viewer.targetLocator')}
+              aria-label={t('viewer.targetLocator')}
             >
               <Crosshair className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setShowOverlays(!showOverlays)}
               className="p-1.5 hover:bg-slate-800 hover:text-yellow-400 rounded transition-colors"
-              title="Draw / Edit Bounding Box"
-              aria-label="Draw bounding box"
+              title={t('viewer.drawBox')}
+              aria-label={t('viewer.drawBox')}
             >
               <Grid className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setActiveLayer(activeLayer === 'sar' ? 'rgb' : 'sar')}
               className="p-1.5 hover:bg-slate-800 hover:text-blue-400 rounded transition-colors"
-              title="Switch radar bands"
-              aria-label="Switch radar bands"
+              title={t('viewer.switchRadar')}
+              aria-label={t('viewer.switchRadar')}
             >
               <Layers className="w-3.5 h-3.5" />
             </button>
@@ -905,11 +907,11 @@ export function DualImageryViewer({
             <Move className="w-3 h-3 text-slate-400" />
             <span>{mockCoords.lat.toFixed(4)}°N, {mockCoords.lng.toFixed(4)}°E</span>
             <span className="text-slate-500">|</span>
-            <span className="text-slate-400">Zoom {zoomLevel.toFixed(1)}x</span>
+            <span className="text-slate-400">{t('viewer.zoomLevel')} {zoomLevel.toFixed(1)}x</span>
             {isMeasuring && (
               <>
                 <span className="text-slate-500">|</span>
-                <span className="text-amber-400">📏 Demo: ~1.2 km</span>
+                <span className="text-amber-400">📏 {t('viewer.measureDemo')}</span>
               </>
             )}
           </div>
@@ -927,7 +929,7 @@ export function DualImageryViewer({
             <div
               className="absolute top-4 right-14 z-20 w-[72px] h-[54px] rounded-md border border-slate-700/80 bg-slate-950/90 backdrop-blur-sm shadow-lg overflow-hidden cursor-pointer"
               onClick={() => setShowMiniMap(false)}
-              title="Mini-map (click to hide)"
+              title={t('viewer.miniMap')}
             >
               <img
                 src="/imagery/sat_after.jpg"
@@ -984,14 +986,14 @@ export function DualImageryViewer({
               <div className="relative z-20 flex items-center justify-between w-full">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-400/90 text-slate-950 text-xs font-bold shadow-md">
                   <span className="w-2.5 h-2.5 rounded-sm bg-slate-950" />
-                  <span>Detected Buildings</span>
+                  <span>{t('viewer.detectedBuildings')}</span>
                 </div>
 
                 {/* Quick action: Crosshair locator */}
                 <button
                   onClick={() => onInspectRegion?.('zoom-detail')}
                   className="p-1 rounded-md bg-slate-950/80 backdrop-blur-sm border border-slate-700 text-slate-200 hover:text-white hover:bg-slate-800 transition-colors shadow-sm"
-                  title="Inspect detail bounds"
+                  title={t('viewer.inspectDetail')}
                 >
                   <MapPin className="w-3.5 h-3.5" />
                 </button>
@@ -1001,13 +1003,13 @@ export function DualImageryViewer({
               <div className="relative z-20 self-end flex flex-col rounded-lg bg-slate-900/85 backdrop-blur-md border border-slate-700/80 p-1 shadow-lg text-slate-200 divide-y divide-slate-800">
                 <button
                   className="p-1.5 hover:bg-slate-800 hover:text-cyan-400 rounded transition-colors"
-                  title="Layer opacity"
+                  title={t('viewer.layerOpacity')}
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5" />
                 </button>
                 <button
                   className="p-1.5 hover:bg-slate-800 hover:text-blue-400 rounded transition-colors"
-                  title="Toggle infrared"
+                  title={t('viewer.toggleInfrared')}
                 >
                   <Layers className="w-3.5 h-3.5" />
                 </button>
@@ -1016,7 +1018,7 @@ export function DualImageryViewer({
               {/* Bottom Inset Caption */}
               <div className="relative z-20 flex items-center justify-between px-2 py-1 rounded bg-slate-950/85 backdrop-blur-md border border-slate-800/90 text-[10px] text-slate-300 font-mono">
                 <span>ROI Alpha (Sub-pixel 0.5m)</span>
-                <span className="text-emerald-400 font-semibold">High Coherence (Demo)</span>
+                <span className="text-emerald-400 font-semibold">{t('viewer.highCoherence')}</span>
               </div>
             </div>
           </div>

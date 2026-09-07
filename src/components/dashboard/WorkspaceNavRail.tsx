@@ -1,5 +1,6 @@
 import { Sparkles, UploadCloud, History, Bookmark, LogOut } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface WorkspaceNavRailProps {
   onNewAnalysis: () => void;
@@ -16,28 +17,30 @@ export function WorkspaceNavRail({
   onSavedResults,
   activeItem = 'new',
 }: WorkspaceNavRailProps) {
+  const { t } = useTranslation();
+
   const items = [
     {
       id: 'new',
-      label: 'New Analysis',
+      label: t('workspaceNavRail.newAnalysis'),
       icon: Sparkles,
       onClick: onNewAnalysis,
     },
     {
       id: 'upload',
-      label: 'Upload Imagery',
+      label: t('workspaceNavRail.uploadImagery'),
       icon: UploadCloud,
       onClick: onUploadImagery,
     },
     {
       id: 'recent',
-      label: 'Recent Analyses',
+      label: t('workspaceNavRail.recentAnalyses'),
       icon: History,
       onClick: onRecentAnalyses,
     },
     {
       id: 'saved',
-      label: 'Saved Results',
+      label: t('workspaceNavRail.savedResults'),
       icon: Bookmark,
       onClick: onSavedResults,
     },
@@ -84,8 +87,8 @@ export function WorkspaceNavRail({
         <button
           onClick={onRecentAnalyses}
           className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
-          title="Return to Analyses"
-          aria-label="Exit workspace"
+          title={t('workspaceNavRail.returnToAnalyses')}
+          aria-label={t('workspaceNavRail.returnToAnalyses')}
         >
           <LogOut className="w-4 h-4 rotate-180" />
         </button>

@@ -1,21 +1,23 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Satellite, Layers, Calendar, Sliders } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface ImageMetadataPanelProps {
   modeCategory?: 'single' | 'compare' | 'fusion' | string;
 }
 
 export function ImageMetadataPanel({ modeCategory = 'compare' }: ImageMetadataPanelProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Base image parameters
   const baseItems = [
-    { label: 'Platform', value: modeCategory === 'fusion' ? 'Sentinel-2 MSI + Sentinel-1 SAR' : 'Sentinel-2 MSI', isMono: false },
-    { label: 'Resolution', value: '10m Ground Sample Distance', isMono: false },
-    { label: 'CRS', value: 'EPSG:4326 · WGS 84', isMono: true },
-    { label: 'Coordinates', value: '28.6139° N, 77.2090° E', isMono: true },
-    { label: 'Dimensions', value: '2048 × 2048 px', isMono: true },
+    { label: t('metadata.platform'), value: modeCategory === 'fusion' ? 'Sentinel-2 MSI + Sentinel-1 SAR' : 'Sentinel-2 MSI', isMono: false },
+    { label: t('metadata.resolution'), value: '10m Ground Sample Distance', isMono: false },
+    { label: t('metadata.crs'), value: 'EPSG:4326 · WGS 84', isMono: true },
+    { label: t('metadata.coordinates'), value: '28.6139° N, 77.2090° E', isMono: true },
+    { label: t('metadata.dimensions'), value: '2048 × 2048 px', isMono: true },
   ];
 
   return (
@@ -29,7 +31,7 @@ export function ImageMetadataPanel({ modeCategory = 'compare' }: ImageMetadataPa
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
             <h2 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-snug">
-              Image Metadata Panel
+              {t('metadata.title')}
             </h2>
             <span className="px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
               {modeCategory}
@@ -51,7 +53,7 @@ export function ImageMetadataPanel({ modeCategory = 'compare' }: ImageMetadataPa
             {/* Section 1: Platform & Spatial Metadata */}
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center gap-1">
-                <Satellite className="w-3 h-3 text-cyan-500" /> Platform & Spatial
+                <Satellite className="w-3 h-3 text-cyan-500" /> {t('metadata.platformSpatial')}
               </div>
               <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 pl-1">
                 {baseItems.map((item, idx) => (
@@ -76,25 +78,25 @@ export function ImageMetadataPanel({ modeCategory = 'compare' }: ImageMetadataPa
             {modeCategory === 'compare' && (
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-500 dark:text-amber-400 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" /> Temporal Comparison
+                  <Calendar className="w-3 h-3" /> {t('metadata.temporalComparison')}
                 </div>
                 <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 pl-1">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap leading-relaxed">
-                    Baseline (T0)
+                    {t('metadata.baseline')}
                   </span>
                   <span className="text-[11px] text-slate-800 dark:text-slate-200 font-mono leading-relaxed">
                     2025-03-12 (Sentinel-2 MSI)
                   </span>
 
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap leading-relaxed">
-                    Observation (T1)
+                    {t('metadata.observation')}
                   </span>
                   <span className="text-[11px] text-slate-800 dark:text-slate-200 font-mono leading-relaxed">
                     2026-03-12 (Sentinel-2 MSI)
                   </span>
 
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap leading-relaxed">
-                    Temporal Delta
+                    {t('metadata.temporalDelta')}
                   </span>
                   <span className="text-[11px] text-slate-800 dark:text-slate-200 leading-relaxed">
                     365 days (1 Year)
@@ -106,25 +108,25 @@ export function ImageMetadataPanel({ modeCategory = 'compare' }: ImageMetadataPa
             {modeCategory === 'fusion' && (
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-cyan-500 dark:text-cyan-400 mb-1 flex items-center gap-1">
-                  <Layers className="w-3 h-3" /> Optical + SAR Fusion
+                  <Layers className="w-3 h-3" /> {t('metadata.opticalSarFusion')}
                 </div>
                 <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 pl-1">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap leading-relaxed">
-                    Optical Channel
+                    {t('metadata.opticalChannel')}
                   </span>
                   <span className="text-[11px] text-slate-800 dark:text-slate-200 leading-relaxed">
                     Sentinel-2 Visible (B04, B03, B02)
                   </span>
 
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap leading-relaxed">
-                    SAR Channel
+                    {t('metadata.sarChannel')}
                   </span>
                   <span className="text-[11px] text-slate-800 dark:text-slate-200 leading-relaxed">
                     C-Band Radar Backscatter (Simulated)
                   </span>
 
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap leading-relaxed">
-                    Polarization
+                    {t('metadata.polarization')}
                   </span>
                   <span className="text-[11px] text-slate-800 dark:text-slate-200 font-mono leading-relaxed">
                     VV / VH Cross-Polarization
@@ -136,18 +138,18 @@ export function ImageMetadataPanel({ modeCategory = 'compare' }: ImageMetadataPa
             {modeCategory === 'single' && (
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1 flex items-center gap-1">
-                  <Sliders className="w-3 h-3" /> Spectral Configuration
+                  <Sliders className="w-3 h-3" /> {t('metadata.spectralConfig')}
                 </div>
                 <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 pl-1">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap leading-relaxed">
-                    Active Bands
+                    {t('metadata.activeBands')}
                   </span>
                   <span className="text-[11px] text-slate-800 dark:text-slate-200 font-mono leading-relaxed">
                     B02 (Blue), B03 (Green), B04 (Red), B08 (NIR)
                   </span>
 
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap leading-relaxed">
-                    Acquisition Date
+                    {t('metadata.acquisitionDate')}
                   </span>
                   <span className="text-[11px] text-slate-800 dark:text-slate-200 font-mono leading-relaxed">
                     2026-03-12

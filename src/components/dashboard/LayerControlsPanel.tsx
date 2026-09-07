@@ -10,6 +10,7 @@ import {
 import { cn } from '../../utils/cn';
 import type { VisualizationLayer, BandCombination } from '../../types/visualization';
 import type { BandCombinationOption } from '../../types/visualization';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface LayerControlsPanelProps {
   baseLayers: VisualizationLayer[];
@@ -32,6 +33,7 @@ export function LayerControlsPanel({
   onOverlayOpacityChange,
   onBandCombinationChange,
 }: LayerControlsPanelProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [showBandSelector, setShowBandSelector] = useState(false);
 
@@ -42,16 +44,16 @@ export function LayerControlsPanel({
         <div className="flex items-center gap-1.5">
           <Layers className="w-4 h-4 text-blue-600 dark:text-cyan-400 shrink-0" />
           <h2 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-snug">
-            Layer Controls
+            {t('layers.title')}
           </h2>
           <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800/60">
-            DEMO
+            {t('common.demo')}
           </span>
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-          aria-label={isExpanded ? 'Collapse layer controls' : 'Expand layer controls'}
+          aria-label={isExpanded ? t('layers.collapseControls') : t('layers.expandControls')}
         >
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
@@ -62,7 +64,7 @@ export function LayerControlsPanel({
           {/* Base Layers — Radio Group */}
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500 mb-1.5">
-              Base Layers
+              {t('layers.baseLayers')}
             </div>
             <div className="space-y-1">
               {baseLayers.map((layer) => (
@@ -103,7 +105,7 @@ export function LayerControlsPanel({
           {/* Overlay Layers — Checkbox Toggles with Opacity */}
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500 mb-1.5">
-              Overlay Layers
+              {t('layers.overlayLayers')}
             </div>
             <div className="space-y-1.5">
               {overlayLayers.map((layer) => (
@@ -115,7 +117,7 @@ export function LayerControlsPanel({
                         'shrink-0 transition-colors',
                         layer.visible ? 'text-blue-600 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-500'
                       )}
-                      title={layer.visible ? 'Hide layer' : 'Show layer'}
+                      title={layer.visible ? t('layers.hideLayer') : t('layers.showLayer')}
                     >
                       {layer.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                     </button>
@@ -171,7 +173,7 @@ export function LayerControlsPanel({
               className="flex items-center gap-1.5 w-full text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500 mb-1.5 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
             >
               <Palette className="w-3 h-3" />
-              <span>Band Combination</span>
+              <span>{t('layers.bandCombination')}</span>
               {showBandSelector ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
             </button>
 

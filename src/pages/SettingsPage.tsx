@@ -19,8 +19,11 @@ import {
   Info,
   Camera,
   Trash2,
+  Globe,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../hooks/useTranslation';
+import { SUPPORTED_LANGUAGES } from '../i18n';
 import { processAvatarFile } from '../components/layout/ProfileModal';
 import {
   getUserProfile,
@@ -95,42 +98,43 @@ interface TabItem {
   description: string;
 }
 
-const SETTINGS_TABS: TabItem[] = [
-  {
-    id: 'profile',
-    label: 'Profile',
-    icon: User,
-    description: 'Personal details and demonstration session credentials.',
-  },
-  {
-    id: 'appearance',
-    label: 'Appearance',
-    icon: SunMoon,
-    description: 'Theme customization and visual display modes.',
-  },
-  {
-    id: 'notifications',
-    label: 'Notifications',
-    icon: Bell,
-    description: 'Task completion alerts and system notifications.',
-  },
-  {
-    id: 'analysis',
-    label: 'Analysis Preferences',
-    icon: SlidersHorizontal,
-    description: 'Default capabilities, viewer state, and evidence overlays.',
-  },
-  {
-    id: 'security',
-    label: 'Security',
-    icon: ShieldCheck,
-    description: 'Password verification and demo authentication status.',
-  },
-];
-
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const { theme, themeMode, setThemeMode } = useTheme();
+  const { t, language, setLanguage } = useTranslation();
+
+  const tabs: TabItem[] = [
+    {
+      id: 'profile',
+      label: t('settings.tabProfile'),
+      icon: User,
+      description: 'Personal details and demonstration session credentials.',
+    },
+    {
+      id: 'appearance',
+      label: t('settings.tabAppearance'),
+      icon: SunMoon,
+      description: 'Theme customization and visual display modes.',
+    },
+    {
+      id: 'notifications',
+      label: t('settings.tabNotifications'),
+      icon: Bell,
+      description: 'Task completion alerts and system notifications.',
+    },
+    {
+      id: 'analysis',
+      label: t('settings.tabAnalysis'),
+      icon: SlidersHorizontal,
+      description: 'Default capabilities, viewer state, and evidence overlays.',
+    },
+    {
+      id: 'security',
+      label: t('settings.tabSecurity'),
+      icon: ShieldCheck,
+      description: 'Password verification and demo authentication status.',
+    },
+  ];
 
   // ─── Profile State ─────────────────────────────────────────────────────────
   const [profile, setProfile] = useState<UserProfile>({
@@ -308,7 +312,7 @@ export function SettingsPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              Account Settings
+              {t('settings.title')}
             </h1>
             <span
               title="Settings are persisted locally in browser storage. No credentials are transmitted to remote servers."
@@ -325,7 +329,7 @@ export function SettingsPage() {
 
       {/* ── Tab Navigation ─────────────────────────────────────────────────── */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800 scrollbar-none">
-        {SETTINGS_TABS.map((tab) => {
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -356,7 +360,7 @@ export function SettingsPage() {
               </div>
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  Profile Information
+                  {t('profileModal.editProfile')}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                   Your identity and demonstration account details across the workspace.
@@ -431,7 +435,7 @@ export function SettingsPage() {
                   htmlFor="profile-name"
                   className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
-                  Full Name
+                  {t('auth.fullName')}
                 </label>
                 <div className="relative max-w-lg">
                   <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -467,7 +471,7 @@ export function SettingsPage() {
                   htmlFor="profile-email"
                   className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300"
                 >
-                  Email Address
+                  {t('auth.email')}
                 </label>
                 <div className="relative max-w-lg">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -495,7 +499,7 @@ export function SettingsPage() {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 text-xs sm:text-sm font-semibold shadow-sm transition-all active:scale-[0.99]"
                 >
                   <Save className="w-4 h-4" />
-                  <span>Save Changes</span>
+                  <span>{t('settings.saveChanges')}</span>
                 </button>
                 <button
                   type="button"
@@ -503,7 +507,7 @@ export function SettingsPage() {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-medium transition-colors"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  <span>Reset</span>
+                  <span>{t('settings.reset')}</span>
                 </button>
 
                 {profileSavedNotice && (
@@ -514,27 +518,6 @@ export function SettingsPage() {
                 )}
               </div>
             </form>
-          </div>
-
-          {/* Demonstration Session Context Card */}
-          <div className="bg-slate-50 dark:bg-[#080d1a] border border-slate-200 dark:border-slate-800/70 rounded-2xl p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-              Session Metadata
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div>
-                <span className="text-slate-400 block mb-0.5">Account ID</span>
-                <span className="font-mono font-medium text-slate-800 dark:text-slate-200">usr_demo_sih26167</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block mb-0.5">Session Tier</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">Local Sandbox (SIH26167)</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block mb-0.5">Storage Mode</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">Browser localStorage</span>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -653,6 +636,50 @@ export function SettingsPage() {
               <span className="font-mono text-[11px] text-blue-600 dark:text-cyan-400">
                 {themeMode.toUpperCase()}
               </span>
+            </div>
+
+            {/* Interface Language */}
+            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800/60">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-cyan-400">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {t('settings.languagePreference')}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {t('profileModal.chooseLanguage')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {SUPPORTED_LANGUAGES.map((lang) => {
+                  const isSelected = language === lang.code;
+                  return (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => setLanguage(lang.code)}
+                      className={cn(
+                        'flex items-center justify-between p-3.5 rounded-xl border text-left transition-all',
+                        isSelected
+                          ? 'border-blue-600 dark:border-cyan-400 bg-blue-50/50 dark:bg-cyan-950/20 ring-2 ring-blue-500/20 dark:ring-cyan-400/20 font-medium'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 hover:bg-slate-100/80 dark:hover:bg-slate-800/60'
+                      )}
+                    >
+                      <div>
+                        <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{lang.name}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{lang.nativeName}</p>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-cyan-400 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

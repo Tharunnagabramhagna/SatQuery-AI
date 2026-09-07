@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ShieldCheck, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { ConfidenceScore } from '../../types/visualization';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface ConfidenceDisplayProps {
   score: ConfidenceScore;
@@ -10,6 +11,7 @@ interface ConfidenceDisplayProps {
 }
 
 export function ConfidenceDisplay({ score, compact = false, className }: ConfidenceDisplayProps) {
+  const { t } = useTranslation();
   const [displayValue, setDisplayValue] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -42,9 +44,9 @@ export function ConfidenceDisplay({ score, compact = false, className }: Confide
   }, [score.overall]);
 
   const getConfidenceLevel = (val: number) => {
-    if (val >= 85) return { label: 'High', color: 'text-emerald-500 dark:text-emerald-400', stroke: '#10b981' };
-    if (val >= 70) return { label: 'Moderate', color: 'text-amber-500 dark:text-amber-400', stroke: '#f59e0b' };
-    return { label: 'Low', color: 'text-rose-500 dark:text-rose-400', stroke: '#f43f5e' };
+    if (val >= 85) return { label: t('confidenceDisplay.high'), color: 'text-emerald-500 dark:text-emerald-400', stroke: '#10b981' };
+    if (val >= 70) return { label: t('confidenceDisplay.moderate'), color: 'text-amber-500 dark:text-amber-400', stroke: '#f59e0b' };
+    return { label: t('confidenceDisplay.low'), color: 'text-rose-500 dark:text-rose-400', stroke: '#f43f5e' };
   };
 
   const level = getConfidenceLevel(score.overall);
@@ -91,9 +93,9 @@ export function ConfidenceDisplay({ score, compact = false, className }: Confide
                 <span className="font-mono text-[13px]">{displayValue}%</span>
               </div>
               <div className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500">
-                <span>{level.label} agreement</span>
+                <span>{level.label} {t('confidenceDisplay.agreement')}</span>
                 <span>•</span>
-                <span className="font-mono text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">DEMO</span>
+                <span className="font-mono text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">{t('common.demo')}</span>
               </div>
             </div>
           </div>
@@ -111,7 +113,7 @@ export function ConfidenceDisplay({ score, compact = false, className }: Confide
         {isExpanded && (
           <div className="mt-2 pt-2 border-t border-slate-200/80 dark:border-slate-800 space-y-1.5 animate-in fade-in duration-150">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
-              Confidence Dimensions (Demo)
+              {t('confidenceDisplay.dimensions')}
             </div>
             {score.breakdown.map((dim) => (
               <div key={dim.id} className="flex items-center gap-2 text-[11px]">
@@ -142,7 +144,7 @@ export function ConfidenceDisplay({ score, compact = false, className }: Confide
           <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{score.label}</span>
         </div>
         <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-          DEMO SCORE
+          {t('confidenceDisplay.demoScore')}
         </span>
       </div>
 
@@ -181,11 +183,11 @@ export function ConfidenceDisplay({ score, compact = false, className }: Confide
 
         <div className="flex-1 min-w-0">
           <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
-            Multimodal agreement across bi-temporal spatial, spectral, and temporal feature embeddings.
+            {t('confidenceDisplay.multimodalDesc')}
           </p>
           <div className="flex items-center gap-1 mt-2 text-[10px] text-slate-400 dark:text-slate-500">
             <Info className="w-3 h-3 shrink-0" />
-            <span>Simulated demonstration values. Not calibrated against ground truth.</span>
+            <span>{t('confidenceDisplay.disclaimer')}</span>
           </div>
         </div>
       </div>
@@ -193,7 +195,7 @@ export function ConfidenceDisplay({ score, compact = false, className }: Confide
       {/* Breakdown Bars */}
       <div className="space-y-2 pt-2.5 border-t border-slate-200/80 dark:border-slate-800">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-          Confidence Dimensions (Demo)
+          {t('confidenceDisplay.dimensions')}
         </div>
         {score.breakdown.map((dim) => (
           <div key={dim.id} className="space-y-0.5">

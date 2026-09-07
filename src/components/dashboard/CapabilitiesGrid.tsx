@@ -9,6 +9,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface CapabilityItem {
   id: string;
@@ -81,6 +82,7 @@ const CAPABILITY_LIST: CapabilityItem[] = [
 
 export function CapabilitiesGrid() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSelectCapability = (mode: string, cap: string) => {
     navigate(`/analysis?mode=${mode}&cap=${cap}`);
@@ -90,8 +92,8 @@ export function CapabilitiesGrid() {
     <div className="w-full mb-8">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">Supported Capabilities</h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Intelligent model routing tailored to remote-sensing tasks</p>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">{t('capabilities.title')}</h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('capabilities.subtitle')}</p>
         </div>
       </div>
 
@@ -126,7 +128,7 @@ export function CapabilitiesGrid() {
               </div>
 
               <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/60">
-                <span>Start Analysis</span>
+                <span>{t('capabilities.startAnalysis')}</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>

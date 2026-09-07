@@ -30,6 +30,7 @@ import type { DocumentationSection, DocumentationCallout } from '../types';
 import { Button } from '../components/common/Button';
 import { EmptyState } from '../components/common/EmptyState';
 import { LoadingState } from '../components/common/LoadingState';
+import { useTranslation } from '../hooks/useTranslation';
 import { cn } from '../utils/cn';
 
 // Icon resolver for Lucide icons stored in section models
@@ -50,25 +51,26 @@ const SECTION_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 // Category metadata
-const CATEGORIES: { id: DocumentationSection['category']; label: string }[] = [
-  { id: 'core', label: 'Core System' },
-  { id: 'agent', label: 'Agent & Capabilities' },
-  { id: 'workspace', label: 'Visual Workspaces' },
-  { id: 'intelligence', label: 'Intelligence & Output' },
-  { id: 'engineering', label: 'Engineering & Roadmap' },
+const CATEGORIES: { id: DocumentationSection['category'] }[] = [
+  { id: 'core' },
+  { id: 'agent' },
+  { id: 'workspace' },
+  { id: 'intelligence' },
+  { id: 'engineering' },
 ];
 
 export function DocumentationPage() {
+  const { t, language } = useTranslation();
   const [sections, setSections] = useState<DocumentationSection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSectionId, setActiveSectionId] = useState<string>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  // Load sections from API service
+  // Load localized sections from API service whenever language changes
   useEffect(() => {
     let isMounted = true;
-    getDocumentationSections()
+    getDocumentationSections(language)
       .then((data) => {
         if (isMounted) {
           setSections(data);
@@ -78,6 +80,8 @@ export function DocumentationPage() {
           const hash = window.location.hash.replace('#', '');
           if (hash && data.some((s) => s.id === hash)) {
             setActiveSectionId(hash);
+          } else if (activeSectionId && data.some((s) => s.id === activeSectionId)) {
+            // Keep active section when switching languages
           } else if (data.length > 0) {
             setActiveSectionId(data[0].id);
           }
@@ -91,7 +95,7 @@ export function DocumentationPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [language]);
 
   // Sync state with URL hash and listen for browser Back/Forward (hashchange)
   useEffect(() => {
@@ -116,7 +120,7 @@ export function DocumentationPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Search filtering logic: checks title, description, content, and subsections
+  // Search filtering logic: checks localized title, description, content, and subsections
   const searchFilteredSections = useMemo(() => {
     if (!searchQuery.trim()) return sections;
 
@@ -152,25 +156,25 @@ export function DocumentationPage() {
         icon: Info,
         border: 'border-blue-500/30 bg-blue-500/10 text-blue-800 dark:text-blue-300',
         iconColor: 'text-blue-500',
-        label: 'NOTE',
+        labelKey: 'docs.calloutNote',
       },
       tip: {
         icon: Lightbulb,
         border: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300',
         iconColor: 'text-emerald-500',
-        label: 'TIP',
+        labelKey: 'docs.calloutTip',
       },
       warning: {
         icon: AlertCircle,
         border: 'border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300',
         iconColor: 'text-amber-500',
-        label: 'WARNING',
+        labelKey: 'docs.calloutWarning',
       },
       info: {
         icon: HelpCircle,
         border: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-800 dark:text-cyan-300',
         iconColor: 'text-cyan-500',
-        label: 'INFORMATION',
+        labelKey: 'docs.calloutInfo',
       },
     };
 
@@ -182,7 +186,7 @@ export function DocumentationPage() {
         <Icon className={cn('w-4 h-4 shrink-0 mt-0.5', config.iconColor)} aria-hidden="true" />
         <div className="flex-1 text-xs leading-relaxed">
           <span className="font-bold tracking-wider mr-1.5 uppercase text-[10px]">
-            [{config.label}]
+            [{t(config.labelKey)}]
           </span>
           {callout.text}
         </div>
@@ -198,7 +202,7 @@ export function DocumentationPage() {
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
               <BookOpen className="w-6 h-6 text-cyan-500" aria-hidden="true" />
-              Technical Documentation Center
+              {t('docs.title')}
             </h1>
             <span
               title="SatQuery AI Technical Documentation. Features and workflows describe the demonstration platform."
@@ -208,7 +212,7 @@ export function DocumentationPage() {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Explore how SatQuery AI turns natural-language questions into evidence-backed satellite intelligence.
+            {t('docs.subtitle')}
           </p>
         </div>
 
@@ -220,15 +224,15 @@ export function DocumentationPage() {
             onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
             icon={isMobileNavOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           >
-            {isMobileNavOpen ? 'Close Menu' : 'Browse Topics'}
+            {isMobileNavOpen ? t('docs.closeMenu') : t('docs.browseTopics')}
           </Button>
         </div>
       </div>
 
       {isLoading ? (
         <LoadingState
-          message="Loading technical documentation..."
-          subMessage="Fetching architecture specs and remote-sensing workflow guides"
+          message={t('docs.loadingMessage')}
+          subMessage={t('docs.loadingSubMessage')}
           variant="card"
           className="py-20"
         />
@@ -249,16 +253,16 @@ export function DocumentationPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search documentation..."
+                  placeholder={t('docs.searchPlaceholder')}
                   className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950/70 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  aria-label="Search documentation topics"
+                  aria-label={t('docs.searchAriaLabel')}
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                    aria-label="Clear search"
+                    aria-label={t('docs.clearSearch')}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -267,14 +271,16 @@ export function DocumentationPage() {
               {searchQuery && (
                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
                   <span>
-                    {searchFilteredSections.length} {searchFilteredSections.length === 1 ? 'match' : 'matches'}
+                    {searchFilteredSections.length === 1
+                      ? t('docs.singleMatch')
+                      : t('docs.multiMatch', { count: searchFilteredSections.length })}
                   </span>
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
                     className="text-cyan-600 dark:text-cyan-400 hover:underline"
                   >
-                    Reset
+                    {t('docs.resetSearch')}
                   </button>
                 </div>
               )}
@@ -298,7 +304,7 @@ export function DocumentationPage() {
                 return (
                   <div key={category.id} className="space-y-1">
                     <h3 className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                      {category.label}
+                      {t(`docs.categories.${category.id}`)}
                     </h3>
 
                     <div className="space-y-0.5">
@@ -325,7 +331,7 @@ export function DocumentationPage() {
                             </div>
                             {sec.isPlanned && (
                               <span className="px-1.5 py-0.2 text-[9px] font-mono font-semibold rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shrink-0 ml-1">
-                                PLANNED
+                                {t('docs.plannedIntegration')}
                               </span>
                             )}
                           </button>
@@ -338,7 +344,7 @@ export function DocumentationPage() {
 
               {searchFilteredSections.length === 0 && (
                 <div className="py-6 px-2 text-center text-xs text-slate-500 dark:text-slate-400">
-                  No matching topics found for "{searchQuery}".
+                  {t('docs.noMatchingTopics', { query: searchQuery })}
                 </div>
               )}
             </nav>
@@ -352,16 +358,16 @@ export function DocumentationPage() {
                 <div className="border-b border-slate-100 dark:border-slate-800/80 pb-5">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                      {CATEGORIES.find((c) => c.id === activeSection.category)?.label}
+                      {t(`docs.categories.${activeSection.category}`)}
                     </span>
                     {activeSection.isDemo && (
                       <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                        DEMO CALIBRATED
+                        {t('docs.demoCalibrated')}
                       </span>
                     )}
                     {activeSection.isPlanned && (
                       <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
-                        PLANNED INTEGRATION
+                        {t('docs.plannedIntegration')}
                       </span>
                     )}
                   </div>
@@ -378,7 +384,7 @@ export function DocumentationPage() {
                 {activeSection.flowDiagram && activeSection.flowDiagram.length > 0 && (
                   <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-3">
-                      Visual Pipeline Workflow
+                      {t('docs.visualPipelineWorkflow')}
                     </span>
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
                       {activeSection.flowDiagram.map((step, idx) => (
@@ -427,7 +433,7 @@ export function DocumentationPage() {
                           <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-[#070b15] shadow-inner my-3">
                             <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-900 border-b border-slate-800 text-[10px] font-mono text-slate-400">
                               <span>{sub.codeBlock.language.toUpperCase()}</span>
-                              <span>ARCHITECTURE SPECIFICATION</span>
+                              <span>{t('docs.archSpecification')}</span>
                             </div>
                             <pre className="p-3.5 text-[11px] font-mono text-cyan-300 overflow-x-auto leading-relaxed">
                               <code>{sub.codeBlock.code}</code>
@@ -452,7 +458,7 @@ export function DocumentationPage() {
                     >
                       <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                       <div className="text-left">
-                        <span className="text-[10px] text-slate-400 block">Previous</span>
+                        <span className="text-[10px] text-slate-400 block">{t('docs.prev')}</span>
                         <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 truncate max-w-[160px] block">
                           {prevSection.title}
                         </span>
@@ -469,7 +475,7 @@ export function DocumentationPage() {
                       className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors group p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900/50"
                     >
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block">Next</span>
+                        <span className="text-[10px] text-slate-400 block">{t('docs.next')}</span>
                         <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 truncate max-w-[160px] block">
                           {nextSection.title}
                         </span>
@@ -484,13 +490,13 @@ export function DocumentationPage() {
             ) : (
               <EmptyState
                 icon={Search}
-                title="No matching documentation section"
+                title={t('docs.emptyTitle')}
                 description={
                   searchQuery
-                    ? `No documentation topics match "${searchQuery}". Try a different keyword.`
-                    : 'Select a documentation topic from the navigation sidebar.'
+                    ? t('docs.emptySearchDesc', { query: searchQuery })
+                    : t('docs.emptySelectDesc')
                 }
-                actionLabel="Clear Search"
+                actionLabel={t('docs.emptyAction')}
                 onAction={() => setSearchQuery('')}
                 className="py-20"
               />

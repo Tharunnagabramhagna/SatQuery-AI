@@ -3,6 +3,7 @@ import { Download, Eye, Map, ShieldCheck, Calendar, BarChart3, FileText, List, C
 import { cn } from '../../utils/cn';
 import type { AnalysisStatistics, ProcessingStage, ConfidenceScore } from '../../types/visualization';
 import { ConfidenceDisplay } from './ConfidenceDisplay';
+import { useTranslation } from '../../hooks/useTranslation';
 
 type TabId = 'summary' | 'details' | 'statistics';
 
@@ -19,6 +20,20 @@ interface FinalAnswerPanelProps {
   processingStages?: ProcessingStage[];
 }
 
+const STAGE_LABEL_KEYS: Record<string, string> = {
+  'Request Received': 'executionStages.requestReceived',
+  'Input Validated': 'executionStages.inputValidated',
+  'Query Understood': 'executionStages.queryUnderstood',
+  'Task Identified': 'executionStages.taskIdentified',
+  'Workflow Selected': 'executionStages.workflowSelected',
+  'Specialist Capability Selected': 'executionStages.specialistCapabilitySelected',
+  'Imagery Processed': 'executionStages.imageryProcessed',
+  'Result Validated': 'executionStages.resultValidated',
+  'Evidence Extracted': 'executionStages.evidenceExtracted',
+  'Confidence Estimated': 'executionStages.confidenceEstimated',
+  'Response Generated': 'executionStages.responseGenerated',
+};
+
 export function FinalAnswerPanel({
   answerSummary,
   confidence,
@@ -30,11 +45,17 @@ export function FinalAnswerPanel({
   statistics,
   processingStages,
 }: FinalAnswerPanelProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>('summary');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const renderStageLabel = (label: string) => {
+    const key = STAGE_LABEL_KEYS[label];
+    return key ? t(key) : label;
+  };
 
   // Close on outside click or Escape key
   useEffect(() => {
@@ -71,7 +92,7 @@ export function FinalAnswerPanel({
         await Promise.resolve(onDownloadReport(format));
       } catch (err) {
         console.error('PDF generation failed:', err);
-        setExportError('Failed to generate PDF. Please try again.');
+        setExportError(t('results.pdfError'));
       } finally {
         setIsGeneratingPdf(false);
       }
@@ -80,15 +101,15 @@ export function FinalAnswerPanel({
         await Promise.resolve(onDownloadReport(format));
       } catch (err) {
         console.error(`${format.toUpperCase()} export failed:`, err);
-        setExportError(`Failed to export ${format.toUpperCase()}.`);
+        setExportError(`${t('results.exportError')} ${format.toUpperCase()}.`);
       }
     }
   };
 
   const tabs: { id: TabId; label: string; icon: typeof List }[] = [
-    { id: 'summary', label: 'Summary', icon: List },
-    { id: 'details', label: 'Details', icon: FileText },
-    { id: 'statistics', label: 'Statistics', icon: BarChart3 },
+    { id: 'summary', label: t('results.summary'), icon: List },
+    { id: 'details', label: t('results.details'), icon: FileText },
+    { id: 'statistics', label: t('results.statistics'), icon: BarChart3 },
   ];
 
   return (
@@ -96,14 +117,14 @@ export function FinalAnswerPanel({
       <div>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-snug">
-            Final Answer Panel
+            {t('results.finalAnswerPanel')}
           </h2>
           <span className="text-[10px] font-semibold text-blue-600 dark:text-cyan-400 font-mono">
-            VLM-AGENT
+            {t('results.vlmAgent')}
           </span>
         </div>
 
-        {/* Phase 2: Tab Navigation */}
+        {/* Tab Navigation */}
         <div className="flex items-center gap-0.5 mb-3 p-0.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/40">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -125,20 +146,20 @@ export function FinalAnswerPanel({
           })}
         </div>
 
-        {/* ─── Summary Tab (Original behavior preserved) ─── */}
+        {/* ─── Summary Tab ─── */}
         {activeTab === 'summary' && (
           <>
             {/* Subtitle & Narrative */}
             <div className="mb-3">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">
-                Analysis Result
+                {t('results.analysisResult')}
               </div>
               <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
                 {answerSummary}
               </p>
             </div>
 
-            {/* Confidence — Phase 2 enhanced or fallback */}
+            {/* Confidence */}
             {confidenceScore ? (
               <ConfidenceDisplay score={confidenceScore} compact />
             ) : (
@@ -146,10 +167,10 @@ export function FinalAnswerPanel({
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <span className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-800 dark:text-slate-200">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span>Confidence:</span>
+                    <span>{t('results.confidence')}</span>
                     <span className="font-mono">{confidence}%</span>
                   </span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium whitespace-nowrap shrink-0">High</span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium whitespace-nowrap shrink-0">{t('results.confidenceHigh')}</span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
@@ -158,7 +179,7 @@ export function FinalAnswerPanel({
                   />
                 </div>
                 <div className="text-right mt-1">
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-medium">Demo</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-medium">{t('common.demo')}</span>
                 </div>
               </div>
             )}
@@ -166,7 +187,7 @@ export function FinalAnswerPanel({
             {/* Evidence-Backed Bullet points */}
             <div className="mb-3">
               <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-400 mb-1.5">
-                Evidence-Backed
+                {t('results.evidenceBacked')}
               </div>
               <ul className="space-y-1.5 text-slate-700 dark:text-slate-300">
                 {evidencePoints.map((point, idx) => (
@@ -185,7 +206,7 @@ export function FinalAnswerPanel({
                 <span className="font-medium text-slate-600 dark:text-slate-400">
                   {statistics.temporalRange.t0} → {statistics.temporalRange.t1}
                 </span>
-                <span className="text-slate-400 dark:text-slate-500 font-mono">(Demo)</span>
+                <span className="text-slate-400 dark:text-slate-500 font-mono">({t('common.demo')})</span>
               </div>
             )}
           </>
@@ -195,8 +216,8 @@ export function FinalAnswerPanel({
         {activeTab === 'details' && (
           <div className="space-y-2">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">
-              Processing Stages
-              <span className="ml-1.5 text-[8px] font-mono text-slate-400/80 dark:text-slate-500 px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800/60">DEMO</span>
+              {t('results.processingStages')}
+              <span className="ml-1.5 text-[8px] font-mono text-slate-400/80 dark:text-slate-500 px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800/60">{t('common.demo')}</span>
             </div>
             {processingStages ? (
               <div className="space-y-1.5">
@@ -210,7 +231,7 @@ export function FinalAnswerPanel({
                     </div>
                     <div className="min-w-0">
                       <div className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 leading-snug truncate">
-                        {stage.label}
+                        {renderStageLabel(stage.label)}
                       </div>
                       {stage.description && (
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
@@ -233,7 +254,7 @@ export function FinalAnswerPanel({
               </div>
             ) : (
               <div className="text-[11px] text-slate-500 dark:text-slate-400 italic px-2">
-                No processing stage data available.
+                {t('results.noProcessingData')}
               </div>
             )}
           </div>
@@ -243,7 +264,7 @@ export function FinalAnswerPanel({
         {activeTab === 'statistics' && statistics && (
           <div className="space-y-3">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">
-              Demo Analysis Metrics
+              {t('results.demoMetrics')}
             </div>
 
             {/* Stat Cards Grid */}
@@ -253,7 +274,7 @@ export function FinalAnswerPanel({
                   {statistics.areaChangedHectares}
                 </div>
                 <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  Hectares Changed <span className="text-slate-400">(Demo)</span>
+                  {t('results.hectaresChanged')} <span className="text-slate-400">({t('common.demo')})</span>
                 </div>
               </div>
 
@@ -262,7 +283,7 @@ export function FinalAnswerPanel({
                   {statistics.buildingCount}
                 </div>
                 <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  Buildings Detected <span className="text-slate-400">(Demo)</span>
+                  {t('results.buildingsDetected')} <span className="text-slate-400">({t('common.demo')})</span>
                 </div>
               </div>
 
@@ -271,7 +292,7 @@ export function FinalAnswerPanel({
                   {statistics.vegetationCoverPercent}%
                 </div>
                 <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  Vegetation Cover <span className="text-slate-400">(Demo)</span>
+                  {t('results.vegetationCover')} <span className="text-slate-400">({t('common.demo')})</span>
                 </div>
               </div>
 
@@ -280,7 +301,7 @@ export function FinalAnswerPanel({
                   {statistics.builtUpPercent}%
                 </div>
                 <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  Built-up Area <span className="text-slate-400">(Demo)</span>
+                  {t('results.builtUpArea')} <span className="text-slate-400">({t('common.demo')})</span>
                 </div>
               </div>
             </div>
@@ -288,7 +309,7 @@ export function FinalAnswerPanel({
             {/* Land Use Change Bar Chart */}
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-400 mb-1.5">
-                Land Use Distribution (Demo)
+                {t('results.landUseDistribution')}
               </div>
               <div className="space-y-1.5">
                 {statistics.landUseChanges.map((change) => (
@@ -319,14 +340,14 @@ export function FinalAnswerPanel({
               <span className="font-medium text-slate-600 dark:text-slate-400">
                 {statistics.temporalRange.t0} → {statistics.temporalRange.t1}
               </span>
-              <span className="text-slate-400 dark:text-slate-500 font-mono">(Demo)</span>
+              <span className="text-slate-400 dark:text-slate-500 font-mono">({t('common.demo')})</span>
             </div>
           </div>
         )}
 
         {activeTab === 'statistics' && !statistics && (
           <div className="text-[11px] text-slate-500 dark:text-slate-400 italic px-2">
-            No statistics data available.
+            {t('results.noStatistics')}
           </div>
         )}
 
@@ -337,7 +358,7 @@ export function FinalAnswerPanel({
             className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-[13px] font-semibold text-slate-700 dark:text-slate-200 transition-colors"
           >
             <Eye className="w-3.5 h-3.5" />
-            <span>View Evidence</span>
+            <span>{t('results.viewEvidence')}</span>
           </button>
 
           <button
@@ -345,7 +366,7 @@ export function FinalAnswerPanel({
             className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-[13px] font-semibold text-slate-700 dark:text-slate-200 transition-colors"
           >
             <Map className="w-3.5 h-3.5" />
-            <span>View on Map</span>
+            <span>{t('results.viewOnMap')}</span>
           </button>
         </div>
 
@@ -356,7 +377,7 @@ export function FinalAnswerPanel({
             onClick={() => setIsDropdownOpen((prev) => !prev)}
             aria-expanded={isDropdownOpen}
             aria-haspopup="menu"
-            aria-label="Download Report Format Selection"
+            aria-label={t('results.downloadReport')}
             disabled={isGeneratingPdf}
             className={cn(
               'w-full flex items-center justify-between py-1.5 px-3 rounded-lg border text-[13px] font-semibold transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:focus:ring-cyan-500/30',
@@ -372,7 +393,7 @@ export function FinalAnswerPanel({
               ) : (
                 <Download className="w-3.5 h-3.5" />
               )}
-              <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download Report'}</span>
+              <span>{isGeneratingPdf ? t('results.generatingPdf') : t('results.downloadReport')}</span>
             </span>
             <ChevronDown
               className={cn(
@@ -382,7 +403,7 @@ export function FinalAnswerPanel({
             />
           </button>
 
-          {/* Format Selection Popover (positioned upwards so it never overlaps map legend) */}
+          {/* Format Selection Popover */}
           {isDropdownOpen && (
             <div
               role="menu"
@@ -391,10 +412,10 @@ export function FinalAnswerPanel({
             >
               <div className="flex items-center justify-between px-2.5 py-1 border-b border-slate-100 dark:border-slate-800/80 mb-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-                  Select Format
+                  {t('results.selectFormat')}
                 </span>
                 <span className="text-[9px] font-mono text-cyan-600 dark:text-cyan-400">
-                  DEMO
+                  {t('common.demo')}
                 </span>
               </div>
 
@@ -414,7 +435,7 @@ export function FinalAnswerPanel({
                       JSON
                     </div>
                     <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                      Structured analysis data
+                      {t('results.jsonDesc')}
                     </div>
                   </div>
                 </div>
@@ -439,7 +460,7 @@ export function FinalAnswerPanel({
                       TXT
                     </div>
                     <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                      Readable text report
+                      {t('results.txtDesc')}
                     </div>
                   </div>
                 </div>
@@ -465,7 +486,7 @@ export function FinalAnswerPanel({
                       PDF
                     </div>
                     <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                      Formatted publication report
+                      {t('results.pdfDesc')}
                     </div>
                   </div>
                 </div>
@@ -499,22 +520,22 @@ export function FinalAnswerPanel({
           <div className="grid grid-cols-2 gap-y-1.5 text-[11px] text-slate-600 dark:text-slate-400">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-sm bg-yellow-400 shadow-sm shrink-0" />
-              <span>Detected Buildings</span>
+              <span>{t('results.detectedBuildings')}</span>
             </div>
 
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-sm bg-amber-600 border border-amber-400 shrink-0" />
-              <span>Changed Region</span>
+              <span>{t('results.changedRegion')}</span>
             </div>
 
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-              <span>Query Target</span>
+              <span>{t('results.queryTarget')}</span>
             </div>
 
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-sm border-2 border-dashed border-slate-400 dark:border-slate-500 shrink-0" />
-              <span>Analysis Area</span>
+              <span>{t('results.analysisArea')}</span>
             </div>
           </div>
         </div>

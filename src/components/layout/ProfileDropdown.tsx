@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { ProfileModal } from './ProfileModal';
+import { useTranslation } from '../../i18n';
 
 interface ProfileDropdownProps {
   isOpen?: boolean;
@@ -32,6 +33,7 @@ export function ProfileDropdown({
   userEmail,
   userAvatar,
 }: ProfileDropdownProps) {
+  const { t } = useTranslation();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -155,7 +157,7 @@ export function ProfileDropdown({
                     {displayName}
                   </div>
                   <div className="text-[10px] text-blue-600 dark:text-cyan-400 font-medium truncate">
-                    Lead Engineer
+                    {t('profileMenu.role')}
                   </div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5 font-mono">
                     {displayEmail}
@@ -164,7 +166,7 @@ export function ProfileDropdown({
               </div>
               {!isSignedIn && (
                 <div className="mt-2 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 text-center">
-                  Demo session signed out
+                  {t('profileMenu.demoSession')}
                 </div>
               )}
             </div>
@@ -178,7 +180,7 @@ export function ProfileDropdown({
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-200 transition-colors text-left focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-800"
               >
                 <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Profile</span>
+                <span>{t('profileMenu.profile')}</span>
               </button>
 
               <button
@@ -188,7 +190,7 @@ export function ProfileDropdown({
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-200 transition-colors text-left focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-800"
               >
                 <Settings className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Account Settings</span>
+                <span>{t('profileMenu.accountSettings')}</span>
               </button>
 
               <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
@@ -201,7 +203,7 @@ export function ProfileDropdown({
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 transition-colors text-left focus:outline-none focus:bg-rose-50 dark:focus:bg-rose-950/30"
                 >
                   <LogOut className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                  <span>Sign Out</span>
+                  <span>{t('profileMenu.signOut')}</span>
                 </button>
               ) : (
                 <button
@@ -211,7 +213,7 @@ export function ProfileDropdown({
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-600 dark:text-cyan-400 transition-colors text-left focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-950/30"
                 >
                   <LogIn className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span>Sign In</span>
+                  <span>{t('profileMenu.signIn')}</span>
                 </button>
               )}
             </div>

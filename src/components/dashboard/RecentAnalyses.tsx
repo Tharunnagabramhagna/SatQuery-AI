@@ -5,8 +5,10 @@ import { getRecentAnalyses } from '../../services/api';
 import type { AnalysisRecord } from '../../types';
 import { Badge } from '../common/Badge';
 import { EmptyState } from '../common/EmptyState';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function RecentAnalyses() {
+  const { t } = useTranslation();
   const [analyses, setAnalyses] = useState<AnalysisRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,7 +36,7 @@ export function RecentAnalyses() {
   const formatDate = (isoString: string) => {
     try {
       const date = new Date(isoString);
-      return date.toLocaleDateString('en-US', {
+      return date.toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -63,10 +65,10 @@ export function RecentAnalyses() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">Recent Analyses</h2>
-            <Badge variant="demo" className="text-[9px]">DEMO DATA</Badge>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">{t('recentAnalyses.title')}</h2>
+            <Badge variant="demo" className="text-[9px]">{t('recentAnalyses.demoBadge')}</Badge>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Previous satellite query and reasoning executions</p>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t('recentAnalyses.subtitle')}</p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -74,7 +76,7 @@ export function RecentAnalyses() {
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
-              placeholder="Filter analyses..."
+              placeholder={t('recentAnalyses.filterPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-3.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors w-48 sm:w-64"
@@ -83,7 +85,7 @@ export function RecentAnalyses() {
           <button
             onClick={() => navigate('/history')}
             className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 text-xs transition-colors"
-            title="View All History"
+            title={t('recentAnalyses.viewAllHistory')}
           >
             <Filter className="w-3.5 h-3.5" />
           </button>
@@ -92,14 +94,14 @@ export function RecentAnalyses() {
 
       {loading ? (
         <div className="py-12 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500">
-          Loading demo analyses...
+          {t('recentAnalyses.loadingAnalyses')}
         </div>
       ) : filteredAnalyses.length === 0 ? (
         <EmptyState
           icon={History}
-          title="No analyses found"
-          description="Start a new analysis to see your queries and visual reasoning logs here."
-          actionLabel="Start Analysis"
+          title={t('recentAnalyses.noAnalysesTitle')}
+          description={t('recentAnalyses.noAnalysesDesc')}
+          actionLabel={t('recentAnalyses.startAnalysis')}
           onAction={() => navigate('/analysis')}
         />
       ) : (
@@ -107,12 +109,12 @@ export function RecentAnalyses() {
           <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800/80 text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4">Type</th>
-                <th className="py-3 px-4">Query</th>
-                <th className="py-3 px-4">Modality</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Action</th>
+                <th className="py-3 px-4">{t('recentAnalyses.tableType')}</th>
+                <th className="py-3 px-4">{t('recentAnalyses.tableQuery')}</th>
+                <th className="py-3 px-4">{t('recentAnalyses.tableModality')}</th>
+                <th className="py-3 px-4">{t('recentAnalyses.tableDate')}</th>
+                <th className="py-3 px-4">{t('recentAnalyses.tableStatus')}</th>
+                <th className="py-3 px-4 text-right">{t('recentAnalyses.tableAction')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -140,14 +142,14 @@ export function RecentAnalyses() {
                     <div className="flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                       <span className="capitalize text-emerald-600 dark:text-emerald-400 font-medium text-[11px]">
-                        {item.status}
+                        {item.status === 'completed' ? t('history.completed') : item.status}
                       </span>
                     </div>
                   </td>
                   <td className="py-3.5 px-4 text-right">
                     <button
                       className="p-1 rounded text-slate-400 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                      title="Inspect analysis"
+                      title={t('recentAnalyses.inspectAnalysis')}
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/analysis?demoId=${item.id}`);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Bot,
@@ -32,15 +33,8 @@ import {
   type AnalysisTool,
 } from './WorkspaceSecondarySidebar';
 import { useTheme } from '../../hooks/useTheme';
-
-const OVERLAY_SUGGESTIONS = [
-  'What are the main changes between these two images?',
-  'How many buildings are in this area?',
-  'Describe the land use in this image',
-  'Detect roads and highways',
-  'Has there been urban expansion in this region?',
-  'Compare vegetation changes over time',
-];
+import { useTranslation } from '../../hooks/useTranslation';
+import { QueryAgentLogo } from '../common/QueryAgentLogo';
 
 // Virtual Auto tool — always first capability
 const AUTO_TOOL: AnalysisTool = {
@@ -125,7 +119,43 @@ export function QueryAgentOverlay({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const isDark = theme === 'dark';
+
+  const overlaySuggestions = [
+    t('queryAgent.suggestion1'),
+    t('queryAgent.suggestion2'),
+    t('queryAgent.suggestion3'),
+    t('queryAgent.suggestion4'),
+    t('queryAgent.suggestion5'),
+    t('queryAgent.suggestion6'),
+  ];
+
+  const getToolTitle = (id: string, fallback: string) => {
+    switch (id) {
+      case 'auto': return t('tools.autoTitle');
+      case 'vqa': return t('tools.vqaName');
+      case 'captioning': return t('tools.captioningName');
+      case 'grounding': return t('tools.groundingName');
+      case 'change_analysis': return t('tools.changeAnalysisName');
+      case 'change_vqa': return t('tools.changeVqaName');
+      case 'optical_sar': return t('tools.opticalSarName');
+      default: return fallback;
+    }
+  };
+
+  const getToolSubtitle = (id: string, fallback: string) => {
+    switch (id) {
+      case 'auto': return t('tools.autoDesc');
+      case 'vqa': return t('tools.vqaDesc');
+      case 'captioning': return t('tools.captioningDesc');
+      case 'grounding': return t('tools.groundingDesc');
+      case 'change_analysis': return t('tools.changeAnalysisDesc');
+      case 'change_vqa': return t('tools.changeVqaDesc');
+      case 'optical_sar': return t('tools.opticalSarDesc');
+      default: return fallback;
+    }
+  };
 
   // Fullscreen / Maximized state
   const [isMaximized, setIsMaximized] = useState(false);
@@ -296,7 +326,9 @@ export function QueryAgentOverlay({
 
   const allTools = [AUTO_TOOL, ...ANALYSIS_TOOLS];
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
       className={cn(
         'fixed inset-0 z-50 flex items-center justify-center transition-all duration-200',
@@ -357,25 +389,25 @@ export function QueryAgentOverlay({
         )}>
           <div className="flex items-center gap-3.5">
             <div className={cn(
-              'p-2 rounded-xl border shadow-sm',
+              'p-1 rounded-xl border shadow-sm overflow-hidden',
               isDark
-                ? 'bg-gradient-to-br from-blue-600/30 to-cyan-500/20 text-cyan-400 border-cyan-500/30'
-                : 'bg-gradient-to-br from-blue-500/15 to-cyan-500/10 text-blue-600 border-blue-300/50'
+                ? 'bg-gradient-to-br from-blue-600/30 to-cyan-500/20 border-cyan-500/30'
+                : 'bg-gradient-to-br from-blue-500/15 to-cyan-500/10 border-blue-300/50'
             )}>
-              <Bot className="w-5 h-5" />
+              <QueryAgentLogo className="w-7 h-7 rounded-lg" />
             </div>
             <div>
               <h2 className={cn(
-                'text-[15px] font-bold tracking-tight leading-tight',
+                'text-sm font-bold tracking-tight',
                 isDark ? 'text-slate-100' : 'text-slate-900'
               )}>
-                Query Agent
+                {t('queryAgent.title')}
               </h2>
               <p className={cn(
-                'text-[11.5px] leading-tight mt-0.5',
+                'text-[11px] truncate hidden sm:block',
                 isDark ? 'text-slate-400' : 'text-slate-500'
               )}>
-                Your AI partner for satellite imagery analysis
+                {t('queryAgent.subtitle')}
               </p>
             </div>
           </div>
@@ -392,7 +424,7 @@ export function QueryAgentOverlay({
                   'w-1.5 h-1.5 rounded-full animate-pulse',
                   isDark ? 'bg-cyan-400' : 'bg-blue-500'
                 )} />
-                MAXIMIZED WORKSPACE
+                {t('queryAgent.maximizedWorkspace')}
               </span>
             )}
             <button
@@ -408,8 +440,8 @@ export function QueryAgentOverlay({
                     ? 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 border-transparent hover:border-slate-700'
                     : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 border-transparent hover:border-slate-300'
               )}
-              title={isMaximized ? 'Restore View (Esc)' : 'Maximize (Fullscreen)'}
-              aria-label={isMaximized ? 'Restore View' : 'Maximize View'}
+              title={isMaximized ? t('queryAgent.restoreView') : t('queryAgent.maximizeView')}
+              aria-label={isMaximized ? t('queryAgent.restoreView') : t('queryAgent.maximizeView')}
             >
               {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
@@ -422,8 +454,8 @@ export function QueryAgentOverlay({
                   ? 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 hover:border-slate-700'
                   : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 hover:border-slate-300'
               )}
-              title="Close (Esc)"
-              aria-label="Close Query Agent"
+              title={t('queryAgent.closeAgent')}
+              aria-label={t('queryAgent.closeAgent')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -443,7 +475,7 @@ export function QueryAgentOverlay({
               'text-[11px] font-bold uppercase tracking-wider mb-3 px-1',
               isDark ? 'text-slate-300' : 'text-slate-600'
             )}>
-              Analysis Tools
+              {t('tools.analysisTools')}
             </h3>
 
             <div className="space-y-1.5">
@@ -486,13 +518,13 @@ export function QueryAgentOverlay({
                           ? isDark ? 'text-white font-semibold' : 'text-blue-700 font-semibold'
                           : isDark ? 'text-slate-200' : 'text-slate-700'
                       )}>
-                        {tool.name}
+                        {getToolTitle(tool.id, tool.name)}
                       </span>
                       <span className={cn(
                         'text-[10px] truncate leading-tight mt-0.5',
                         isDark ? 'text-slate-400' : 'text-slate-500'
                       )}>
-                        {subtitle}
+                        {getToolSubtitle(tool.id, subtitle)}
                       </span>
                     </div>
                   </button>
@@ -513,25 +545,25 @@ export function QueryAgentOverlay({
               {/* Agent Greeting */}
               <div className="flex items-start gap-3 mb-3">
                 <div className={cn(
-                  'w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-sm mt-0.5',
+                  'w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-sm mt-0.5 overflow-hidden',
                   isDark
-                    ? 'bg-blue-500/20 text-cyan-400 border-cyan-500/30'
-                    : 'bg-blue-50 text-blue-600 border-blue-200'
+                    ? 'border-cyan-500/30'
+                    : 'border-blue-200'
                 )}>
-                  <Bot className="w-4 h-4" />
+                  <QueryAgentLogo className="w-8 h-8 rounded-lg" />
                 </div>
                 <div>
                   <h4 className={cn(
                     'text-[13px] font-bold leading-snug',
                     isDark ? 'text-slate-100' : 'text-slate-900'
                   )}>
-                    Hello! I'm your SatQuery AI Agent.
+                    {t('queryAgent.greetingTitle')}
                   </h4>
                   <p className={cn(
                     'text-[11.5px] leading-relaxed mt-0.5',
                     isDark ? 'text-slate-300' : 'text-slate-600'
                   )}>
-                    I can help you analyze satellite imagery using advanced AI models. Ask me anything about your imagery, and I'll choose the right analysis tool for you.
+                    {t('queryAgent.greetingBody')}
                   </p>
                 </div>
               </div>
@@ -542,13 +574,13 @@ export function QueryAgentOverlay({
                   'text-[11px] font-semibold',
                   isDark ? 'text-slate-400' : 'text-slate-500'
                 )}>
-                  Try asking:
+                  {t('queryAgent.tryAsking')}
                 </span>
               </div>
 
               {/* 6 Suggestion Buttons Grid (3 cols x 2 rows) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {OVERLAY_SUGGESTIONS.map((suggestion, idx) => (
+                {overlaySuggestions.map((suggestion, idx) => (
                   <button
                     key={idx}
                     type="button"
@@ -593,7 +625,7 @@ export function QueryAgentOverlay({
                     ? 'text-slate-100 placeholder:text-slate-500'
                     : 'text-slate-800 placeholder:text-slate-400'
                 )}
-                placeholder="Ask anything about your satellite imagery..."
+                placeholder={t('queryAgent.placeholder')}
               />
 
               {/* Attached Images Preview Strip */}
@@ -630,7 +662,7 @@ export function QueryAgentOverlay({
                             ? isDark ? 'text-cyan-400' : 'text-blue-500'
                             : isDark ? 'text-emerald-400' : 'text-emerald-600'
                         )}>
-                          {img.type === 'dashboard' ? 'Dashboard' : 'Uploaded'}
+                          {img.type === 'dashboard' ? t('queryAgent.dashboard') : t('queryAgent.uploaded')}
                         </span>
                       </div>
                       <button
@@ -642,7 +674,7 @@ export function QueryAgentOverlay({
                             ? 'text-slate-500 hover:text-red-400 hover:bg-slate-700/80'
                             : 'text-slate-400 hover:text-red-500 hover:bg-slate-100'
                         )}
-                        title="Remove image"
+                        title={t('queryAgent.removeImage')}
                         aria-label={`Remove ${img.name}`}
                       >
                         <XCircle className="w-3.5 h-3.5" />
@@ -673,7 +705,7 @@ export function QueryAgentOverlay({
                       'w-3.5 h-3.5',
                       isDark ? 'text-slate-400' : 'text-slate-500'
                     )} />
-                    <span>Add Images</span>
+                    <span>{t('queryAgent.addImages')}</span>
                   </button>
 
                   {/* Use Current Images Button with Dropdown */}
@@ -698,7 +730,7 @@ export function QueryAgentOverlay({
                           ? isDark ? 'text-cyan-400' : 'text-blue-600'
                           : isDark ? 'text-slate-400' : 'text-slate-500'
                       )} />
-                      <span>Use Current Images</span>
+                      <span>{t('queryAgent.useCurrentImages')}</span>
                       <ChevronDown className={cn(
                         'w-3 h-3 transition-transform',
                         isCurrentImagesOpen && 'rotate-180'
@@ -721,7 +753,7 @@ export function QueryAgentOverlay({
                             'text-[10px] font-bold uppercase tracking-wider',
                             isDark ? 'text-slate-400' : 'text-slate-500'
                           )}>
-                            Dashboard Imagery
+                            {t('queryAgent.dashboardImagery')}
                           </span>
                         </div>
                         <div className="p-1.5 space-y-0.5">
@@ -794,12 +826,12 @@ export function QueryAgentOverlay({
                   {isAnalyzing ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Sending…</span>
+                      <span>{t('queryAgent.sending')}</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-3.5 h-3.5" />
-                      <span>Send</span>
+                      <span>{t('queryAgent.send')}</span>
                     </>
                   )}
                 </button>
@@ -818,14 +850,14 @@ export function QueryAgentOverlay({
                   'text-xs font-semibold',
                   isDark ? 'text-slate-200' : 'text-slate-800'
                 )}>
-                  Current Imagery Context
+                  {t('queryAgent.contextTitle')}
                 </h5>
                 <div className={cn(
                   'flex items-center gap-1 text-[11px] font-medium',
                   isDark ? 'text-emerald-400' : 'text-emerald-600'
                 )}>
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{modeCategory === 'single' ? '1 image loaded' : '2 images loaded'}</span>
+                  <span>{modeCategory === 'single' ? t('queryAgent.oneImageLoaded') : t('queryAgent.twoImagesLoaded')}</span>
                 </div>
               </div>
 
@@ -838,7 +870,7 @@ export function QueryAgentOverlay({
                         'block text-[10px] font-medium mb-1',
                         isDark ? 'text-slate-400' : 'text-slate-500'
                       )}>
-                        Previous Image (2025-03-12)
+                        {t('queryAgent.previousImageLabel')} (2025-03-12)
                       </span>
                       <img
                         src="/imagery/sat_before.jpg"
@@ -856,7 +888,9 @@ export function QueryAgentOverlay({
                       'block text-[10px] font-medium mb-1',
                       isDark ? 'text-slate-400' : 'text-slate-500'
                     )}>
-                      {modeCategory === 'single' ? 'Satellite Scene (2026-03-12)' : 'Current Image (2026-03-12)'}
+                      {modeCategory === 'single'
+                        ? `${t('queryAgent.satelliteScene')} (2026-03-12)`
+                        : `${t('queryAgent.currentImageLabel')} (2026-03-12)`}
                     </span>
                     <img
                       src="/imagery/sat_after.jpg"
@@ -876,37 +910,37 @@ export function QueryAgentOverlay({
                 )}>
                   <div className="flex items-center gap-2">
                     <MapPin className={cn('w-3.5 h-3.5 shrink-0', isDark ? 'text-slate-500' : 'text-slate-400')} />
-                    <span>Location</span>
+                    <span>{t('queryAgent.locationLabel')}</span>
                     <span className={cn('font-medium ml-auto', isDark ? 'text-slate-200' : 'text-slate-800')}>New Delhi, India</span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Compass className={cn('w-3.5 h-3.5 shrink-0', isDark ? 'text-slate-500' : 'text-slate-400')} />
-                    <span>Coordinates</span>
+                    <span>{t('queryAgent.coordinatesLabel')}</span>
                     <span className={cn('font-medium font-mono text-[10px] ml-auto', isDark ? 'text-slate-200' : 'text-slate-800')}>28.6139° N, 77.2090° E</span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Database className={cn('w-3.5 h-3.5 shrink-0', isDark ? 'text-slate-500' : 'text-slate-400')} />
-                    <span>Source</span>
+                    <span>{t('queryAgent.sourceLabel')}</span>
                     <span className={cn('font-medium ml-auto', isDark ? 'text-slate-200' : 'text-slate-800')}>Sentinel-2</span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Grid className={cn('w-3.5 h-3.5 shrink-0', isDark ? 'text-slate-500' : 'text-slate-400')} />
-                    <span>Resolution</span>
+                    <span>{t('queryAgent.resolutionLabel')}</span>
                     <span className={cn('font-medium ml-auto', isDark ? 'text-slate-200' : 'text-slate-800')}>10 m</span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Crop className={cn('w-3.5 h-3.5 shrink-0', isDark ? 'text-slate-500' : 'text-slate-400')} />
-                    <span>Area</span>
+                    <span>{t('queryAgent.areaLabel')}</span>
                     <span className={cn('font-medium ml-auto', isDark ? 'text-slate-200' : 'text-slate-800')}>12.4 km²</span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Cloud className={cn('w-3.5 h-3.5 shrink-0', isDark ? 'text-slate-500' : 'text-slate-400')} />
-                    <span>Cloud Cover</span>
+                    <span>{t('queryAgent.cloudCoverLabel')}</span>
                     <span className={cn('font-medium ml-auto', isDark ? 'text-slate-200' : 'text-slate-800')}>2.3%</span>
                   </div>
                 </div>
@@ -915,6 +949,7 @@ export function QueryAgentOverlay({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

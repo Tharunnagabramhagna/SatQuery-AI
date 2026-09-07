@@ -19,11 +19,15 @@ import type {
   UserProfile,
   UserPreferences,
 } from '../types';
+import type { SupportedLanguage } from '../i18n/types';
 import { mockAnalyses } from '../mock/mockAnalyses';
 import { DEMO_SCENARIOS } from '../mock/mockResponses';
 import { MOCK_ANALYSIS_HISTORY } from '../mock/mockHistory';
 import { MOCK_DATASET_SCENARIOS } from '../mock/mockDatasets';
-import { MOCK_DOCUMENTATION_SECTIONS } from '../mock/mockDocumentation';
+import {
+  getLocalizedDocumentation,
+  findLocalizedDocumentationSection,
+} from '../mock/mockDocumentation';
 
 // ─── Simulate network delay ─────────────────────────────────────
 
@@ -115,14 +119,14 @@ export async function getDatasetScenarioById(id: string): Promise<DatasetScenari
 
 // ─── Technical Documentation Center ───────────────────────────────
 
-export async function getDocumentationSections(): Promise<DocumentationSection[]> {
-  // In the future: GET /api/documentation/sections
-  return MOCK_DOCUMENTATION_SECTIONS;
+export async function getDocumentationSections(lang: SupportedLanguage = 'en'): Promise<DocumentationSection[]> {
+  // In the future: GET /api/documentation/sections?lang=...
+  return getLocalizedDocumentation(lang);
 }
 
-export async function getDocumentationSectionById(id: string): Promise<DocumentationSection | undefined> {
-  // In the future: GET /api/documentation/sections/:id
-  return MOCK_DOCUMENTATION_SECTIONS.find((s) => s.id === id);
+export async function getDocumentationSectionById(id: string, lang: SupportedLanguage = 'en'): Promise<DocumentationSection | undefined> {
+  // In the future: GET /api/documentation/sections/:id?lang=...
+  return findLocalizedDocumentationSection(id, lang);
 }
 
 // ─── User Profile & Account Settings (Backend-Ready) ──────────────
@@ -199,15 +203,19 @@ export async function updateUserProfile(profile: Partial<UserProfile>): Promise<
 
 const LANGUAGE_STORAGE_KEY = 'satquery-language';
 
-export async function getLanguage(): Promise<string> {
+export async function getLanguage(): Promise<SupportedLanguage> {
   try {
-    return localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en';
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (stored === 'en' || stored === 'es' || stored === 'fr' || stored === 'de' || stored === 'hi' || stored === 'ja') {
+      return stored;
+    }
+    return 'en';
   } catch {
     return 'en';
   }
 }
 
-export async function updateLanguage(lang: string): Promise<string> {
+export async function updateLanguage(lang: SupportedLanguage): Promise<SupportedLanguage> {
   try {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
     if (typeof window !== 'undefined') {

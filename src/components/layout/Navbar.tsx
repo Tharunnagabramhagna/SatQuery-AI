@@ -11,6 +11,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { NotificationPopover } from './NotificationPopover';
 import { ProfileDropdown } from './ProfileDropdown';
 import { cn } from '../../utils/cn';
+import { useTranslation } from '../../i18n';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -35,6 +36,7 @@ export function Navbar({
   userEmail,
   userAvatar,
 }: NavbarProps) {
+  const { t } = useTranslation();
   const [activePopover, setActivePopover] = useState<'notifications' | 'profile' | null>(null);
 
   const handleToggleNotifications = () => {
@@ -63,10 +65,10 @@ export function Navbar({
         <div className="flex items-center gap-2">
           <BrandMark />
           <span
-            title="SatQuery AI is running in demonstration mode. Imagery and analysis results are simulated."
+            title={t('nav.demoTooltip')}
             className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold tracking-wider rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-help"
           >
-            DEMO
+            {t('common.demo')}
           </span>
         </div>
 
@@ -85,7 +87,7 @@ export function Navbar({
             }
           >
             <LayoutDashboard className="w-4 h-4" />
-            <span>Dashboard</span>
+            <span>{t('nav.dashboard')}</span>
           </NavLink>
 
           <NavLink
@@ -99,7 +101,7 @@ export function Navbar({
               )
             }
           >
-            Analysis History
+            {t('nav.history')}
           </NavLink>
 
           <NavLink
@@ -113,7 +115,7 @@ export function Navbar({
               )
             }
           >
-            Datasets
+            {t('nav.datasets')}
           </NavLink>
 
           <NavLink
@@ -127,7 +129,7 @@ export function Navbar({
               )
             }
           >
-            Documentation
+            {t('nav.documentation')}
           </NavLink>
         </nav>
       </div>
@@ -138,13 +140,13 @@ export function Navbar({
         <button
           onClick={onOpenSystemStatus}
           className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors shadow-sm"
-          title="Inspect System Status"
+          title={t('nav.systemStatus')}
         >
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span>System status</span>
+          <span>{t('nav.systemStatus')}</span>
           <ChevronDown className="w-3 h-3 text-slate-400" />
         </button>
 
@@ -153,10 +155,10 @@ export function Navbar({
           type="button"
           onClick={onSignIn}
           className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600/10 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-300 border border-blue-400/40 dark:border-cyan-500/30 hover:bg-blue-600/20 dark:hover:bg-cyan-500/20 hover:border-blue-500/60 dark:hover:border-cyan-400/50 transition-all duration-150 shadow-sm"
-          title="Sign In to SatQuery AI"
+          title={t('nav.signIn')}
         >
           <LogIn className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
-          <span>Sign In</span>
+          <span>{t('nav.signIn')}</span>
         </button>
 
         {/* Theme Mode Toggle (Light/Dark) */}

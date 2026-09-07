@@ -16,6 +16,8 @@ import {
   LogOut,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { QueryAgentLogo } from '../common/QueryAgentLogo';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export interface AnalysisModeConfig {
   id: string;
@@ -180,6 +182,7 @@ export function WorkspaceSecondarySidebar({
   onRecentAnalyses,
   onSavedResults,
 }: WorkspaceSecondarySidebarProps) {
+  const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuContainerRef = useRef<HTMLDivElement>(null);
 
@@ -230,11 +233,11 @@ export function WorkspaceSecondarySidebar({
             ) : (
               <Menu className="w-4 h-4 text-slate-600 dark:text-slate-300 shrink-0" />
             )}
-            <span className="font-semibold tracking-tight">Menu</span>
+            <span className="font-semibold tracking-tight">{t('sidebar.menu')}</span>
           </div>
 
           <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium px-1.5 py-0.5 rounded bg-slate-300/50 dark:bg-slate-700/50">
-            {isMenuOpen ? 'Close' : 'Workspace'}
+            {isMenuOpen ? t('sidebar.close') : t('sidebar.workspace')}
           </span>
         </button>
 
@@ -250,7 +253,7 @@ export function WorkspaceSecondarySidebar({
               className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-md transition-colors font-medium text-left"
             >
               <Plus className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
-              <span>New Analysis</span>
+              <span>{t('sidebar.newAnalysis')}</span>
             </button>
 
             <button
@@ -262,7 +265,7 @@ export function WorkspaceSecondarySidebar({
               className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-md transition-colors font-medium text-left"
             >
               <Upload className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-              <span>Upload Imagery</span>
+              <span>{t('sidebar.uploadImagery')}</span>
             </button>
 
             <button
@@ -274,7 +277,7 @@ export function WorkspaceSecondarySidebar({
               className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-md transition-colors font-medium text-left"
             >
               <History className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-              <span>Recent Analyses</span>
+              <span>{t('sidebar.recentAnalyses')}</span>
             </button>
 
             <button
@@ -286,7 +289,7 @@ export function WorkspaceSecondarySidebar({
               className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-md transition-colors font-medium text-left"
             >
               <Bookmark className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-              <span>Saved Results</span>
+              <span>{t('sidebar.savedResults')}</span>
             </button>
           </div>
         )}
@@ -308,18 +311,18 @@ export function WorkspaceSecondarySidebar({
       >
         <div
           className={cn(
-            'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+            'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors overflow-hidden',
             isQueryAgentOpen
               ? 'bg-blue-600/20 dark:bg-cyan-500/20 text-blue-600 dark:text-cyan-400'
               : 'bg-blue-500/10 dark:bg-cyan-400/10 text-blue-600 dark:text-cyan-400'
           )}
         >
-          <Bot className="w-4 h-4" />
+          <QueryAgentLogo className="w-7 h-7 rounded-lg" />
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="truncate leading-snug">Query Agent</span>
+          <span className="truncate leading-snug">{t('sidebar.queryAgent')}</span>
           <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400 leading-tight truncate">
-            AI analysis workspace
+            {t('sidebar.aiWorkspace')}
           </span>
         </div>
         {isQueryAgentOpen && (
@@ -338,7 +341,7 @@ export function WorkspaceSecondarySidebar({
             aria-label="Exit workspace"
           >
             <LogOut className="w-3.5 h-3.5 rotate-180 shrink-0" />
-            <span>Exit Workspace</span>
+            <span>{t('sidebar.exitWorkspace')}</span>
           </button>
         </div>
       )}

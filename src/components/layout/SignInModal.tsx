@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X, LogIn, Lock, Mail, Satellite, CheckCircle2, Loader2, ArrowRight, Info,
   Eye, EyeOff, User, UserPlus,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useTranslation } from '../../hooks/useTranslation';
 
 // ─── Shared Sub-Components ───────────────────────────────────────────────────
 
@@ -159,6 +161,7 @@ interface SignInModalProps {
 }
 
 export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
+  const { t } = useTranslation();
   // View state: signin or signup
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
 
@@ -342,7 +345,9 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
   const isSignIn = authView === 'signin';
   const showSuccessState = isSignIn ? isSuccess : isSignUpSuccess;
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-sm"
       onClick={(e) => {
@@ -370,7 +375,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
             </div>
             <div>
               <h2 id="auth-modal-title" className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                {isSignIn ? 'Sign In to SatQuery AI' : 'Create an account'}
+                {isSignIn ? t('auth.signIn') : t('auth.signUp')}
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                 {isSignIn ? 'Space Intelligence Workspace' : 'Create your SatQuery AI account to get started.'}
@@ -443,7 +448,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
               <form onSubmit={handleSignInSubmit} className="space-y-5">
                 <div>
                   <label htmlFor="signin-email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    Email Address
+                    {t('auth.email')}
                   </label>
                   <div className="relative">
                     <Mail className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -481,14 +486,14 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
                       defaultChecked
                       className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-0 cursor-pointer"
                     />
-                    <span className="text-xs sm:text-sm">Remember session</span>
+                    <span className="text-xs sm:text-sm">{t('auth.rememberMe')}</span>
                   </label>
                   <a
                     href="#forgot"
                     onClick={(e) => e.preventDefault()}
                     className="text-xs sm:text-sm font-medium text-blue-600 dark:text-cyan-400 hover:underline hover:text-blue-500 dark:hover:text-cyan-300 transition-colors"
                   >
-                    Forgot password?
+                    {t('auth.forgotPassword')}
                   </a>
                 </div>
 
@@ -509,7 +514,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
                   ) : (
                     <>
                       <LogIn className="w-5 h-5" />
-                      <span>Sign In</span>
+                      <span>{t('auth.signIn')}</span>
                       <ArrowRight className="w-5 h-5 ml-auto" />
                     </>
                   )}
@@ -570,7 +575,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
                 {/* Full Name */}
                 <div>
                   <label htmlFor="signup-name" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    Full Name
+                    {t('auth.fullName')}
                   </label>
                   <div className="relative">
                     <User className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -597,7 +602,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
                 {/* Email Address */}
                 <div>
                   <label htmlFor="signup-email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    Email Address
+                    {t('auth.email')}
                   </label>
                   <div className="relative">
                     <Mail className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -624,7 +629,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
                 {/* Password */}
                 <div>
                   <label htmlFor="signup-password" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    Password
+                    {t('auth.password')}
                   </label>
                   <PasswordInput
                     id="signup-password"
@@ -671,7 +676,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
                 {/* Confirm Password */}
                 <div>
                   <label htmlFor="signup-confirm" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    Confirm Password
+                    {t('auth.confirmPassword')}
                   </label>
                   <PasswordInput
                     id="signup-confirm"
@@ -778,6 +783,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

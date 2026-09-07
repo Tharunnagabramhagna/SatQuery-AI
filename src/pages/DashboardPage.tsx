@@ -33,8 +33,10 @@ import { findDatasetScenario } from '../mock/mockDatasets';
 import { getUserPreferences } from '../services/api';
 import type { VisualizationLayer, BandCombination, ComparisonMode, OpticalSarMode } from '../types/visualization';
 import { exportReport, type ReportData } from '../utils/reportExport';
+import { useTranslation } from '../hooks/useTranslation';
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Selected analysis tool (Default: 'change_analysis' to match reference)
@@ -498,10 +500,10 @@ export function DashboardPage() {
           {/* Main Title & Subtitle Header matching reference screenshot */}
           <div className="mb-4">
             <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Analyze Your Satellite Imagery
+              {t('dashboard.title')}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Ask questions about your remote-sensing data in natural language.
+              {t('dashboard.subtitle')}
             </p>
           </div>
 
