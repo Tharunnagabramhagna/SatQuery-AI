@@ -38,7 +38,11 @@ COMPARISON_SYSTEM_INSTRUCTION = (
     "comparison between two supplied satellite images (Image A and Image B) to answer the user's inquiry.\n\n"
     "Strict Operational Guidelines:\n"
     "1. Grounding: Base comparison strictly and solely on visual and structural features directly discernible in Image A and Image B.\n"
-    "2. Modality Awareness: Respect the declared modalities of Image A and Image B (Optical, SAR, or Unknown). For Optical+SAR cross-modal comparisons, do NOT confuse sensor representation differences with physical scene change.\n"
+    "2. Modality Awareness: Respect the declared modalities of Image A and Image B (Optical, SAR, or Unknown).\n"
+    "   - Optical: Identify visible land cover, spectral color/context, vegetation, roads, buildings, water.\n"
+    "   - SAR: Identify radar backscatter intensity, surface roughness, structural/double-bounce reflections (urban/buildings), smooth surface low-returns (water), and dielectric signatures.\n"
+    "   - Optical+SAR Cross-Modal: Do NOT confuse sensor representation differences with physical scene change. Distinguish optical visual evidence from SAR backscatter evidence, provide a fused conclusion, and report any conflicting evidence.\n"
+    "   - Limitations: Acknowledge that visual analysis of SAR evaluates rendered spatial patterns and brightness rather than calibrated complex polarimetry or interferometry.\n"
     "3. Zero Fabrication: NEVER fabricate quantitative change percentages (e.g. 'increased by 24%'), exact area/hectares, exact object counts, or geographic coordinates unless verified scale/data is directly visible.\n"
     "4. Qualitative Precision: Use calibrated qualitative language (e.g. 'appears', 'likely', 'visually', 'suggests').\n"
     "5. Distinguish Similarities vs Differences: Clearly categorize findings into 'similarities' and 'differences'. In 'observations', list notable contextual features.\n"
@@ -48,11 +52,19 @@ COMPARISON_SYSTEM_INSTRUCTION = (
 
 SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
 VALID_MODALITIES = {"optical", "sar", "unknown"}
+ELIGIBLE_FALLBACK_ERRORS = {
+    "rate_limit_exceeded",
+    "timeout",
+    "api_error",
+    "provider_unavailable",
+    "missing_api_key",
+}
 
 
 class ComparisonTool(BaseTool):
     """
-    Multimodal Image Comparison specialist tool powered by Google Gemini (gemini-3.6-flash).
+    Multimodal Image Comparison specialist tool powered primarily by Google Gemini (gemini-3.6-flash),
+    with optional local fallback to Qwen3-VL via Ollama when Gemini experiences provider/runtime availability failures.
     Compares two satellite images (Optical, SAR, or Optical+SAR) to extract semantic similarities
     and differences without fabricating quantitative metrics.
     """
@@ -70,6 +82,8 @@ class ComparisonTool(BaseTool):
         model: Optional[str] = None,
         timeout: Optional[float] = None,
         client: Optional[genai.Client] = None,
+        fallback_adapter: Optional[Any] = None,
+        enable_fallback: Optional[bool] = None,
     ) -> None:
         self.api_key = api_key if api_key is not None else settings.GEMINI_API_KEY
         self.model = model or settings.GEMINI_MODEL or "gemini-3.6-flash"
@@ -85,6 +99,15 @@ class ComparisonTool(BaseTool):
                 self._client = None
         else:
             self._client = None
+
+        # Optional local Qwen fallback adapter (lazy initialization)
+        if fallback_adapter is not None:
+            self.fallback_adapter = fallback_adapter
+        elif enable_fallback is True:
+            from backend.services.ollama import get_default_qwen_adapter
+            self.fallback_adapter = get_default_qwen_adapter()
+        else:
+            self.fallback_adapter = None
 
     async def execute(self, params: Dict[str, Any]) -> ToolResult:
         """
@@ -205,6 +228,53 @@ class ComparisonTool(BaseTool):
         # 5. Verify Gemini client and API key
         if not self.api_key or self._client is None:
             logger.warning("Gemini API key is not configured for ComparisonTool")
+            if self.fallback_adapter is not None:
+                logger.warning(
+                    "Gemini API key not configured -> attempting Qwen fallback (%s)",
+                    self.fallback_adapter.model,
+                )
+                qwen_output, qwen_error_type, qwen_error_msg = await self.fallback_adapter.compare(
+                    query=query,
+                    bytes_a=bytes_a,
+                    mime_a=mime_a,
+                    bytes_b=bytes_b,
+                    mime_b=mime_b,
+                    modality_a=modality_a,
+                    modality_b=modality_b,
+                )
+                if qwen_output is not None:
+                    logger.info("Qwen Comparison fallback succeeded (model: %s)", self.fallback_adapter.model)
+                    return self._build_qwen_success_result(
+                        output=qwen_output,
+                        pil_img_a=pil_img_a,
+                        pil_img_b=pil_img_b,
+                        modality_a=modality_a,
+                        modality_b=modality_b,
+                        gemini_error_type="missing_api_key",
+                    )
+                else:
+                    logger.error("Qwen Comparison fallback failed (%s: %s)", qwen_error_type, qwen_error_msg)
+                    return ToolResult(
+                        tool_name=self.tool_id.value,
+                        status=ToolStatus.ERROR.value,
+                        answer=None,
+                        confidence=0.0,
+                        evidence=[],
+                        visualizations=[],
+                        metadata={
+                            "capability": "COMPARISON",
+                            "error_type": "missing_api_key",
+                            "fallback_attempted": True,
+                            "fallback_error": qwen_error_type,
+                            "provider": "gemini",
+                            "model": self.model,
+                        },
+                        warnings=[
+                            "Gemini API key is not configured. Multimodal comparison unavailable.",
+                            f"Local Qwen fallback failed: {qwen_error_msg}",
+                        ],
+                    )
+
             return ToolResult(
                 tool_name=self.tool_id.value,
                 status=ToolStatus.ERROR.value,
@@ -233,6 +303,56 @@ class ComparisonTool(BaseTool):
         )
 
         if output is None:
+            # Check if eligible for Qwen fallback
+            if self.fallback_adapter is not None and error_type in ELIGIBLE_FALLBACK_ERRORS:
+                logger.warning(
+                    "Gemini Comparison failed (%s: %s) -> attempting Qwen fallback (model: %s)",
+                    error_type,
+                    error_msg,
+                    self.fallback_adapter.model,
+                )
+                qwen_output, qwen_error_type, qwen_error_msg = await self.fallback_adapter.compare(
+                    query=query,
+                    bytes_a=bytes_a,
+                    mime_a=mime_a,
+                    bytes_b=bytes_b,
+                    mime_b=mime_b,
+                    modality_a=modality_a,
+                    modality_b=modality_b,
+                )
+                if qwen_output is not None:
+                    logger.info("Qwen Comparison fallback succeeded (model: %s)", self.fallback_adapter.model)
+                    return self._build_qwen_success_result(
+                        output=qwen_output,
+                        pil_img_a=pil_img_a,
+                        pil_img_b=pil_img_b,
+                        modality_a=modality_a,
+                        modality_b=modality_b,
+                        gemini_error_type=error_type,
+                    )
+                else:
+                    logger.error("Qwen Comparison fallback failed (%s: %s)", qwen_error_type, qwen_error_msg)
+                    return ToolResult(
+                        tool_name=self.tool_id.value,
+                        status=ToolStatus.ERROR.value,
+                        answer=None,
+                        confidence=0.0,
+                        evidence=[],
+                        visualizations=[],
+                        metadata={
+                            "capability": "COMPARISON",
+                            "error_type": error_type or "inference_failure",
+                            "fallback_attempted": True,
+                            "fallback_error": qwen_error_type,
+                            "provider": "gemini",
+                            "model": self.model,
+                        },
+                        warnings=[
+                            error_msg or "Multimodal comparison analysis failed.",
+                            f"Local Qwen fallback failed: {qwen_error_msg}",
+                        ],
+                    )
+
             return ToolResult(
                 tool_name=self.tool_id.value,
                 status=ToolStatus.ERROR.value,
@@ -275,6 +395,41 @@ class ComparisonTool(BaseTool):
                     source=f"Gemini Comparison ({self.model})",
                 )
             )
+        for opt in getattr(output, "optical_evidence", []):
+            evidence.append(
+                AnalysisEvidence(
+                    type="optical_evidence",
+                    description=opt,
+                    source=f"Gemini Comparison ({self.model})",
+                    modality="optical",
+                )
+            )
+        for sar in getattr(output, "sar_evidence", []):
+            evidence.append(
+                AnalysisEvidence(
+                    type="sar_evidence",
+                    description=sar,
+                    source=f"Gemini Comparison ({self.model})",
+                    modality="sar",
+                )
+            )
+        if getattr(output, "fused_conclusion", None):
+            evidence.append(
+                AnalysisEvidence(
+                    type="fused_conclusion",
+                    description=output.fused_conclusion,
+                    source=f"Gemini Comparison ({self.model})",
+                    modality="fused",
+                )
+            )
+        for conf in getattr(output, "conflicting_evidence", []):
+            evidence.append(
+                AnalysisEvidence(
+                    type="conflicting_evidence",
+                    description=conf,
+                    source=f"Gemini Comparison ({self.model})",
+                )
+            )
 
         is_cross_modal = (
             (modality_a == "optical" and modality_b == "sar")
@@ -291,11 +446,28 @@ class ComparisonTool(BaseTool):
             "similarities": output.similarities,
             "differences": output.differences,
             "observations": output.observations,
+            "optical_evidence": getattr(output, "optical_evidence", []),
+            "sar_evidence": getattr(output, "sar_evidence", []),
+            "fused_conclusion": getattr(output, "fused_conclusion", ""),
+            "conflicting_evidence": getattr(output, "conflicting_evidence", []),
+            "limitations": getattr(output, "limitations", []),
             "image_a_dimensions": f"{pil_img_a.width}x{pil_img_a.height}",
             "image_b_dimensions": f"{pil_img_b.width}x{pil_img_b.height}",
             "image_a_format": pil_img_a.format or "RGB",
             "image_b_format": pil_img_b.format or "RGB",
         }
+
+        warnings = list(output.warnings)
+        for lim in getattr(output, "limitations", []):
+            if lim not in warnings:
+                warnings.append(lim)
+        if modality_a == "sar" or modality_b == "sar" or is_cross_modal:
+            sar_disclaimer = (
+                "Visual VLM analysis of SAR imagery interprets rendered backscatter spatial distribution "
+                "and brightness; it does not replace calibrated complex polarimetric decomposition or interferometric processing."
+            )
+            if sar_disclaimer not in warnings:
+                warnings.append(sar_disclaimer)
 
         # Zero fabricated visualizations (bounding boxes, masks, coordinates)
         return ToolResult(
@@ -306,7 +478,129 @@ class ComparisonTool(BaseTool):
             evidence=evidence,
             visualizations=[],
             metadata=metadata,
-            warnings=output.warnings,
+            warnings=warnings,
+        )
+
+    def _build_qwen_success_result(
+        self,
+        output: ComparisonOutputSchema,
+        pil_img_a: Image.Image,
+        pil_img_b: Image.Image,
+        modality_a: str,
+        modality_b: str,
+        gemini_error_type: Optional[str] = None,
+    ) -> ToolResult:
+        """Build compatible ToolResult from Qwen Comparison output adhering to standard schema."""
+        evidence: List[AnalysisEvidence] = []
+        for sim in output.similarities:
+            evidence.append(
+                AnalysisEvidence(
+                    type="similarity",
+                    description=sim,
+                    source=f"Qwen Comparison ({self.fallback_adapter.model})",
+                )
+            )
+        for diff in output.differences:
+            evidence.append(
+                AnalysisEvidence(
+                    type="difference",
+                    description=diff,
+                    source=f"Qwen Comparison ({self.fallback_adapter.model})",
+                )
+            )
+        for obs in output.observations:
+            evidence.append(
+                AnalysisEvidence(
+                    type="visual_observation",
+                    description=obs,
+                    source=f"Qwen Comparison ({self.fallback_adapter.model})",
+                )
+            )
+        for opt in getattr(output, "optical_evidence", []):
+            evidence.append(
+                AnalysisEvidence(
+                    type="optical_evidence",
+                    description=opt,
+                    source=f"Qwen Comparison ({self.fallback_adapter.model})",
+                    modality="optical",
+                )
+            )
+        for sar in getattr(output, "sar_evidence", []):
+            evidence.append(
+                AnalysisEvidence(
+                    type="sar_evidence",
+                    description=sar,
+                    source=f"Qwen Comparison ({self.fallback_adapter.model})",
+                    modality="sar",
+                )
+            )
+        if getattr(output, "fused_conclusion", None):
+            evidence.append(
+                AnalysisEvidence(
+                    type="fused_conclusion",
+                    description=output.fused_conclusion,
+                    source=f"Qwen Comparison ({self.fallback_adapter.model})",
+                    modality="fused",
+                )
+            )
+        for conf in getattr(output, "conflicting_evidence", []):
+            evidence.append(
+                AnalysisEvidence(
+                    type="conflicting_evidence",
+                    description=conf,
+                    source=f"Qwen Comparison ({self.fallback_adapter.model})",
+                )
+            )
+
+        is_cross_modal = (
+            (modality_a == "optical" and modality_b == "sar")
+            or (modality_a == "sar" and modality_b == "optical")
+        )
+
+        metadata = {
+            "capability": "COMPARISON",
+            "provider": "qwen",
+            "model": self.fallback_adapter.model,
+            "fallback": True,
+            "fallback_reason": gemini_error_type,
+            "modality_a": modality_a,
+            "modality_b": modality_b,
+            "is_cross_modal": is_cross_modal,
+            "similarities": output.similarities,
+            "differences": output.differences,
+            "observations": output.observations,
+            "optical_evidence": getattr(output, "optical_evidence", []),
+            "sar_evidence": getattr(output, "sar_evidence", []),
+            "fused_conclusion": getattr(output, "fused_conclusion", ""),
+            "conflicting_evidence": getattr(output, "conflicting_evidence", []),
+            "limitations": getattr(output, "limitations", []),
+            "image_a_dimensions": f"{pil_img_a.width}x{pil_img_a.height}",
+            "image_b_dimensions": f"{pil_img_b.width}x{pil_img_b.height}",
+            "image_a_format": pil_img_a.format or "RGB",
+            "image_b_format": pil_img_b.format or "RGB",
+        }
+
+        warnings = list(output.warnings)
+        for lim in getattr(output, "limitations", []):
+            if lim not in warnings:
+                warnings.append(lim)
+        if modality_a == "sar" or modality_b == "sar" or is_cross_modal:
+            sar_disclaimer = (
+                "Visual VLM analysis of SAR imagery interprets rendered backscatter spatial distribution "
+                "and brightness; it does not replace calibrated complex polarimetric decomposition or interferometric processing."
+            )
+            if sar_disclaimer not in warnings:
+                warnings.append(sar_disclaimer)
+
+        return ToolResult(
+            tool_name=self.tool_id.value,
+            status=ToolStatus.SUCCESS.value,
+            answer=output.answer,
+            confidence=round(float(output.confidence), 4),
+            evidence=evidence,
+            visualizations=[],
+            metadata=metadata,
+            warnings=warnings,
         )
 
     def _resolve_modality(self, val: Any) -> str:

@@ -58,6 +58,15 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-3.6-flash"
     GEMINI_TIMEOUT_SECONDS: float = 10.0
 
+    # Ollama / Local Qwen Fallback configuration (optional local fallback when Gemini is unavailable)
+    # Timeouts are initial safe upper bounds based on local laptop benchmarking on Intel iGPU (Vulkan);
+    # they are fully configurable via environment variables.
+    OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
+    OLLAMA_MODEL: str = "qwen-satquery"
+    OLLAMA_VQA_TIMEOUT_SECONDS: float = 90.0
+    OLLAMA_COMPARISON_TIMEOUT_SECONDS: float = 150.0
+    ENABLE_OLLAMA_FALLBACK: bool = True
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

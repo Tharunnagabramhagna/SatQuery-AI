@@ -1,0 +1,136 @@
+{
+  "metadata": {
+    "title": "SIH 2026 Representative Queries — SatQuery-AI Acceptance Tests",
+    "problem_statement": "SIH26167: Interactive Vision-Language Assistant for Multimodal Remote Sensing Image Analysis through Text Queries",
+    "note": "This harness tests functional pipeline behavior only. It does NOT claim satisfaction of remote-sensing model adaptation/fine-tuning (e.g. BigEarthNet) requirements.",
+    "created": "2026-09-07"
+  },
+  "fixtures": {
+    "before_image": "tests/data/sat_before.jpg",
+    "after_image": "tests/data/sat_after.jpg",
+    "sar_image": null,
+    "sar_note": "No SAR fixture exists in tests/data/. Test 04 (Optical+SAR) is BLOCKED until a real SAR image is added."
+  },
+  "tests": [
+    {
+      "id": "SIH-01",
+      "name": "Land-Cover VQA",
+      "query": "Describe the land-cover and major objects visible in this image.",
+      "expected_intent": "VQA",
+      "expected_tool": "VQA_TOOL",
+      "images": {
+        "before_image": "tests/data/sat_before.jpg",
+        "after_image": null
+      },
+      "modalities": {
+        "before_image_modality": "optical",
+        "after_image_modality": null
+      },
+      "provider": {
+        "primary": "gemini",
+        "fallback_eligible": true,
+        "fallback_provider": "qwen_ollama",
+        "fallback_condition": "Eligible Gemini provider/runtime failure (HTTP 429, timeout, missing API key)"
+      },
+      "qwen_required": false,
+      "expected_status": "success"
+    },
+    {
+      "id": "SIH-02",
+      "name": "Water Body Grounding",
+      "query": "Highlight the water body referred to in the query.",
+      "expected_intent": "GROUNDING",
+      "expected_tool": "GROUNDING_TOOL",
+      "images": {
+        "before_image": "tests/data/sat_before.jpg",
+        "after_image": null
+      },
+      "modalities": {
+        "before_image_modality": "optical",
+        "after_image_modality": null
+      },
+      "provider": {
+        "primary": "gemini",
+        "fallback_eligible": false,
+        "fallback_provider": null,
+        "fallback_condition": "Qwen is NEVER used for Grounding"
+      },
+      "qwen_required": false,
+      "expected_status": "success"
+    },
+    {
+      "id": "SIH-03",
+      "name": "Bi-temporal Change Detection",
+      "query": "What changed between these two dates, and where did the change occur?",
+      "expected_intent": "CHANGE_DETECTION",
+      "expected_tool": "CHANGE_DETECTION_TOOL",
+      "images": {
+        "before_image": "tests/data/sat_before.jpg",
+        "after_image": "tests/data/sat_after.jpg"
+      },
+      "modalities": {
+        "before_image_modality": "optical",
+        "after_image_modality": "optical"
+      },
+      "provider": {
+        "primary": "local_change_detection",
+        "fallback_eligible": false,
+        "fallback_provider": null,
+        "fallback_condition": "Qwen is NEVER used for Change Detection"
+      },
+      "qwen_required": false,
+      "expected_status": "success"
+    },
+    {
+      "id": "SIH-04",
+      "name": "Optical + SAR Cross-Modal Analysis",
+      "query": "Use the optical and SAR images together to identify built-up and water-covered regions.",
+      "expected_intent": "COMPARISON",
+      "expected_tool": "COMPARISON_TOOL",
+      "images": {
+        "before_image": "tests/data/sat_before.jpg",
+        "after_image": null,
+        "sar_required": true
+      },
+      "modalities": {
+        "before_image_modality": "optical",
+        "after_image_modality": "sar"
+      },
+      "provider": {
+        "primary": "gemini",
+        "fallback_eligible": true,
+        "fallback_provider": "qwen_ollama",
+        "fallback_condition": "Eligible Gemini provider/runtime failure"
+      },
+      "qwen_required": false,
+      "blocked": true,
+      "blocked_reason": "MISSING_SAR_FIXTURE: No real SAR image exists in tests/data/. Cannot relabel an optical image as SAR.",
+      "expected_status": "blocked"
+    },
+    {
+      "id": "SIH-05",
+      "name": "Built-up Area Change Analysis",
+      "query": "Has the built-up area increased, decreased, or remained unchanged?",
+      "expected_intent": "CHANGE_DETECTION",
+      "expected_tool": "CHANGE_DETECTION_TOOL",
+      "images": {
+        "before_image": "tests/data/sat_before.jpg",
+        "after_image": "tests/data/sat_after.jpg"
+      },
+      "modalities": {
+        "before_image_modality": "optical",
+        "after_image_modality": "optical"
+      },
+      "provider": {
+        "primary": "local_change_detection",
+        "fallback_eligible": false,
+        "fallback_provider": null,
+        "fallback_condition": "Qwen is NEVER used for Change Detection"
+      },
+      "qwen_required": false,
+      "expected_status": "limitation",
+      "semantic_limitation": true,
+      "note": "The current Change Detection tool reports pixel-level change metrics (change_percentage, changed_pixels). It does NOT compute built-up-area hectares, coordinates, or land-class percentages. The test validates that the tool produces an honest answer using its actual capabilities without fabricating unsupported measurements."
+    }
+  ]
+}

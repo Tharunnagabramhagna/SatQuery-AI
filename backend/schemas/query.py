@@ -19,6 +19,20 @@ class ExecutionTraceStep(BaseModel):
     status: str = Field(default="completed", description="Execution status: completed | skipped | failed")
 
 
+class ExecutionSummary(BaseModel):
+    """Auditable summary of the execution pipeline for SIH compliance evaluation."""
+
+    task: str = Field(..., description="Classified analytical task")
+    models: List[str] = Field(default_factory=list, description="Models invoked during pipeline execution")
+    tools: List[str] = Field(default_factory=list, description="Specialist tools executed")
+    input_summary: Dict[str, Any] = Field(default_factory=dict, description="Summary of input formats, modalities, and counts")
+    parameters: Dict[str, Any] = Field(default_factory=dict, description="Execution parameters passed to specialist tools")
+    evidence: List[AnalysisEvidence] = Field(default_factory=list, description="Aggregated evidence items supporting answer")
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Calibrated final confidence score")
+    warnings: List[str] = Field(default_factory=list, description="Operational caveats and limitations")
+    provider_info: Dict[str, Any] = Field(default_factory=dict, description="Provider, model, and fallback tracking details")
+
+
 class QueryRequest(BaseModel):
     """Incoming query request model."""
 
@@ -121,4 +135,8 @@ class QueryResponse(BaseModel):
     tool_result: Optional[ToolResult] = Field(
         default=None,
         description="Structured execution result returned by the selected specialist tool.",
+    )
+    execution_summary: Optional[ExecutionSummary] = Field(
+        default=None,
+        description="Auditable summary of the execution trace, models, tools, evidence, and confidence.",
     )

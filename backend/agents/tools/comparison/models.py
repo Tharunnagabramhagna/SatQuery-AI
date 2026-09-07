@@ -38,3 +38,23 @@ class ComparisonOutputSchema(BaseModel):
         default_factory=list,
         description="Caveats regarding resolution, alignment, cloud cover, sensor/modality differences, or comparison uncertainty.",
     )
+    optical_evidence: List[str] = Field(
+        default_factory=list,
+        description="Directly observable visual, spectral, contextual, and land-cover features from optical imagery.",
+    )
+    sar_evidence: List[str] = Field(
+        default_factory=list,
+        description="Directly observable radar backscatter intensity, surface roughness, structural bounce, and moisture response features from SAR imagery.",
+    )
+    fused_conclusion: str = Field(
+        default="",
+        description="Reconciled multimodal analytical conclusion synthesizing both sensor modalities.",
+    )
+    conflicting_evidence: List[str] = Field(
+        default_factory=list,
+        description="Contradictions or divergences between optical spectral reflectance and radar backscatter.",
+    )
+    limitations: List[str] = Field(
+        default_factory=list,
+        description="Sensor, resolution, and VLM limitations (e.g. noting that visual VLM analysis of SAR interprets rendered intensity patterns rather than calibrated complex polarimetry).",
+    )

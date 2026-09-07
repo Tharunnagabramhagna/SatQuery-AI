@@ -33,11 +33,20 @@ class ToolRegistry:
         self._register_defaults()
 
     def _register_defaults(self) -> None:
-        """Register the standard set of placeholder tools."""
-        self.register(VQATool())
+        """Register the standard set of specialist tools."""
+        from backend.config import settings
+        from backend.services.ollama import get_default_qwen_adapter
+
+        ollama_adapter = (
+            get_default_qwen_adapter()
+            if getattr(settings, "ENABLE_OLLAMA_FALLBACK", False)
+            else None
+        )
+
+        self.register(VQATool(fallback_adapter=ollama_adapter))
         self.register(GroundingTool())
         self.register(ChangeDetectionTool())
-        self.register(ComparisonTool())
+        self.register(ComparisonTool(fallback_adapter=ollama_adapter))
         self.register(ClarificationTool())
 
     def register(self, tool: BaseTool) -> None:
