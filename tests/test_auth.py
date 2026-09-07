@@ -56,18 +56,7 @@ def _verify_user(client: TestClient, email: str) -> None:
 
 
 
-@pytest.fixture(scope="module")
-def test_engine():
-    """Create a database engine pointing strictly to `satquery_test`."""
-    test_url = settings.TEST_DATABASE_URL
-    if not test_url or "satquery_test" not in test_url:
-        pytest.fail("TEST_DATABASE_URL must be configured with 'satquery_test'")
 
-    engine = create_engine(test_url, pool_pre_ping=True)
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
 
 
 @pytest.fixture

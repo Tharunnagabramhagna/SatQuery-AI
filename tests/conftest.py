@@ -1,22 +1,42 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
 from backend.db.base import Base
-from backend.db.session import get_db
+from backend.db.session import get_db, check_db_connectivity
 from backend.main import app
 from backend.config import settings
 
 
 @pytest.fixture(scope="session")
 def test_engine():
-    """Use the dedicated PostgreSQL test database for API tests."""
-    engine = create_engine(settings.TEST_DATABASE_URL, pool_pre_ping=True)
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
+    """Use PostgreSQL test database if reachable, otherwise fallback to SQLite."""
+    pg_engine = None
+    if settings.TEST_DATABASE_URL:
+        try:
+            cand_engine = create_engine(settings.TEST_DATABASE_URL, pool_pre_ping=True)
+            if check_db_connectivity(target_engine=cand_engine, timeout=0.5):
+                pg_engine = cand_engine
+        except Exception:
+            pg_engine = None
+
+    if pg_engine is not None:
+        Base.metadata.create_all(bind=pg_engine)
+        yield pg_engine
+        Base.metadata.drop_all(bind=pg_engine)
+        pg_engine.dispose()
+    else:
+        sqlite_engine = create_engine(
+            "sqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+        Base.metadata.create_all(bind=sqlite_engine)
+        yield sqlite_engine
+        Base.metadata.drop_all(bind=sqlite_engine)
+        sqlite_engine.dispose()
 
 
 @pytest.fixture

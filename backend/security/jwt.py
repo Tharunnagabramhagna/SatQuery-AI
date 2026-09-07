@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import os
 import uuid
 from typing import Any, Dict, Optional
 
@@ -29,7 +30,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 # Generic authentication failure exception
 CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Could not validate credentials.",
+    detail="Invalid, expired, or malformed authentication credentials.",
     headers={"WWW-Authenticate": "Bearer"},
 )
 

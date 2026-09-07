@@ -51,6 +51,14 @@ class OAuthProfile:
     email_verified: bool
 
 
+def _to_utc(dt: Optional[datetime.datetime]) -> Optional[datetime.datetime]:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=datetime.timezone.utc)
+    return dt.astimezone(datetime.timezone.utc)
+
+
 def generate_and_store_oauth_state(db: Session, provider: str) -> str:
     """Generate a secure CSRF state token, record its SHA-256 hash, and return the raw token."""
     raw_state = generate_oauth_state()
@@ -91,7 +99,7 @@ def validate_and_consume_oauth_state(db: Session, provider: str, raw_state: Opti
         logger.warning("OAuth callback rejected: state token already consumed for provider=%s", provider)
         return False
 
-    if state_record.expires_at < now:
+    if _to_utc(state_record.expires_at) < now:
         logger.warning("OAuth callback rejected: state token expired for provider=%s", provider)
         return False
 
@@ -529,7 +537,7 @@ def exchange_oauth_code_for_user(db: Session, raw_code: str) -> User:
             detail="OAuth exchange code has already been used.",
         )
 
-    if record.expires_at < now:
+    if _to_utc(record.expires_at) < now:
         logger.warning("OAuth exchange failed: exchange code expired")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

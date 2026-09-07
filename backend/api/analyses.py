@@ -57,7 +57,7 @@ def list_user_analyses(
     analyses = db.execute(
         select(Analysis)
         .where(Analysis.user_id == current_user.id)
-        .order_by(Analysis.created_at.desc())
+        .order_by(Analysis.created_at.desc(), Analysis.id.desc())
     ).scalars().all()
 
     return [

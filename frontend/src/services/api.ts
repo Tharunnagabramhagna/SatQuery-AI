@@ -116,7 +116,7 @@ export async function getSystemStatus(): Promise<SystemStatus> {
     if (response.ok) {
       const data = await response.json();
       return {
-        status: data.status === 'healthy' ? 'online' : 'degraded',
+        status: data.status === 'healthy' ? 'operational' : 'degraded',
         label: data.status === 'healthy' ? 'Backend Connected' : 'Backend Degraded',
         isDemo: false,
         lastChecked: new Date().toISOString(),

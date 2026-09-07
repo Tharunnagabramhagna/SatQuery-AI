@@ -64,6 +64,8 @@ export interface AnalysisRequest {
   mode: AnalysisMode;
   capability: AnalysisCapability;
   files: File[];
+  beforeImage?: File;
+  afterImage?: File;
 }
 
 export interface AnalysisResponse {

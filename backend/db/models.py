@@ -22,7 +22,7 @@ import datetime
 import uuid
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, Uuid, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, JSON, String, Text, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -176,12 +176,13 @@ class Analysis(Base):
         doc="Analysis outcome status (e.g. completed, error, failed)",
     )
     response_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSONB,
+        JSON().with_variant(JSONB, "postgresql"),
         nullable=True,
         doc="Complete structured analysis result payload in JSONB format",
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True),
+        default=lambda: datetime.datetime.now(datetime.timezone.utc),
         server_default=func.now(),
         nullable=False,
         index=True,

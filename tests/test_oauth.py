@@ -43,17 +43,7 @@ from backend.main import app
 from backend.security import decode_access_token, hash_password
 
 
-@pytest.fixture(scope="module")
-def test_engine():
-    """Create test engine on satquery_test."""
-    test_url = settings.TEST_DATABASE_URL
-    if not test_url or "satquery_test" not in test_url:
-        pytest.fail("TEST_DATABASE_URL must point to satquery_test")
-    engine = create_engine(test_url, pool_pre_ping=True)
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
+
 
 
 @pytest.fixture

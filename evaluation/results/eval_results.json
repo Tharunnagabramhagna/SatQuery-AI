@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-09-07T10:42:23.940396+00:00",
-  "execution_time_seconds": 24.15,
+  "timestamp": "2026-09-07T21:35:53.637037+00:00",
+  "execution_time_seconds": 8.8,
   "suite_summary": {
     "total_cases": 60,
-    "passed_cases": 50,
-    "failed_cases": 10,
-    "overall_success_rate": 0.8333
+    "passed_cases": 45,
+    "failed_cases": 15,
+    "overall_success_rate": 0.75
   },
   "metrics": {
     "classification": {
-      "accuracy": 0.7833,
-      "macro_precision": 0.7745,
-      "macro_recall": 0.8089,
-      "macro_f1": 0.771,
-      "weighted_f1": 0.7875,
+      "accuracy": 0.75,
+      "macro_precision": 0.7583,
+      "macro_recall": 0.7867,
+      "macro_f1": 0.7481,
+      "weighted_f1": 0.7527,
       "per_class": {
         "CHANGE_DETECTION": {
           "precision": 1.0,
-          "recall": 0.7778,
-          "f1": 0.875,
+          "recall": 0.6667,
+          "f1": 0.8,
           "support": 18
         },
         "COMPARISON": {
@@ -28,9 +28,9 @@
           "support": 2
         },
         "GROUNDING": {
-          "precision": 0.8,
+          "precision": 0.75,
           "recall": 0.6,
-          "f1": 0.6857,
+          "f1": 0.6667,
           "support": 20
         },
         "UNKNOWN": {
@@ -40,20 +40,20 @@
           "support": 3
         },
         "VQA": {
-          "precision": 0.7391,
+          "precision": 0.7083,
           "recall": 1.0,
-          "f1": 0.85,
+          "f1": 0.8292,
           "support": 17
         }
       },
       "total_samples": 60
     },
     "routing": {
-      "routing_accuracy": 0.7167,
-      "wrong_tool_rate": 0.2833,
+      "routing_accuracy": 0.7,
+      "wrong_tool_rate": 0.3,
       "fallback_rate": 0.2833,
       "total_cases": 60,
-      "correct_routings": 43
+      "correct_routings": 42
     },
     "change_detection": {
       "binary_accuracy": 1.0,
@@ -65,10 +65,10 @@
       "pct_evaluated_cases": 3
     },
     "vqa": {
-      "mean_keyword_recall": 0.3333,
+      "mean_keyword_recall": 0.0,
       "mean_token_f1": 0.0,
       "mean_exact_match": 0.0,
-      "total_cases": 2
+      "total_cases": 0
     },
     "grounding": {
       "mean_semantic_match": 0.0,
@@ -78,12 +78,14 @@
     }
   },
   "error_analysis": {
-    "total_errors": 10,
+    "total_errors": 15,
     "error_taxonomy": {
-      "misclassification": 5,
+      "misclassification": 6,
       "ambiguity_fallback": 2,
       "ood_misclassification": 1,
-      "routing_fallback": 2
+      "routing_fallback": 2,
+      "vqa_discrepancy": 2,
+      "grounding_discrepancy": 2
     },
     "detailed_failures": [
       {
@@ -97,6 +99,18 @@
         "expected_tool": "grounding_tool",
         "failure_category": "misclassification",
         "failure_reason": "Intent mismatch: expected GROUNDING, got VQA"
+      },
+      {
+        "case_id": "QU_CD_003",
+        "query": "Identify changes in the coastline following the hurricane.",
+        "category": "query_understanding",
+        "expected_capability": "CHANGE_DETECTION",
+        "predicted_intent": "VQA",
+        "expected_intent": "CHANGE_DETECTION",
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "expected_tool": "change_detection_tool",
+        "failure_category": "misclassification",
+        "failure_reason": "Intent mismatch: expected CHANGE_DETECTION, got VQA"
       },
       {
         "case_id": "QU_AMB_001",
@@ -145,6 +159,30 @@
         "expected_tool": "change_detection_tool",
         "failure_category": "routing_fallback",
         "failure_reason": "Routing mismatch: expected change_detection_tool, selected CLARIFICATION_TOOL"
+      },
+      {
+        "case_id": "VQA_REAL_001",
+        "query": "Is there a runway visible in the satellite image?",
+        "category": "vqa",
+        "expected_capability": "VQA",
+        "predicted_intent": "VQA",
+        "expected_intent": "VQA",
+        "predicted_tool": "VQA_TOOL",
+        "expected_tool": "vqa_tool",
+        "failure_category": "vqa_discrepancy",
+        "failure_reason": "Answer '' did not contain expected keywords ['yes', 'runway', 'airport']"
+      },
+      {
+        "case_id": "GR_SEM_001",
+        "query": "Locate airplanes parked near the terminal.",
+        "category": "grounding",
+        "expected_capability": "GROUNDING",
+        "predicted_intent": "GROUNDING",
+        "expected_intent": "GROUNDING",
+        "predicted_tool": "GROUNDING_TOOL",
+        "expected_tool": "grounding_tool",
+        "failure_category": "grounding_discrepancy",
+        "failure_reason": "Grounding tool returned status=error, cap=GROUNDING"
       },
       {
         "case_id": "QU_GR_009",
@@ -205,6 +243,30 @@
         "expected_tool": "grounding_tool",
         "failure_category": "routing_fallback",
         "failure_reason": "Routing mismatch: expected grounding_tool, selected CLARIFICATION_TOOL"
+      },
+      {
+        "case_id": "VQA_REAL_002",
+        "query": "Are there buildings or built-up structures visible in this scene?",
+        "category": "vqa",
+        "expected_capability": "VQA",
+        "predicted_intent": "VQA",
+        "expected_intent": "VQA",
+        "predicted_tool": "VQA_TOOL",
+        "expected_tool": "vqa_tool",
+        "failure_category": "vqa_discrepancy",
+        "failure_reason": "Answer '' did not contain expected keywords ['yes', 'building', 'urban']"
+      },
+      {
+        "case_id": "GR_SEM_002",
+        "query": "Identify the primary road artery leading into the city.",
+        "category": "grounding",
+        "expected_capability": "GROUNDING",
+        "predicted_intent": "VQA",
+        "expected_intent": "GROUNDING",
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "expected_tool": "grounding_tool",
+        "failure_category": "grounding_discrepancy",
+        "failure_reason": "Grounding tool returned status=error, cap=GROUNDING"
       }
     ]
   },
@@ -466,18 +528,18 @@
       "capability": "CHANGE_DETECTION",
       "evaluation_type": "manually_curated",
       "query": "Identify changes in the coastline following the hurricane.",
-      "passed": true,
-      "failure_reason": null,
-      "failure_category": null,
+      "passed": false,
+      "failure_reason": "Intent mismatch: expected CHANGE_DETECTION, got VQA",
+      "failure_category": "misclassification",
       "details": {
-        "predicted_intent": "CHANGE_DETECTION",
-        "intent_confidence": 0.95,
+        "predicted_intent": "VQA",
+        "intent_confidence": 0.5,
         "extracted_entities": [
           "coastline"
         ],
-        "predicted_tool": "CHANGE_DETECTION_TOOL",
-        "routing_confidence": 0.95,
-        "requires_clarification": false,
+        "predicted_tool": "CLARIFICATION_TOOL",
+        "routing_confidence": 0.5,
+        "requires_clarification": true,
         "entity_match_score": 0.0
       }
     },
@@ -753,7 +815,9 @@
             }
           },
           "detected_clusters_count": 2,
-          "coordinate_format": "normalized [ymin, xmin, ymax, xmax]"
+          "coordinate_format": "normalized [ymin, xmin, ymax, xmax]",
+          "semantic_interpretation_status": "unavailable",
+          "semantic_error_type": "client_error"
         },
         "changed_pixels": 5535,
         "change_percentage": 33.78
@@ -770,10 +834,10 @@
       "failure_category": null,
       "details": {
         "predicted_intent": "CHANGE_DETECTION",
-        "intent_confidence": 0.95,
+        "intent_confidence": 0.89,
         "extracted_entities": [],
         "predicted_tool": "CHANGE_DETECTION_TOOL",
-        "routing_confidence": 0.95,
+        "routing_confidence": 0.89,
         "requires_clarification": false,
         "tool_status": "success",
         "metadata": {
@@ -797,7 +861,9 @@
             }
           },
           "detected_clusters_count": 0,
-          "coordinate_format": "normalized [ymin, xmin, ymax, xmax]"
+          "coordinate_format": "normalized [ymin, xmin, ymax, xmax]",
+          "semantic_interpretation_status": "unavailable",
+          "semantic_error_type": "client_error"
         },
         "changed_pixels": 0,
         "change_percentage": 0.0
@@ -813,12 +879,12 @@
       "failure_reason": null,
       "failure_category": null,
       "details": {
-        "predicted_intent": "CHANGE_DETECTION",
-        "intent_confidence": 0.72,
+        "predicted_intent": "GROUNDING",
+        "intent_confidence": 0.86,
         "extracted_entities": [],
-        "predicted_tool": "CLARIFICATION_TOOL",
-        "routing_confidence": 0.72,
-        "requires_clarification": true,
+        "predicted_tool": "GROUNDING_TOOL",
+        "routing_confidence": 0.86,
+        "requires_clarification": false,
         "tool_status": "input_required",
         "metadata": {
           "capability": "CHANGE_DETECTION",
@@ -838,9 +904,9 @@
       "capability": "VQA",
       "evaluation_type": "real_annotated",
       "query": "Is there a runway visible in the satellite image?",
-      "passed": true,
-      "failure_reason": null,
-      "failure_category": null,
+      "passed": false,
+      "failure_reason": "Answer '' did not contain expected keywords ['yes', 'runway', 'airport']",
+      "failure_category": "vqa_discrepancy",
       "details": {
         "predicted_intent": "VQA",
         "intent_confidence": 0.92,
@@ -850,11 +916,11 @@
         "predicted_tool": "VQA_TOOL",
         "routing_confidence": 0.92,
         "requires_clarification": false,
-        "tool_status": "completed",
-        "answer": "yes",
-        "keyword_recall": 0.3333,
-        "exact_match": 1.0,
-        "token_f1": 1.0
+        "tool_status": "error",
+        "answer": null,
+        "keyword_recall": 0.0,
+        "exact_match": 0.0,
+        "token_f1": 0.0
       }
     },
     {
@@ -874,7 +940,7 @@
         "routing_confidence": 0.71,
         "requires_clarification": false,
         "tool_status": "input_required",
-        "answer": "A satellite image is required for Visual Question Answering."
+        "answer": "Visual Question Answering requires a satellite image. Please supply an image input."
       }
     },
     {
@@ -883,9 +949,9 @@
       "capability": "GROUNDING",
       "evaluation_type": "manually_curated",
       "query": "Locate airplanes parked near the terminal.",
-      "passed": true,
-      "failure_reason": null,
-      "failure_category": null,
+      "passed": false,
+      "failure_reason": "Grounding tool returned status=error, cap=GROUNDING",
+      "failure_category": "grounding_discrepancy",
       "details": {
         "predicted_intent": "GROUNDING",
         "intent_confidence": 0.89,
@@ -895,8 +961,8 @@
         "predicted_tool": "GROUNDING_TOOL",
         "routing_confidence": 0.89,
         "requires_clarification": false,
-        "tool_status": "completed",
-        "answer": "Grounding target assessment: no"
+        "tool_status": "error",
+        "answer": null
       }
     },
     {
@@ -1256,10 +1322,10 @@
       "failure_category": null,
       "details": {
         "predicted_intent": "CHANGE_DETECTION",
-        "intent_confidence": 0.95,
+        "intent_confidence": 0.89,
         "extracted_entities": [],
         "predicted_tool": "CHANGE_DETECTION_TOOL",
-        "routing_confidence": 0.95,
+        "routing_confidence": 0.89,
         "requires_clarification": false
       }
     },
@@ -1339,7 +1405,9 @@
             }
           },
           "detected_clusters_count": 2,
-          "coordinate_format": "normalized [ymin, xmin, ymax, xmax]"
+          "coordinate_format": "normalized [ymin, xmin, ymax, xmax]",
+          "semantic_interpretation_status": "unavailable",
+          "semantic_error_type": "client_error"
         },
         "changed_pixels": 4150,
         "change_percentage": 25.33
@@ -1351,9 +1419,9 @@
       "capability": "VQA",
       "evaluation_type": "real_annotated",
       "query": "Are there buildings or built-up structures visible in this scene?",
-      "passed": true,
-      "failure_reason": null,
-      "failure_category": null,
+      "passed": false,
+      "failure_reason": "Answer '' did not contain expected keywords ['yes', 'building', 'urban']",
+      "failure_category": "vqa_discrepancy",
       "details": {
         "predicted_intent": "VQA",
         "intent_confidence": 0.71,
@@ -1365,11 +1433,11 @@
         "predicted_tool": "VQA_TOOL",
         "routing_confidence": 0.71,
         "requires_clarification": false,
-        "tool_status": "completed",
-        "answer": "yes",
-        "keyword_recall": 0.3333,
-        "exact_match": 1.0,
-        "token_f1": 1.0
+        "tool_status": "error",
+        "answer": null,
+        "keyword_recall": 0.0,
+        "exact_match": 0.0,
+        "token_f1": 0.0
       }
     },
     {
@@ -1378,9 +1446,9 @@
       "capability": "GROUNDING",
       "evaluation_type": "manually_curated",
       "query": "Identify the primary road artery leading into the city.",
-      "passed": true,
-      "failure_reason": null,
-      "failure_category": null,
+      "passed": false,
+      "failure_reason": "Grounding tool returned status=error, cap=GROUNDING",
+      "failure_category": "grounding_discrepancy",
       "details": {
         "predicted_intent": "VQA",
         "intent_confidence": 0.5,
@@ -1390,8 +1458,8 @@
         "predicted_tool": "CLARIFICATION_TOOL",
         "routing_confidence": 0.5,
         "requires_clarification": true,
-        "tool_status": "completed",
-        "answer": "Grounding target assessment: road"
+        "tool_status": "error",
+        "answer": null
       }
     },
     {

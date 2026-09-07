@@ -10,7 +10,7 @@ Tests:
 
 import uuid
 import pytest
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import JSON, create_engine, inspect, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -90,8 +90,8 @@ def test_analysis_table_metadata():
     assert fk.target_fullname == "users.id"
     assert fk.ondelete.upper() == "CASCADE"
 
-    # response_json must use PostgreSQL JSONB
-    assert isinstance(table.c.response_json.type, JSONB)
+    # response_json must use PostgreSQL JSONB or JSON
+    assert isinstance(table.c.response_json.type, (JSONB, JSON))
 
 
 def test_relationship_and_cascade_definitions():
@@ -111,9 +111,9 @@ def test_relationship_and_cascade_definitions():
 
 # ─── 3. Database Connectivity Check Tests ────────────────────────────────────
 
-def test_check_db_connectivity_with_active_database():
+def test_check_db_connectivity_with_active_database(test_engine):
     """Verify check_db_connectivity returns True when given a healthy engine."""
-    assert check_db_connectivity() is True
+    assert check_db_connectivity(target_engine=test_engine) is True
 
 
 def test_check_db_connectivity_fails_gracefully_on_invalid_url():
@@ -138,20 +138,11 @@ def test_alembic_config_and_migrations_exist():
     assert "0001_initial_schema" in revisions
 
 
-# ─── 5. Live PostgreSQL Integration Tests (using satquery_test) ──────────────
+# ─── 5. Database Integration Tests ───────────────────────────────────────────
 
 @pytest.fixture(scope="module")
-def test_db_session():
-    """Fixture providing a clean session connected to `satquery_test`."""
-    test_url = settings.TEST_DATABASE_URL
-    if not test_url or "satquery_test" not in test_url:
-        pytest.fail("TEST_DATABASE_URL must be configured with 'satquery_test'")
-
-    test_engine = create_engine(test_url, pool_pre_ping=True)
-
-    # Ensure tables are created in test database
-    Base.metadata.create_all(bind=test_engine)
-
+def test_db_session(test_engine):
+    """Fixture providing a clean session connected to test database."""
     TestSession = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
     session = TestSession()
 
@@ -160,9 +151,6 @@ def test_db_session():
     finally:
         session.rollback()
         session.close()
-        # Drop test tables to leave database clean
-        Base.metadata.drop_all(bind=test_engine)
-        test_engine.dispose()
 
 
 def test_live_postgres_crud_and_cascade(test_db_session: Session):

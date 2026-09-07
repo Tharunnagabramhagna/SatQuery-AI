@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: Optional[str] = None
 
-    # JWT Authentication configuration (secrets must be provided via environment / .env)
-    JWT_SECRET_KEY: Optional[str] = None
+    # JWT Authentication configuration (override in production via environment / .env)
+    JWT_SECRET_KEY: str = "satquery-insecure-dev-secret-key-32-chars-long"
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 

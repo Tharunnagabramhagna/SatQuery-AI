@@ -33,6 +33,14 @@ from backend.services.email import send_verification_email
 
 logger = logging.getLogger("satquery.auth")
 
+
+def _to_utc(dt: datetime.datetime | None) -> datetime.datetime | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=datetime.timezone.utc)
+    return dt.astimezone(datetime.timezone.utc)
+
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
@@ -164,7 +172,7 @@ def verify_email(
         )
 
     # Check expiration
-    if verification.expires_at < now:
+    if _to_utc(verification.expires_at) < now:
         verification.status = "expired"
         db.commit()
         raise HTTPException(
@@ -255,7 +263,7 @@ def resend_verification(
     ).scalar_one_or_none()
 
     if latest is not None:
-        elapsed = (now - latest.created_at).total_seconds()
+        elapsed = (now - _to_utc(latest.created_at)).total_seconds()
         if elapsed < settings.EMAIL_RESEND_COOLDOWN_SECONDS:
             retry_after = int(settings.EMAIL_RESEND_COOLDOWN_SECONDS - elapsed)
             raise HTTPException(
