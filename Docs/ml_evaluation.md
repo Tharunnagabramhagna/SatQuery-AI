@@ -163,29 +163,49 @@ Automated error categorization identified **10 total failures** out of 60 benchm
 
 ---
 
-## 6. How to Run the Evaluation Suite
+---
 
-### Run via Python Module
-```bash
-# Standard evaluation run
+## 6. Methodology Scope & Limitations
+
+### 6.1 Software Correctness vs. ML Evaluation
+It is critical to distinguish two different levels of testing in SatQuery AI:
+- **Software Correctness (147 Unit/Integration Tests)**: Verifies that components meet API contracts, raise correct HTTP status codes, preserve database integrity, manage sessions, handle missing inputs, and execute without unhandled exceptions.
+- **ML Evaluation (60-Case Benchmark Suite)**: Evaluates empirical heuristic precision, semantic entity overlap, tool routing correctness, and visual question answering responses on real and synthetic inputs.
+
+### 6.2 Scope of the 83.3% Suite Pass Rate
+> **Important Clarification**: The **83.3% overall pass rate** represents performance strictly across this **60-case curated engineering benchmark suite**. It must **not** be interpreted as a universal production ML accuracy or general remote sensing performance claim.
+
+### 6.3 Empirical Limitations
+1. **Real Image Sample Size**: Only 3 cases utilize real satellite image pairs (`sat_before.jpg` / `sat_after.jpg`) due to repository size constraints.
+2. **Synthetic Controls**: 8 cases are synthetic edge-case controls (e.g. identical pairs, missing image inputs) testing defensive degradation rather than physical surface changes.
+3. **Grounding Ground Truth**: The grounding tool currently assesses semantic presence and classification rather than fine-grained pixel segmentation masks.
+4. **Local BLIP Vision-Language Limitations**: The default VQA provider uses `Salesforce/blip-vqa-base` (pre-trained on general domain photography), which exhibits lower domain keyword recall on specialized remote sensing terminology compared to fine-tuned geospatial foundational models.
+5. **Deterministic Heuristics**: The `RuleBasedQueryClassifier` is intentionally deterministic for fast prototyping, but lacks generalization on multi-clause phrasing.
+
+---
+
+## 7. How Another Developer Runs My Work
+
+### 7.1 Quick Verification
+```powershell
+# Run the ML evaluation benchmark
 python -m evaluation.run
 
-# Verbose mode with per-case output
-python -m evaluation.run --verbose
+# Run evaluation unit tests
+python -m pytest tests/test_evaluation_metrics.py -v
 
-# Custom dataset and results directory
-python -m evaluation.run --dataset path/to/dataset.json --results-dir path/to/results
+# Run the complete test suite
+python -m pytest -q
 ```
 
-### Generated Artifacts
+### 7.2 Generated Artifacts
 - **Structured JSON Results**: `evaluation/results/eval_results.json`
 - **Formatted Markdown Report**: `evaluation/results/eval_report.md`
 
 ---
 
-## 7. Architectural Recommendations
-
-Based on empirical benchmark findings:
+## 8. Architectural Recommendations
 1. **Hybrid Intent Classification**: Integrate a lightweight semantic embedding classifier (e.g. sentence-transformers or small DistilBERT) to handle out-of-vocabulary phrases where regex heuristics fail.
 2. **Domain Boundary Gate (OOD Filter)**: Add an explicit geospatial domain verification step before routing to prevent non-remote-sensing queries from activating computer vision tools.
 3. **High-Resolution Grounding**: Add a dedicated open-vocabulary object detector (such as Grounding DINO) to generate pixel coordinates and bounding boxes rather than relying purely on visual question answering prompts.
+

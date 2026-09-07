@@ -123,22 +123,27 @@ python -m alembic downgrade base
 
 ---
 
-## 5. Quick Reference & Verification Commands
+---
 
-### Check PostgreSQL Service (Windows)
+## 5. How Another Developer Runs My Work
+
+### 5.1 Environment Prerequisites
+Ensure PostgreSQL is running and test database `satquery_test` exists:
 ```powershell
 Get-Service -Name "*postgres*"
 ```
 
-### Create Application & Test Databases
-```sql
-CREATE DATABASE satquery;
-CREATE DATABASE satquery_test;
+### 5.2 Verify Alembic Migrations
+```powershell
+python -m pytest tests/test_database.py -k "alembic" -v
 ```
 
-### Run Full Test Suite
-```bash
-python -m pytest tests/test_database.py -v
-python -m pytest tests/test_auth.py -v
-python -m pytest -q
+### 5.3 Run Database & History Integration Tests
+```powershell
+# Run database schema and live migration tests
+python -m pytest tests/test_database.py -q
+
+# Run authentication and analysis history tests
+python -m pytest tests/test_auth.py -q
 ```
+
