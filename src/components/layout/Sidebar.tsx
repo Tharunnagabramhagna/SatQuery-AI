@@ -128,13 +128,13 @@ export function Sidebar({ collapsed, onToggle, isMobile, onCloseMobile }: Sideba
   return (
     <aside
       className={cn(
-        'relative flex flex-col bg-slate-50 dark:bg-[#080d1a] border-r border-slate-200 dark:border-slate-800/80 transition-all duration-300 ease-in-out select-none z-40 shrink-0',
+        'relative flex flex-col bg-slate-50/75 dark:bg-[#080d1a]/55 backdrop-blur-xl backdrop-saturate-150 border-r border-slate-200/60 dark:border-white/[0.06] transition-all duration-300 ease-in-out select-none z-40 shrink-0',
         collapsed ? 'w-[68px]' : 'w-64',
         isMobile ? 'w-64 h-full' : 'h-screen sticky top-0 hidden lg:flex'
       )}
     >
       {/* Brand Header */}
-      <div className="flex items-center justify-between h-14 px-4 border-b border-slate-200 dark:border-slate-800/80">
+      <div className="flex items-center justify-between h-14 px-4 border-b border-slate-200/60 dark:border-white/[0.06]">
         <BrandMark collapsed={collapsed} />
         {!isMobile && (
           <button
@@ -154,7 +154,7 @@ export function Sidebar({ collapsed, onToggle, isMobile, onCloseMobile }: Sideba
           onClick={handleNewAnalysis}
           className={cn(
             'w-full flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-150',
-            'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-sm shadow-blue-500/25',
+            'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-[0_10px_28px_rgba(14,165,233,0.22)]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
             collapsed ? 'p-2.5' : 'py-2 px-3 text-xs'
           )}
@@ -190,7 +190,7 @@ export function Sidebar({ collapsed, onToggle, isMobile, onCloseMobile }: Sideba
                     return cn(
                       'group relative flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
                       active
-                        ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-600/10 dark:text-blue-400 dark:border-blue-500/20 font-semibold'
+                        ? 'bg-blue-500/[0.08] text-blue-600 border border-blue-400/20 dark:bg-cyan-400/[0.07] dark:text-cyan-300 dark:border-cyan-400/20 backdrop-blur-md font-semibold shadow-[0_4px_18px_rgba(0,0,0,0.08)]'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/50',
                       collapsed && 'justify-center px-2'
                     );
@@ -199,7 +199,7 @@ export function Sidebar({ collapsed, onToggle, isMobile, onCloseMobile }: Sideba
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   {!collapsed && <span className="truncate">{item.label}</span>}
-                  
+
                   {/* Tooltip on collapse hover */}
                   {collapsed && (
                     <div className="absolute left-full ml-2 px-2.5 py-1.5 bg-slate-900 text-slate-100 text-[11px] rounded-md shadow-xl border border-slate-700 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
@@ -215,7 +215,7 @@ export function Sidebar({ collapsed, onToggle, isMobile, onCloseMobile }: Sideba
 
       {/* Sidebar Footer Info */}
       {!collapsed && (
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-100/60 dark:bg-[#060a14]/60">
+        <div className="p-3 border-t border-slate-200/60 dark:border-white/[0.06] bg-white/20 dark:bg-white/[0.025] backdrop-blur-lg">
           <div className="flex flex-col gap-0.5 text-[11px] text-slate-600 dark:text-slate-400">
             <div className="flex items-center justify-between text-slate-800 dark:text-slate-300">
               <span className="font-semibold">SIH 2026</span>

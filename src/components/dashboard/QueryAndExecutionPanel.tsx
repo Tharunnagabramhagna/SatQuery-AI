@@ -70,7 +70,7 @@ export function QueryAndExecutionPanel({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full">
       {/* Left Card: Query Agent (Conditional) */}
       {showQueryInput && (
-        <div className="lg:col-span-7 flex flex-col justify-between rounded-xl border border-slate-300 dark:border-slate-800/90 bg-white dark:bg-[#0a0f1e]/90 p-4 shadow-sm">
+        <div className="lg:col-span-7 flex flex-col justify-between rounded-2xl glass-strong glass-highlight p-4 shadow-[0_18px_60px_rgba(0,0,0,0.20)]">
           <div>
             <div className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-2 leading-snug">
               <QueryAgentLogo className="w-5 h-5 rounded shrink-0" />
@@ -82,14 +82,14 @@ export function QueryAndExecutionPanel({
                 value={currentQuery}
                 onChange={(e) => onQueryChange(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 text-[12.5px] leading-relaxed text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-[#070b15] border border-slate-300 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium resize-none transition-colors"
+                className="w-full px-3 py-2 text-[12.5px] leading-relaxed text-slate-900 dark:text-slate-100 bg-white/45 dark:bg-white/[0.035] backdrop-blur-md border border-slate-300/70 dark:border-white/[0.07] rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium resize-none transition-colors"
                 placeholder={t('queryAgent.placeholder')}
               />
             </div>
           </div>
 
           {/* Suggestions & Action Row */}
-          <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+          <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-200/50 dark:border-white/[0.06]">
             <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 py-0.5">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium shrink-0">
                 {t('execution.suggestions')}
@@ -98,7 +98,7 @@ export function QueryAndExecutionPanel({
                 <button
                   key={idx}
                   onClick={() => onSelectSuggestion(s)}
-                  className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 dark:hover:text-cyan-400 border border-slate-200 dark:border-slate-700/60 transition-colors shrink-0 whitespace-nowrap"
+                  className="px-2 py-0.5 rounded text-[11px] font-medium bg-white/45 dark:bg-white/[0.035] backdrop-blur-md text-slate-700 dark:text-slate-300 hover:bg-blue-500/[0.10] dark:hover:bg-cyan-400/[0.08] hover:text-blue-600 dark:hover:text-cyan-300 border border-slate-200/60 dark:border-white/[0.07] transition-colors shrink-0 whitespace-nowrap"
                 >
                   {s}
                 </button>
@@ -110,7 +110,7 @@ export function QueryAndExecutionPanel({
               disabled={isAnalyzing}
               className={cn(
                 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-md transition-all duration-150 shrink-0',
-                'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100',
+                'bg-slate-950/90 text-white hover:bg-slate-900 dark:bg-white/[0.92] dark:text-slate-950 dark:hover:bg-white backdrop-blur-md',
                 isAnalyzing && 'opacity-70 cursor-not-allowed'
               )}
             >
@@ -133,7 +133,7 @@ export function QueryAndExecutionPanel({
       {/* Right Card / Full Width: AI Execution Panel */}
       <div
         className={cn(
-          'rounded-xl border border-slate-300 dark:border-slate-800/90 bg-white dark:bg-[#0a0f1e]/90 p-4 shadow-sm flex flex-col justify-between transition-all duration-150',
+          'rounded-2xl glass-strong glass-highlight p-4 shadow-[0_18px_60px_rgba(0,0,0,0.20)] flex flex-col justify-between transition-all duration-200',
           showQueryInput ? 'lg:col-span-5' : 'lg:col-span-12'
         )}
       >
@@ -144,11 +144,11 @@ export function QueryAndExecutionPanel({
                 {t('execution.title')}
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-cyan-500/[0.07] text-cyan-600 dark:text-cyan-300 border border-cyan-400/20 backdrop-blur-md">
                 DEMO TRACE
               </span>
               {!showQueryInput && (
-                <span className="ml-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                <span className="ml-1 px-2 py-0.5 rounded text-[10px] font-medium bg-white/40 dark:bg-white/[0.035] backdrop-blur-md text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.07]">
                   {activeModeName}
                 </span>
               )}
@@ -161,7 +161,7 @@ export function QueryAndExecutionPanel({
                   disabled={isAnalyzing}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold shadow-sm transition-all duration-150',
-                    'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100',
+                    'bg-slate-950/90 text-white hover:bg-slate-900 dark:bg-white/[0.92] dark:text-slate-950 dark:hover:bg-white backdrop-blur-md',
                     isAnalyzing && 'opacity-70 cursor-not-allowed'
                   )}
                 >
@@ -212,12 +212,12 @@ export function QueryAndExecutionPanel({
                   <div key={stage.id} className="flex items-center gap-2 min-w-0">
                     <div
                       className={cn(
-                        'w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150',
+                        'w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all duration-150 backdrop-blur-md',
                         isStepCompleted
-                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-400/20'
                           : isStepRunning
-                          ? 'bg-blue-500/20 text-blue-600 dark:text-cyan-400'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                            ? 'bg-blue-500/20 text-blue-600 dark:text-cyan-400'
+                            : 'bg-white/35 dark:bg-white/[0.025] text-slate-400 border border-white/[0.05]'
                       )}
                     >
                       {isStepRunning ? (
@@ -234,8 +234,8 @@ export function QueryAndExecutionPanel({
                         isStepCompleted
                           ? 'text-slate-800 dark:text-slate-200'
                           : isStepRunning
-                          ? 'text-blue-600 dark:text-cyan-400 font-semibold'
-                          : 'text-slate-400 dark:text-slate-500'
+                            ? 'text-blue-600 dark:text-cyan-400 font-semibold'
+                            : 'text-slate-400 dark:text-slate-500'
                       )}
                     >
                       {stageTranslatedLabel}

@@ -51,7 +51,7 @@ export function Navbar({
     setActivePopover(null);
   };
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 lg:px-6 bg-white dark:bg-[#070b15] border-b border-slate-200 dark:border-slate-800/90 w-full select-none transition-colors duration-150">
+    <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 lg:px-6 bg-white/75 dark:bg-[#070b15]/55 backdrop-blur-xl backdrop-saturate-150 border-b border-slate-200/70 dark:border-white/[0.07] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.16)] w-full select-none transition-colors duration-150">
       {/* Left Brand Area */}
       <div className="flex items-center gap-6">
         <button
@@ -81,7 +81,7 @@ export function Navbar({
               cn(
                 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all',
                 isActive
-                  ? 'bg-slate-100 dark:bg-slate-800/90 text-blue-700 dark:text-white border border-slate-300 dark:border-slate-700 shadow-sm'
+                  ? 'bg-white/10 dark:bg-white/[0.06] text-blue-700 dark:text-white border border-slate-300/50 dark:border-white/[0.08] backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.10)]'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               )
             }
@@ -96,7 +96,7 @@ export function Navbar({
               cn(
                 'px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors',
                 isActive
-                  ? 'bg-slate-100 dark:bg-slate-800/90 text-blue-700 dark:text-white border border-slate-300 dark:border-slate-700 font-semibold'
+                  ? 'bg-white/10 dark:bg-white/[0.06] text-blue-700 dark:text-white border border-slate-300/50 dark:border-white/[0.08] backdrop-blur-md font-semibold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               )
             }
@@ -110,7 +110,7 @@ export function Navbar({
               cn(
                 'px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors',
                 isActive
-                  ? 'bg-slate-100 dark:bg-slate-800/90 text-blue-700 dark:text-white border border-slate-300 dark:border-slate-700 font-semibold'
+                  ? 'bg-white/10 dark:bg-white/[0.06] text-blue-700 dark:text-white border border-slate-300/50 dark:border-white/[0.08] backdrop-blur-md font-semibold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               )
             }
@@ -124,7 +124,7 @@ export function Navbar({
               cn(
                 'px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors',
                 isActive
-                  ? 'bg-slate-100 dark:bg-slate-800/90 text-blue-700 dark:text-white border border-slate-300 dark:border-slate-700 font-semibold'
+                  ? 'bg-white/10 dark:bg-white/[0.06] text-blue-700 dark:text-white border border-slate-300/50 dark:border-white/[0.08] backdrop-blur-md font-semibold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               )
             }
@@ -139,7 +139,7 @@ export function Navbar({
         {/* System Status Pill Dropdown Trigger */}
         <button
           onClick={onOpenSystemStatus}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 dark:bg-white/[0.045] backdrop-blur-md border border-slate-200/60 dark:border-white/[0.07] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
           title={t('nav.systemStatus')}
         >
           <span className="relative flex h-2 w-2">
@@ -154,7 +154,7 @@ export function Navbar({
         <button
           type="button"
           onClick={onSignIn}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600/10 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-300 border border-blue-400/40 dark:border-cyan-500/30 hover:bg-blue-600/20 dark:hover:bg-cyan-500/20 hover:border-blue-500/60 dark:hover:border-cyan-400/50 transition-all duration-150 shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600/10 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-300 border border-blue-400/25 dark:border-cyan-500/25 backdrop-blur-md hover:bg-blue-600/15 dark:hover:bg-cyan-500/20 hover:border-blue-500/60 dark:hover:border-cyan-400/50 transition-all duration-150 shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
           title={t('nav.signIn')}
         >
           <LogIn className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />
@@ -172,14 +172,14 @@ export function Navbar({
         />
 
         {/* User Profile Avatar / Dropdown */}
-        <div className="flex items-center gap-2 pl-1 border-l border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-2 pl-2 border-l border-slate-200/60 dark:border-white/[0.06]">
           <ProfileDropdown
             isOpen={activePopover === 'profile'}
             onToggle={handleToggleProfile}
             onClose={handleClosePopovers}
             isSignedIn={isSignedIn}
-            onSignIn={onSignIn || (() => {})}
-            onSignOut={onSignOut || (() => {})}
+            onSignIn={onSignIn || (() => { })}
+            onSignOut={onSignOut || (() => { })}
             userName={userName}
             userEmail={userEmail}
             userAvatar={userAvatar}

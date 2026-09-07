@@ -104,11 +104,11 @@ export function CapabilitiesGrid() {
             <div
               key={item.id}
               onClick={() => handleSelectCapability(item.mode, item.capability)}
-              className="group relative flex flex-col justify-between p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0f1e]/60 hover:bg-slate-50/70 dark:hover:bg-[#0f1628] hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+              className="group relative flex flex-col justify-between p-6 rounded-2xl glass glass-interactive glass-highlight cursor-pointer transition-all duration-300"
             >
               <div>
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-600/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-600/20 transition-colors shadow-inner">
+                  <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-500/[0.08] dark:bg-cyan-400/[0.08] border border-blue-400/20 dark:border-cyan-400/20 text-blue-600 dark:text-cyan-300 group-hover:bg-blue-500/[0.14] dark:group-hover:bg-cyan-400/[0.14] transition-colors shadow-inner">
                     <Icon className="w-5 h-5" />
                   </div>
                   {item.badge ? (
@@ -127,7 +127,7 @@ export function CapabilitiesGrid() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/60">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity mt-5 pt-3.5 border-t border-slate-200/40 dark:border-white/[0.06]">
                 <span>{t('capabilities.startAnalysis')}</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
