@@ -1,6 +1,15 @@
+"""Gemini VLM service with retry logic and mock fallback.
+
+Provides async methods for VQA, grounding, and change detection using the
+Google Gemini generative AI API.  Falls back to mock implementations when
+Gemini is unavailable or the API key is not configured.
+"""
+
+import base64
+import io
 import os
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
@@ -11,14 +20,48 @@ from src.models.mock_vlm import async_mock_vqa, async_mock_grounding, async_mock
 
 logger = logging.getLogger("satquery.gemini_vlm")
 
-# Configure the Gemini client lazily per request to allow key rotation
+# Model name — update this when migrating to newer Gemini versions
+GEMINI_MODEL_NAME = os.getenv("GEMINI_VLM_MODEL", "gemini-2.0-flash")
+
+
+# ---------------------------------------------------------------------------
+# Client & Image Helpers
+# ---------------------------------------------------------------------------
+
 def _configure_client():
+    """Configure the Gemini client lazily per request to allow key rotation."""
     api_key = get_gemini_key()
     if not api_key:
         raise RuntimeError("Gemini API key not configured")
     genai.configure(api_key=api_key)
-    # Use Gemini 1.5 Pro Vision model (adjust as needed)
-    return genai.GenerativeModel("gemini-1.5-pro-vision")
+    return genai.GenerativeModel(GEMINI_MODEL_NAME)
+
+
+def _prepare_image_input(image: str):
+    """Convert image string to a Gemini-compatible input.
+
+    Handles three formats:
+      1. Local file path  → ``genai.upload_file``
+      2. Base64 data URI  → decode and wrap as inline ``Part``
+      3. Plain URL/text   → pass through as-is (Gemini may fetch the URL)
+    """
+    # 1. Local file
+    if os.path.isfile(image):
+        return genai.upload_file(path=image)
+
+    # 2. Base64 data URI (e.g. "data:image/jpeg;base64,/9j/...")
+    if image.startswith("data:"):
+        try:
+            header, b64data = image.split(",", 1)
+            mime_type = header.split(":")[1].split(";")[0]  # e.g. "image/jpeg"
+            raw_bytes = base64.b64decode(b64data)
+            return {"mime_type": mime_type, "data": raw_bytes}
+        except Exception:
+            logger.warning("Failed to decode base64 image, passing as text")
+
+    # 3. URL or raw string — pass as-is
+    return image
+
 
 # Generic retry decorator for Gemini calls
 retry_decorator = retry(
@@ -27,6 +70,7 @@ retry_decorator = retry(
     wait=wait_exponential(multiplier=1, max=10),
     reraise=True,
 )
+
 
 class GeminiVLMService:
     """Service wrapper for Gemini VLM operations with retry and mock fallback.
@@ -53,23 +97,21 @@ class GeminiVLMService:
         image: str
             Path, URL, or base64 string of the image.
         query: str
-            Natural‑language question.
+            Natural-language question.
         **kwargs: Any
             Additional parameters (ignored for Gemini but kept for API compatibility).
         """
         try:
             model = self._get_model()
-            response = model.generate_content([
-                genai.upload_file(path=image) if os.path.isfile(image) else image,
-                query,
-            ])
+            image_input = _prepare_image_input(image)
+            response = model.generate_content([image_input, query])
             answer = response.text.strip()
             return {
                 "answer": answer,
                 "confidence": 1.0,
                 "bounding_boxes": [],
                 "evidence": [],
-                "metadata": {"model": "gemini-1.5-pro-vision", "source": "gemini"},
+                "metadata": {"model": GEMINI_MODEL_NAME, "source": "gemini"},
                 "is_mock": False,
             }
         except Exception as exc:
@@ -80,7 +122,7 @@ class GeminiVLMService:
 
     @retry_decorator
     async def async_grounding(self, image: str, query: str, confidence_threshold: float = 0.5, target_classes: Any = None, **kwargs: Any) -> Dict[str, Any]:
-        """Text‑guided grounding via Gemini.
+        """Text-guided grounding via Gemini.
 
         Gemini does not provide explicit grounding, so we fall back to the mock
         implementation on failure. Successful calls return an empty list of
@@ -88,15 +130,17 @@ class GeminiVLMService:
         """
         try:
             model = self._get_model()
+            image_input = _prepare_image_input(image)
             response = model.generate_content([
-                genai.upload_file(path=image) if os.path.isfile(image) else image,
+                image_input,
                 f"Ground the following query in the image: {query}",
             ])
             return {
+                "query": query,
                 "detected_objects": [],
                 "total_detected": 0,
                 "summary": response.text.strip(),
-                "metadata": {"model": "gemini-1.5-pro-vision", "source": "gemini"},
+                "metadata": {"model": GEMINI_MODEL_NAME, "source": "gemini"},
                 "is_mock": False,
             }
         except Exception as exc:
@@ -107,7 +151,7 @@ class GeminiVLMService:
 
     @retry_decorator
     async def async_change_detection(self, image_before: str, image_after: str, query: str = "What changed?", threshold: float = 0.5, **kwargs: Any) -> Dict[str, Any]:
-        """Bi‑temporal change detection using Gemini.
+        """Bi-temporal change detection using Gemini.
 
         Gemini does not support explicit change detection, so this method simply
         forwards to the mock implementation on any error. If the call succeeds,
@@ -115,12 +159,11 @@ class GeminiVLMService:
         """
         try:
             model = self._get_model()
-            response = model.generate_content([
-                genai.upload_file(path=image_before) if os.path.isfile(image_before) else image_before,
-                genai.upload_file(path=image_after) if os.path.isfile(image_after) else image_after,
-                query,
-            ])
+            before_input = _prepare_image_input(image_before)
+            after_input = _prepare_image_input(image_after)
+            response = model.generate_content([before_input, after_input, query])
             return {
+                "query": query,
                 "summary": response.text.strip(),
                 "detected_changes": [],
                 "total_changes": 0,
@@ -131,7 +174,8 @@ class GeminiVLMService:
                     "total_modified_area_hectares": 0.0,
                     "change_intensity": "none",
                 },
-                "metadata": {"model": "gemini-1.5-pro-vision", "source": "gemini"},
+                "compatibility_verified": True,
+                "metadata": {"model": GEMINI_MODEL_NAME, "source": "gemini"},
                 "is_mock": False,
             }
         except Exception as exc:
@@ -139,6 +183,7 @@ class GeminiVLMService:
             result = await async_mock_change_detection(image_before=image_before, image_after=image_after, query=query, threshold=threshold)
             result["is_mock"] = True
             return result
+
 
 # Singleton instance used by the API routes
 default_gemini_service = GeminiVLMService()

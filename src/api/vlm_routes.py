@@ -12,9 +12,12 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, status
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
-from src.models.mock_vlm import async_mock_vqa, async_mock_grounding
 from src.models.gemini_vlm import default_gemini_service
+from src.models.geochat_inference import predict_vqa_and_grounding
+from src.models.change_detection import predict_bi_temporal_change
+
 
 async def route_query(query: str, image_paths: list, parameters: Optional[Dict[str, Any]] = None) -> dict:
     """Route a query to the appropriate mock VLM function.
@@ -24,30 +27,16 @@ async def route_query(query: str, image_paths: list, parameters: Optional[Dict[s
     """
     lowered = query.lower()
     img = image_paths[0] if image_paths else ""
-    
+
     if parameters and parameters.get("use_real_vlm"):
         res = await default_gemini_service.async_vqa(image=img, query=query, **parameters)
         res["metadata"]["task"] = "single_image_vqa_real"
         res["metadata"]["device"] = "cuda"
         return res
-        
+
     if "ground" in lowered or "where" in lowered:
         return await default_gemini_service.async_grounding(image=img, query=query)
     return await default_gemini_service.async_vqa(image=img, query=query, **(parameters or {}))
-
-
-from src.models.mock_vlm import (
-    async_mock_vqa,
-    async_mock_grounding,
-    async_mock_change_detection,
-)
-from src.models.geochat_inference import (
-    predict_vqa_and_grounding,
-    cleanup_memory,
-)
-from src.models.change_detection import (
-    predict_bi_temporal_change,
-)
 
 logger = logging.getLogger("satquery.api.vlm")
 
@@ -353,7 +342,8 @@ async def predict_endpoint(request: VQARequest) -> Dict[str, Any]:
         )
 
     try:
-        return predict_vqa_and_grounding(
+        return await run_in_threadpool(
+            predict_vqa_and_grounding,
             image_path=request.image,
             prompt=request.query,
             **(request.parameters or {}),
@@ -428,7 +418,8 @@ async def change_detection_endpoint(request: ChangeDetectionRequest) -> ChangeDe
             and os.getenv("SATQUERY_USE_MOCK_CHANGE", "false").lower() != "true"
         )
         if use_deltavlm:
-            change_result = predict_bi_temporal_change(
+            change_result = await run_in_threadpool(
+                predict_bi_temporal_change,
                 image_before_path=request.image_before,
                 image_after_path=request.image_after,
                 query=request.query,

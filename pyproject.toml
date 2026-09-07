@@ -20,6 +20,6 @@ pythonpath = ["."]
 asyncio_mode = "auto"
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "backend", "satquery_gis", "evaluation", "tests"]
 extraPaths = ["."]
 reportMissingImports = false

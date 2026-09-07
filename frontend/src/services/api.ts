@@ -35,39 +35,65 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// ─── API Configuration ──────────────────────────────────────────
+
+const API_BASE = '/api';
+
 // ─── Analysis ────────────────────────────────────────────────────
 
 export async function submitAnalysis(request: AnalysisRequest): Promise<AnalysisResponse> {
-  // In the future: POST /api/analysis
-  await delay(2500);
+  // Try real backend first, fall back to demo if unavailable
+  try {
+    const formData = new FormData();
+    formData.append('query', request.query);
+    if (request.mode) formData.append('mode', request.mode);
+    if (request.capability) formData.append('capability', request.capability);
+    if (request.beforeImage) formData.append('before_image', request.beforeImage);
+    if (request.afterImage) formData.append('after_image', request.afterImage);
 
-  // Find a matching demo scenario or return a generic demo response
-  const scenario = DEMO_SCENARIOS.find(
-    (s) => s.mode === request.mode && s.capability === request.capability
-  );
+    const response = await fetch(`${API_BASE}/analysis`, {
+      method: 'POST',
+      body: formData,
+    });
 
-  if (scenario) {
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { ...data, isDemo: false };
+  } catch {
+    // Backend unavailable — fall back to demo mode
+    console.warn('Backend unavailable, using demo mode');
+    await delay(1500);
+
+    const scenario = DEMO_SCENARIOS.find(
+      (s) => s.mode === request.mode && s.capability === request.capability
+    );
+
+    if (scenario) {
+      return {
+        ...scenario.mockResponse,
+        analysisId: `demo-${Date.now()}`,
+      };
+    }
+
     return {
-      ...scenario.mockResponse,
       analysisId: `demo-${Date.now()}`,
+      status: 'completed',
+      task: request.capability,
+      answer: `[DEMO] Analysis completed for query: "${request.query}". This is a demo response — connect to the SatQuery backend for real analysis results.`,
+      confidence: 0.75,
+      evidence: [],
+      visualizations: [],
+      executionTrace: [
+        { step: 1, action: 'Query Understanding', detail: 'Parsed user query', duration: 100, status: 'completed' },
+        { step: 2, action: 'Analysis', detail: 'Demo analysis executed', duration: 2000, status: 'completed' },
+      ],
+      warnings: ['This is a demo response. Connect to the SatQuery AI backend for real analysis.'],
+      isDemo: true,
     };
   }
-
-  return {
-    analysisId: `demo-${Date.now()}`,
-    status: 'completed',
-    task: request.capability,
-    answer: `[DEMO] Analysis completed for query: "${request.query}". This is a demo response — connect to the SatQuery backend for real analysis results.`,
-    confidence: 0.75,
-    evidence: [],
-    visualizations: [],
-    executionTrace: [
-      { step: 1, action: 'Query Understanding', detail: 'Parsed user query', duration: 100, status: 'completed' },
-      { step: 2, action: 'Analysis', detail: 'Demo analysis executed', duration: 2000, status: 'completed' },
-    ],
-    warnings: ['This is a demo response. Connect to the SatQuery AI backend for real analysis.'],
-    isDemo: true,
-  };
 }
 
 // ─── Analysis History ────────────────────────────────────────────
@@ -85,14 +111,26 @@ export async function getAnalysisHistory(): Promise<AnalysisRecord[]> {
 // ─── System Health ───────────────────────────────────────────────
 
 export async function getSystemStatus(): Promise<SystemStatus> {
-  // In the future: GET /api/health
-  await delay(200);
-  return {
-    status: 'demo',
-    label: 'Demo Environment',
-    isDemo: true,
-    lastChecked: new Date().toISOString(),
-  };
+  try {
+    const response = await fetch(`${API_BASE}/health`);
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        status: data.status === 'healthy' ? 'online' : 'degraded',
+        label: data.status === 'healthy' ? 'Backend Connected' : 'Backend Degraded',
+        isDemo: false,
+        lastChecked: new Date().toISOString(),
+      };
+    }
+    throw new Error('Health check failed');
+  } catch {
+    return {
+      status: 'demo',
+      label: 'Demo Environment',
+      isDemo: true,
+      lastChecked: new Date().toISOString(),
+    };
+  }
 }
 
 // ─── Demo Scenarios ──────────────────────────────────────────────
