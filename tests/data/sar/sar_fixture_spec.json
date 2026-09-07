@@ -1,0 +1,11 @@
+{
+  "status": "BLOCKED",
+  "reason": "MISSING_SAR_FIXTURE: No operational SAR raster is bundled in this repository. Synthetic RGB images are strictly rejected as SAR substitutes.",
+  "required_specifications": {
+    "sensor": "Sentinel-1 C-band SAR or equivalent",
+    "product_type": "GRD",
+    "polarization": ["VV", "VH"],
+    "supported_formats": [".tif", ".tiff", ".png"],
+    "co_registration_required": true
+  }
+}

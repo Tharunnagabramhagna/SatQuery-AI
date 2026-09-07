@@ -23,7 +23,7 @@ Execution flow across hackathon blocks:
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from backend.agents.query_understanding.service import (
     QueryUnderstandingService,
@@ -32,7 +32,8 @@ from backend.agents.query_understanding.service import (
 from backend.agents.router.agent_router import AgentRouter, default_agent_router
 from backend.agents.router.base import BaseRouter
 from backend.agents.tools.executor import ToolExecutor, default_tool_executor
-from backend.schemas.query import ExecutionTraceStep
+from backend.schemas.query import ExecutionSummary, ExecutionTraceStep
+from backend.validation import InputValidator
 
 
 class AgentOrchestrator:
@@ -80,6 +81,14 @@ class AgentOrchestrator:
         Returns:
             Dictionary matching QueryResponse data structure.
         """
+        # Step 0: Input & Modality Validation
+        validation_summary = InputValidator.validate_inputs(
+            before_image=before_image,
+            after_image=after_image,
+            before_modality=before_image_modality,
+            after_modality=after_image_modality,
+        )
+
         # Step 1: Query Understanding
         t0 = time.perf_counter()
         structured = await self.query_understanding.analyze(query)
@@ -189,6 +198,9 @@ class AgentOrchestrator:
 
         # Merge warnings
         warnings = []
+        for vw in validation_summary.warnings:
+            if vw not in warnings:
+                warnings.append(vw)
         if structured.is_ambiguous and structured.ambiguity_reason:
             warnings.append(structured.ambiguity_reason)
         if routing_decision.requires_clarification and routing_decision.clarification_prompt:
@@ -215,6 +227,34 @@ class AgentOrchestrator:
                 else routing_decision.routing_confidence
             )
 
+        # Build auditable execution summary for SIH compliance
+        models_invoked: List[str] = []
+        qu_model = structured.extracted_attributes.get("model")
+        if qu_model and qu_model not in models_invoked:
+            models_invoked.append(qu_model)
+        tool_model = tool_result.metadata.get("model")
+        if tool_model and tool_model not in models_invoked:
+            models_invoked.append(tool_model)
+        if not models_invoked and provider:
+            models_invoked.append(provider)
+
+        execution_summary = ExecutionSummary(
+            task=structured.intent.value,
+            models=models_invoked,
+            tools=[tool_result.tool_name],
+            input_summary=validation_summary.to_dict(),
+            parameters=extra_params,
+            evidence=tool_result.evidence,
+            confidence=final_confidence,
+            warnings=warnings,
+            provider_info={
+                "query_understanding_provider": structured.extracted_attributes.get("provider", "rule_based"),
+                "tool_provider": tool_result.metadata.get("provider", "unknown"),
+                "fallback_used": tool_result.metadata.get("fallback", False),
+                "fallback_reason": tool_result.metadata.get("fallback_reason"),
+            },
+        )
+
         return {
             "received_query": query,
             "status": "received",
@@ -224,6 +264,7 @@ class AgentOrchestrator:
             "evidence": tool_result.evidence,
             "visualizations": tool_result.visualizations,
             "execution_trace": [trace_step1, trace_step2, trace_step3],
+            "execution_summary": execution_summary,
             "warnings": warnings,
             "structured_query": structured,
             "routing_decision": routing_decision,
