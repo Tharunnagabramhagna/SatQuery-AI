@@ -1,0 +1,11 @@
+{
+  "include": ["src", "tests"],
+  "extraPaths": [".", "src"],
+  "reportMissingImports": "none",
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": [".", "src"]
+    }
+  ]
+}

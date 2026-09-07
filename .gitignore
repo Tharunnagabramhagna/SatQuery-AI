@@ -4,10 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
-venv/
-.venv/
-ENV/
 build/
 develop-eggs/
 dist/
@@ -24,6 +20,14 @@ wheels/
 .installed.cfg
 *.egg
 
+# Virtual Environments
+venv/
+.venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
 # Testing & Linting
 .pytest_cache/
 .coverage
@@ -31,10 +35,10 @@ htmlcov/
 .mypy_cache/
 .pytype/
 .ruff_cache/
+.tox/
 
 # Node / Frontend
 node_modules/
-dist/
 dist-ssr/
 *.local
 npm-debug.log*
@@ -54,6 +58,8 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
 
 # Scratch scripts
 scratch/
