@@ -1,100 +1,14 @@
-# SatQuery AI — Database Guide (PostgreSQL & Alembic)
+# SatQuery AI — Database Architecture & Engineering Guide
 
-SatQuery AI uses **PostgreSQL** as its primary relational database with **SQLAlchemy 2.x** (synchronous declarative ORM) and the **psycopg 3** driver (`psycopg[binary]`). Schema evolution is managed exclusively through **Alembic** migrations.
+SatQuery AI uses **PostgreSQL** as its primary relational database with **SQLAlchemy 2.x** (synchronous declarative ORM) and the **psycopg 3** driver (`psycopg[binary]`). Schema evolution is strictly managed through **Alembic** migrations.
 
 ---
 
-## 1. Database URL Format
+## 1. Database Architecture Overview
 
-Connection strings must use the psycopg 3 driver prefix `postgresql+psycopg://`:
+### Relational Schema: `users` 1 ─── N `analyses`
 
 ```text
-postgresql+psycopg://USER:PASSWORD@HOST:PORT/DATABASE
-```
-
-### Examples
-- **Local Native PostgreSQL**:
-  ```text
-  postgresql+psycopg://postgres:postgres@localhost:5432/satquery
-  ```
-- **Local Test Database**:
-  ```text
-  postgresql+psycopg://postgres:postgres@localhost:5432/satquery_test
-  ```
-
-Set these in your local `.env` file (copied from `.env.example`):
-```bash
-cp .env.example .env
-```
-
----
-
-## 2. Starting PostgreSQL Locally
-
-### Option A: Local Native PostgreSQL (Windows / Linux / macOS)
-If PostgreSQL is installed locally:
-- **Windows Service**: Started automatically (`postgresql-x64-17`). To check:
-  ```powershell
-  Get-Service -Name "*postgres*"
-  ```
-- Create the application and test databases:
-  ```sql
-  CREATE DATABASE satquery;
-  CREATE DATABASE satquery_test;
-  ```
-
-### Option B: Docker Compose (Alternative for Docker environments)
-```bash
-docker compose up -d
-```
-This spins up PostgreSQL 17 on `localhost:5432` with persistent volume `satquery_postgres_data`.
-
----
-
-## 3. Running Alembic Migrations
-
-Migrations are the **single source of truth** for the database schema. Never rely on `Base.metadata.create_all()` in production.
-
-### Apply all pending migrations to the latest revision:
-```bash
-alembic upgrade head
-```
-
-### Inspect the current migration version:
-```bash
-alembic current
-```
-
-### View migration history:
-```bash
-alembic history --verbose
-```
-
-### Roll back the last migration:
-```bash
-alembic downgrade -1
-```
-
----
-
-## 4. Creating a New Migration
-
-1. Update or add declarative models in `backend/db/models.py`.
-2. Generate an auto-detected migration script:
-   ```bash
-   alembic revision --autogenerate -m "describe changes"
-   ```
-3. Inspect the newly created script under `alembic/versions/` to verify operations.
-4. Apply the migration:
-   ```bash
-   alembic upgrade head
-   ```
-
----
-
-## 5. Relational Architecture: User 1 ─── N Analysis
-
-```
 ┌─────────────────────────────────┐       ┌───────────────────────────────────────┐
 │              users              │       │               analyses                │
 ├─────────────────────────────────┤       ├───────────────────────────────────────┤
@@ -111,16 +25,120 @@ alembic downgrade -1
                                                       └────── ON DELETE CASCADE ──────┘
 ```
 
-### Design Decisions:
-1. **UUID Primary Keys**:
-   - Both `User.id` and `Analysis.id` use UUIDv4 (`sa.Uuid(as_uuid=True)`).
-   - Prevents enumeration attacks, supports distributed generation, and matches the frontend `analysisId` convention.
-2. **Nullable `user_id`**:
-   - Supports anonymous and demo analyses before full user authentication (Phase 4B).
-   - When users authenticate, their ID is associated with the record.
-3. **Cascade Strategy**:
-   - Database-level: `ForeignKey("users.id", ondelete="CASCADE")`.
-   - ORM-level: `relationship("Analysis", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)`.
-   - Eliminates contradictory deletion rules and allows PostgreSQL to optimize cascades.
-4. **JSONB `response_json`**:
-   - Stores the structured analysis output (visualizations, evidence, trace, metadata) in high-performance binary JSON format with full PostgreSQL indexing support.
+---
+
+## 2. Key Architectural Decisions
+
+### 2.1 Why PostgreSQL?
+- **Strict ACID Guarantees**: Ensures atomic transactions for multi-step query processing, user management, and execution logging.
+- **Native JSONB Support**: Combines relational rigor (users, relationships, foreign keys, audit timestamps) with semi-structured document storage (multimodal outputs, model predictions, bounding boxes, agent traces).
+- **Production Scalability**: Robust connection pooling, concurrent read/write isolation, and enterprise-grade backup/restore capabilities.
+
+### 2.2 Why JSONB for `response_json`?
+- **Multimodal AI Flexibility**: Analysis outputs contain heterogeneous data structures (bounding box coordinates, change masks, confidence scores, evidence lists, and visualization paths).
+- **Binary Performance**: PostgreSQL stores JSONB in a decomposed binary format, allowing fast indexing, path extraction (`->`, `->>`), and containment queries (`@>`) without deserializing the whole document.
+- **Future-Proof Schema**: Specialized agents can introduce new metadata attributes (e.g. sensor bands, cloud-cover percentages) without triggering schema migrations.
+
+### 2.3 UUID Primary Keys
+- Both `User.id` and `Analysis.id` use RFC 4122 UUIDv4 (`sa.Uuid(as_uuid=True)`).
+- Eliminates predictable ID enumeration attacks.
+- Supports decentralized ID generation across services and matches frontend conventions (`analysisId`).
+
+### 2.4 Authenticated vs. Guest Analysis Behavior
+- **Authenticated Requests**: When an `Authorization: Bearer <token>` header is present and valid, the API links the created analysis to `current_user.id`. The user can retrieve their analysis history via `GET /api/analyses`.
+- **Guest / Demo Requests**: Anonymous users can submit queries without logging in. The system processes the query and persists the record with `user_id = None`. Guest analyses cannot be listed via `GET /api/analyses` (which requires authentication and returns `HTTP 401 Unauthorized`), protecting user privacy.
+- **User Isolation**: Analysis history queries strictly filter `WHERE user_id = :user_id ORDER BY created_at DESC`, guaranteeing that one user can never view or enumerate another user's queries.
+
+### 2.5 Cascade Deletion
+- Foreign key: `ForeignKey("users.id", ondelete="CASCADE")`.
+- ORM relationship: `relationship("Analysis", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)`.
+- When a user account is deleted, all associated analyses are purged by the database engine efficiently.
+
+---
+
+## 3. Database Environments & Isolation
+
+To prevent accidental data loss or state contamination, SatQuery strictly isolates development and testing environments:
+
+| Environment | Database Name | Connection String Variable | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Development** | `satquery` | `DATABASE_URL` | Local API server and development data |
+| **Test** | `satquery_test` | `TEST_DATABASE_URL` | Automated test suite execution (pytest) |
+
+> [!IMPORTANT]
+> The automated test suite (`pytest`) connects **exclusively** to `satquery_test`. Fixtures drop and recreate test tables per session or test run. Tests **never** touch the `satquery` development database.
+
+### Connection String Format
+SatQuery uses the **psycopg 3** driver prefix `postgresql+psycopg://`:
+```text
+postgresql+psycopg://postgres:postgres@localhost:5432/satquery
+postgresql+psycopg://postgres:postgres@localhost:5432/satquery_test
+```
+
+---
+
+## 4. Alembic Migration Workflow
+
+Alembic migrations are the **single source of truth** for schema state. Never rely on `create_all()` in production environments.
+
+### 4.1 Applying Migrations
+Apply all migrations to reach the latest schema:
+```bash
+python -m alembic upgrade head
+```
+
+### 4.2 Inspecting Migration State
+Check current database migration version:
+```bash
+python -m alembic current
+```
+
+View complete migration history:
+```bash
+python -m alembic history --verbose
+```
+
+### 4.3 Rolling Back Migrations
+Roll back the most recent migration step:
+```bash
+python -m alembic downgrade -1
+```
+
+Roll back all migrations to clean base:
+```bash
+python -m alembic downgrade base
+```
+
+### 4.4 Creating a New Migration
+1. Update or create models in `backend/db/models.py`.
+2. Generate an auto-detected migration:
+   ```bash
+   python -m alembic revision --autogenerate -m "add new field to analyses"
+   ```
+3. Inspect the generated file under `alembic/versions/` to verify operations.
+4. Apply the migration:
+   ```bash
+   python -m alembic upgrade head
+   ```
+
+---
+
+## 5. Quick Reference & Verification Commands
+
+### Check PostgreSQL Service (Windows)
+```powershell
+Get-Service -Name "*postgres*"
+```
+
+### Create Application & Test Databases
+```sql
+CREATE DATABASE satquery;
+CREATE DATABASE satquery_test;
+```
+
+### Run Full Test Suite
+```bash
+python -m pytest tests/test_database.py -v
+python -m pytest tests/test_auth.py -v
+python -m pytest -q
+```

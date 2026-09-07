@@ -27,10 +27,13 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Set database URL dynamically from backend settings if not already provided via -x url=...
+# Set database URL dynamically from backend settings if not already provided via -x url=... or config
 custom_url = context.get_x_argument(as_dictionary=True).get("url")
+main_url = config.get_main_option("sqlalchemy.url")
 if custom_url:
     target_url = custom_url
+elif main_url and "%(DATABASE_URL)s" not in main_url and not main_url.startswith("%"):
+    target_url = main_url
 else:
     target_url = settings.DATABASE_URL
 

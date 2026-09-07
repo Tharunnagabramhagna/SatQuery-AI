@@ -6,7 +6,7 @@ import shutil
 import tempfile
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -15,7 +15,6 @@ from backend.db.session import get_db
 from backend.security.jwt import get_optional_current_user
 
 from backend.agents.orchestrator import orchestrator
-from backend.schemas.analysis import AnalysisHistoryItem, AnalysisHistoryResponse
 from backend.schemas.analysis import AnalysisHistoryItem, AnalysisHistoryResponse
 from backend.schemas.frontend import FrontendAnalysisResponse
 from backend.schemas.health import HealthResponse
@@ -136,7 +135,7 @@ async def _save_upload_to_temp(file: UploadFile, temp_dir: str, prefix: str) -> 
 async def get_analysis_history(
     db: Session = Depends(get_db),
     current_user = Depends(get_optional_current_user),
-    limit: int = 50,
+    limit: int = Query(default=50, ge=1, le=100, description="Maximum number of analyses to return (1-100)"),
 ) -> AnalysisHistoryResponse:
     """Return the authenticated user's persisted analysis history."""
 
@@ -144,15 +143,16 @@ async def get_analysis_history(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    limit = max(1, min(limit, 100))
+    safe_limit = max(1, min(limit, 100))
 
     analyses = (
         db.query(Analysis)
         .filter(Analysis.user_id == current_user.id)
         .order_by(Analysis.created_at.desc())
-        .limit(limit)
+        .limit(safe_limit)
         .all()
     )
 

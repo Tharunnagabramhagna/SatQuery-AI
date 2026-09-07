@@ -696,3 +696,108 @@ def test_analysis_history_isolated_between_users(client):
         item["query"] == "User A satellite analysis"
         for item in data_b["items"]
     )
+
+
+def test_analysis_history_empty_returns_cleanly(client):
+    """A new user with no analyses receives HTTP 200 and an empty list."""
+    email = f"empty_hist_{uuid.uuid4().hex[:8]}@example.com"
+    password = "EmptyPassword123!"
+
+    reg = client.post("/api/auth/register", json={"email": email, "password": password})
+    assert reg.status_code == 201
+
+    login = client.post("/api/auth/login", json={"email": email, "password": password})
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+
+    resp = client.get("/api/analyses", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 0
+    assert data["items"] == []
+
+
+def test_analysis_history_multiple_and_ordering(client):
+    """Multiple analyses are returned with the newest record appearing first (created_at DESC)."""
+    email = f"order_hist_{uuid.uuid4().hex[:8]}@example.com"
+    password = "OrderPassword123!"
+
+    reg = client.post("/api/auth/register", json={"email": email, "password": password})
+    assert reg.status_code == 201
+
+    login = client.post("/api/auth/login", json={"email": email, "password": password})
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    queries = [
+        "First analysis query - coastline",
+        "Second analysis query - forest cover",
+        "Third analysis query - urban expansion",
+    ]
+
+    for q in queries:
+        resp = client.post("/api/query", json={"query": q}, headers=headers)
+        assert resp.status_code == 200
+
+    history = client.get("/api/analyses", headers=headers)
+    assert history.status_code == 200
+    data = history.json()
+
+    assert data["total"] == 3
+    assert len(data["items"]) == 3
+
+    # Newest must be first
+    assert data["items"][0]["query"] == queries[2]
+    assert data["items"][1]["query"] == queries[1]
+    assert data["items"][2]["query"] == queries[0]
+
+
+def test_analysis_history_limit_parameter(client):
+    """The limit parameter constrains the number of returned analysis history items."""
+    email = f"limit_hist_{uuid.uuid4().hex[:8]}@example.com"
+    password = "LimitPassword123!"
+
+    reg = client.post("/api/auth/register", json={"email": email, "password": password})
+    assert reg.status_code == 201
+
+    login = client.post("/api/auth/login", json={"email": email, "password": password})
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    for i in range(4):
+        resp = client.post("/api/query", json={"query": f"Query batch {i}"}, headers=headers)
+        assert resp.status_code == 200
+
+    # Request limit=2
+    history_lim2 = client.get("/api/analyses?limit=2", headers=headers)
+    assert history_lim2.status_code == 200
+    data2 = history_lim2.json()
+    assert len(data2["items"]) == 2
+    assert data2["total"] == 2
+    # Verify they are the most recent two
+    assert data2["items"][0]["query"] == "Query batch 3"
+    assert data2["items"][1]["query"] == "Query batch 2"
+
+    # Request default limit
+    history_all = client.get("/api/analyses", headers=headers)
+    assert history_all.status_code == 200
+    assert len(history_all.json()["items"]) == 4
+
+
+def test_analysis_history_guest_unauthenticated_returns_401(client):
+    """Unauthenticated guest requests to GET /api/analyses are rejected with HTTP 401."""
+    resp = client.get("/api/analyses")
+    assert resp.status_code == 401
+    assert "detail" in resp.json()
+
+
+def test_analysis_history_invalid_bearer_token_returns_401(client):
+    """Requests with malformed or invalid Bearer tokens return HTTP 401."""
+    resp = client.get(
+        "/api/analyses",
+        headers={"Authorization": "Bearer not-a-valid-jwt-token"},
+    )
+    assert resp.status_code == 401
+
