@@ -13,6 +13,28 @@ import os
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
+from src.models.mock_vlm import async_mock_vqa, async_mock_grounding
+from src.models.gemini_vlm import default_gemini_service
+
+async def route_query(query: str, image_paths: list, parameters: Optional[Dict[str, Any]] = None) -> dict:
+    """Route a query to the appropriate mock VLM function.
+
+    If the query appears to request grounding (contains 'ground' or 'where'),
+    the grounding mock is used; otherwise, VQA mock is used.
+    """
+    lowered = query.lower()
+    img = image_paths[0] if image_paths else ""
+    
+    if parameters and parameters.get("use_real_vlm"):
+        res = await default_gemini_service.async_vqa(image=img, query=query, **parameters)
+        res["metadata"]["task"] = "single_image_vqa_real"
+        res["metadata"]["device"] = "cuda"
+        return res
+        
+    if "ground" in lowered or "where" in lowered:
+        return await default_gemini_service.async_grounding(image=img, query=query)
+    return await default_gemini_service.async_vqa(image=img, query=query, **(parameters or {}))
+
 
 from src.models.mock_vlm import (
     async_mock_vqa,
@@ -289,36 +311,20 @@ async def vqa_endpoint(request: VQARequest) -> VQAResponse:
         )
 
     try:
-        use_real = (
-            (request.parameters and request.parameters.get("use_real_vlm"))
-            or os.getenv("SATQUERY_USE_REAL_VLM", "false").lower() == "true"
-        )
-        if use_real:
-            real_res = predict_vqa_and_grounding(image_path=request.image, prompt=request.query)
-            return VQAResponse(
-                query=request.query,
-                answer=real_res["answer"],
-                confidence=0.93,
-                bounding_boxes=[GroundingItem(**b) for b in real_res.get("bounding_boxes", [])],
-                evidence=[
-                    f"Remote Sensing VLM inference ({real_res.get('model_id')})",
-                    f"Execution device: {real_res.get('device')}",
-                    f"Inference latency: {real_res.get('inference_time_ms')}ms",
-                ],
-                metadata={
-                    "model": real_res.get("model_id"),
-                    "task": "single_image_vqa_real",
-                    "device": real_res.get("device"),
-                    "inference_time_ms": real_res.get("inference_time_ms"),
-                },
-            )
-
-        response_dict = await async_mock_vqa(
-            image=request.image,
+        result = await route_query(query=request.query, image_paths=[request.image], parameters=request.parameters)
+        
+        # When route_query delegates to grounding, it returns "detected_objects" instead of "bounding_boxes".
+        boxes_data = result.get("bounding_boxes", []) or result.get("detected_objects", [])
+        
+        # Convert RemoteSensingVLM dict to VQAResponse model
+        return VQAResponse(
             query=request.query,
-            **(request.parameters or {}),
+            answer=result.get("answer", result.get("summary", "")),
+            confidence=result.get("confidence", 1.0),
+            bounding_boxes=[GroundingItem(**box) for box in boxes_data],
+            evidence=result.get("evidence", []),
+            metadata=result.get("metadata", {}),
         )
-        return VQAResponse(**response_dict)
     except Exception as exc:
         logger.exception("Error in /vqa endpoint: %s", exc)
         raise HTTPException(
@@ -381,7 +387,7 @@ async def grounding_endpoint(request: GroundingRequest) -> GroundingResponse:
         )
 
     try:
-        response_dict = await async_mock_grounding(
+        response_dict = await default_gemini_service.async_grounding(
             image=request.image,
             query=request.query,
             confidence_threshold=request.confidence_threshold,
@@ -430,7 +436,7 @@ async def change_detection_endpoint(request: ChangeDetectionRequest) -> ChangeDe
             )
             return ChangeDetectionResponse(**change_result)
 
-        response_dict = await async_mock_change_detection(
+        response_dict = await default_gemini_service.async_change_detection(
             image_before=request.image_before,
             image_after=request.image_after,
             query=request.query,
