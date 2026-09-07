@@ -47,12 +47,19 @@ VQA_SYSTEM_INSTRUCTION = (
 )
 
 SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
+ELIGIBLE_FALLBACK_ERRORS = {
+    "rate_limit_exceeded",
+    "timeout",
+    "api_error",
+    "provider_unavailable",
+    "missing_api_key",
+}
 
 
 class VQATool(BaseTool):
     """
-    Multimodal Visual Question Answering specialist tool powered by Google Gemini (gemini-3.6-flash).
-    Answers natural language queries about visual features, land use, and objects in satellite imagery.
+    Multimodal Visual Question Answering specialist tool powered primarily by Google Gemini (gemini-3.6-flash),
+    with optional local fallback to Qwen3-VL via Ollama when Gemini experiences provider/runtime availability failures.
     """
 
     tool_id = ToolIdentifier.VQA_TOOL
@@ -68,6 +75,8 @@ class VQATool(BaseTool):
         model: Optional[str] = None,
         timeout: Optional[float] = None,
         client: Optional[genai.Client] = None,
+        fallback_adapter: Optional[Any] = None,
+        enable_fallback: Optional[bool] = None,
     ) -> None:
         self.api_key = api_key if api_key is not None else settings.GEMINI_API_KEY
         self.model = model or settings.GEMINI_MODEL or "gemini-3.6-flash"
@@ -83,6 +92,15 @@ class VQATool(BaseTool):
                 self._client = None
         else:
             self._client = None
+
+        # Optional local Qwen fallback adapter (lazy initialization)
+        if fallback_adapter is not None:
+            self.fallback_adapter = fallback_adapter
+        elif enable_fallback is True:
+            from backend.services.ollama import get_default_qwen_adapter
+            self.fallback_adapter = get_default_qwen_adapter()
+        else:
+            self.fallback_adapter = None
 
     async def execute(self, params: Dict[str, Any]) -> ToolResult:
         """
@@ -108,7 +126,7 @@ class VQATool(BaseTool):
             or "Describe this satellite scene and identify the land use."
         )
 
-        # 1. Validate image presence
+        # 1. Validate image presence (no fallback on invalid/missing input)
         if not image_input:
             logger.info("VQATool invoked without image input")
             return ToolResult(
@@ -126,7 +144,7 @@ class VQATool(BaseTool):
                 warnings=["Visual Question Answering requires a satellite image."],
             )
 
-        # 2. Decode and validate image
+        # 2. Decode and validate image (no fallback on invalid image format)
         try:
             pil_img, image_bytes, mime_type = self._load_and_validate_image(image_input)
         except ImageValidationError as exc:
@@ -148,6 +166,46 @@ class VQATool(BaseTool):
         # 3. Verify Gemini client and API key
         if not self.api_key or self._client is None:
             logger.warning("Gemini API key is not configured for VQATool")
+            if self.fallback_adapter is not None:
+                logger.warning(
+                    "Gemini API key not configured -> attempting Qwen fallback (%s)",
+                    self.fallback_adapter.model,
+                )
+                qwen_output, qwen_error_type, qwen_error_msg = await self.fallback_adapter.vqa(
+                    query=query,
+                    image_bytes=image_bytes,
+                    mime_type=mime_type,
+                )
+                if qwen_output is not None:
+                    logger.info("Qwen VQA fallback succeeded (model: %s)", self.fallback_adapter.model)
+                    return self._build_qwen_success_result(
+                        output=qwen_output,
+                        pil_img=pil_img,
+                        gemini_error_type="missing_api_key",
+                    )
+                else:
+                    logger.error("Qwen VQA fallback failed (%s: %s)", qwen_error_type, qwen_error_msg)
+                    return ToolResult(
+                        tool_name=self.tool_id.value,
+                        status=ToolStatus.ERROR.value,
+                        answer=None,
+                        confidence=0.0,
+                        evidence=[],
+                        visualizations=[],
+                        metadata={
+                            "capability": "VQA",
+                            "error_type": "missing_api_key",
+                            "fallback_attempted": True,
+                            "fallback_error": qwen_error_type,
+                            "provider": "gemini",
+                            "model": self.model,
+                        },
+                        warnings=[
+                            "Gemini API key is not configured. Visual Question Answering unavailable.",
+                            f"Local Qwen fallback failed: {qwen_error_msg}",
+                        ],
+                    )
+
             return ToolResult(
                 tool_name=self.tool_id.value,
                 status=ToolStatus.ERROR.value,
@@ -172,6 +230,49 @@ class VQATool(BaseTool):
         )
 
         if output is None:
+            # Check if eligible for Qwen fallback
+            if self.fallback_adapter is not None and error_type in ELIGIBLE_FALLBACK_ERRORS:
+                logger.warning(
+                    "Gemini VQA failed (%s: %s) -> attempting Qwen fallback (model: %s)",
+                    error_type,
+                    error_msg,
+                    self.fallback_adapter.model,
+                )
+                qwen_output, qwen_error_type, qwen_error_msg = await self.fallback_adapter.vqa(
+                    query=query,
+                    image_bytes=image_bytes,
+                    mime_type=mime_type,
+                )
+                if qwen_output is not None:
+                    logger.info("Qwen VQA fallback succeeded (model: %s)", self.fallback_adapter.model)
+                    return self._build_qwen_success_result(
+                        output=qwen_output,
+                        pil_img=pil_img,
+                        gemini_error_type=error_type,
+                    )
+                else:
+                    logger.error("Qwen VQA fallback failed (%s: %s)", qwen_error_type, qwen_error_msg)
+                    return ToolResult(
+                        tool_name=self.tool_id.value,
+                        status=ToolStatus.ERROR.value,
+                        answer=None,
+                        confidence=0.0,
+                        evidence=[],
+                        visualizations=[],
+                        metadata={
+                            "capability": "VQA",
+                            "error_type": error_type or "inference_failure",
+                            "fallback_attempted": True,
+                            "fallback_error": qwen_error_type,
+                            "provider": "gemini",
+                            "model": self.model,
+                        },
+                        warnings=[
+                            error_msg or "Visual Question Answering analysis failed.",
+                            f"Local Qwen fallback failed: {qwen_error_msg}",
+                        ],
+                    )
+
             return ToolResult(
                 tool_name=self.tool_id.value,
                 status=ToolStatus.ERROR.value,
@@ -188,7 +289,7 @@ class VQATool(BaseTool):
                 warnings=[error_msg or "Visual Question Answering analysis failed."],
             )
 
-        # 5. Build grounded evidence items
+        # 5. Build grounded evidence items for successful Gemini inference
         evidence: List[AnalysisEvidence] = []
         for obs in output.observations:
             evidence.append(
@@ -227,6 +328,63 @@ class VQATool(BaseTool):
         }
 
         # Zero fabricated visualizations (bounding boxes, masks, coordinates)
+        return ToolResult(
+            tool_name=self.tool_id.value,
+            status=ToolStatus.SUCCESS.value,
+            answer=output.answer,
+            confidence=round(float(output.confidence), 4),
+            evidence=evidence,
+            visualizations=[],
+            metadata=metadata,
+            warnings=output.warnings,
+        )
+
+    def _build_qwen_success_result(
+        self,
+        output: VQAOutputSchema,
+        pil_img: Image.Image,
+        gemini_error_type: Optional[str] = None,
+    ) -> ToolResult:
+        """Build compatible ToolResult from Qwen VQA output adhering to standard schema."""
+        evidence: List[AnalysisEvidence] = []
+        for obs in output.observations:
+            evidence.append(
+                AnalysisEvidence(
+                    type="visual_observation",
+                    description=obs,
+                    source=f"Qwen VQA ({self.fallback_adapter.model})",
+                )
+            )
+        if output.detected_objects:
+            evidence.append(
+                AnalysisEvidence(
+                    type="detected_objects",
+                    description=f"Identified object categories: {', '.join(output.detected_objects)}.",
+                    source=f"Qwen VQA ({self.fallback_adapter.model})",
+                )
+            )
+        if output.land_use:
+            evidence.append(
+                AnalysisEvidence(
+                    type="land_use",
+                    description=f"Classified land-use patterns: {', '.join(output.land_use)}.",
+                    source=f"Qwen VQA ({self.fallback_adapter.model})",
+                )
+            )
+
+        metadata = {
+            "capability": "VQA",
+            "provider": "qwen",
+            "model": self.fallback_adapter.model,
+            "fallback": True,
+            "fallback_reason": gemini_error_type,
+            "detected_objects": output.detected_objects,
+            "land_use": output.land_use,
+            "observations": output.observations,
+            "image_dimensions": f"{pil_img.width}x{pil_img.height}",
+            "image_format": pil_img.format or "RGB",
+        }
+
         return ToolResult(
             tool_name=self.tool_id.value,
             status=ToolStatus.SUCCESS.value,
