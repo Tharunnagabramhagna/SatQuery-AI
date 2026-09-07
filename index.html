@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/assets/satquery-logo.png" />
+    <link rel="apple-touch-icon" href="/assets/satquery-logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="SatQuery AI - Interactive Vision-Language Assistant for Multimodal Remote Sensing Image Analysis Through Text Queries" />
+    <title>SatQuery AI — Remote Sensing Intelligence</title>
+    <script>
+      (function() {
+        try {
+          const theme = localStorage.getItem('satquery-theme') || 'dark';
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-slate-50 dark:bg-[#060a14] text-slate-900 dark:text-slate-100 antialiased font-sans min-h-screen selection:bg-blue-600/30 selection:text-blue-600 dark:selection:text-blue-200 transition-colors duration-150">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
