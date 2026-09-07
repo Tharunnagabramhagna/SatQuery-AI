@@ -51,21 +51,35 @@ def get_windows(width, height, window_size=512, overlap=0):
 def align_rasters(t1_filepath, t2_filepath, output_t2_filepath, resampling=Resampling.bilinear):
     """
     Aligns T2 raster to exactly match the grid (CRS, transform, shape) of T1 raster
-    to prevent false change-detection artifacts.
+    to prevent false change-detection artifacts, while preserving T2's native band count,
+    dtype, and band metadata.
     """
     with rasterio.open(t1_filepath) as src1:
-        t1_meta = src1.meta.copy()
+        target_crs = src1.crs
+        target_transform = src1.transform
+        target_width = src1.width
+        target_height = src1.height
         
     with rasterio.open(t2_filepath) as src2:
-        with rasterio.open(output_t2_filepath, 'w', **t1_meta) as dst:
+        out_meta = src2.meta.copy()
+        out_meta.update({
+            'crs': target_crs,
+            'transform': target_transform,
+            'width': target_width,
+            'height': target_height
+        })
+        with rasterio.open(output_t2_filepath, 'w', **out_meta) as dst:
             for i in range(1, src2.count + 1):
                 reproject(
                     source=rasterio.band(src2, i),
                     destination=rasterio.band(dst, i),
                     src_transform=src2.transform,
                     src_crs=src2.crs,
-                    dst_transform=t1_meta['transform'],
-                    dst_crs=t1_meta['crs'],
+                    dst_transform=target_transform,
+                    dst_crs=target_crs,
                     resampling=resampling
                 )
+                if src2.descriptions and len(src2.descriptions) >= i and src2.descriptions[i - 1]:
+                    dst.set_band_description(i, src2.descriptions[i - 1])
     return output_t2_filepath
+
