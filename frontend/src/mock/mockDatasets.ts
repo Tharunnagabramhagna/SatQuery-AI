@@ -184,8 +184,23 @@ export const MOCK_DATASET_SCENARIOS: DatasetScenario[] = [
 ];
 
 /**
- * Find a dataset scenario by ID
+ * Find a dataset scenario by ID (supporting both mock scenarios and custom imported datasets)
  */
 export function findDatasetScenario(id: string): DatasetScenario | undefined {
-  return MOCK_DATASET_SCENARIOS.find((scenario) => scenario.id === id);
+  const found = MOCK_DATASET_SCENARIOS.find((scenario) => scenario.id === id);
+  if (found) return found;
+
+  try {
+    const raw = localStorage.getItem('satquery-custom-datasets');
+    if (raw) {
+      const parsed: DatasetScenario[] = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.find((s) => s.id === id);
+      }
+    }
+  } catch {
+    // ignore parse error
+  }
+  return undefined;
 }
+

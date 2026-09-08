@@ -53,26 +53,36 @@ app = FastAPI(
 )
 
 # Configure CORS Middleware
-# Allows frontend development servers (Vite default :5173, React :3000) and configurable origins
+# Explicit allowed origins including production Vercel frontend and local development
+default_origins = [
+    "https://sat-query-ai-two.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
 allowed_origins_env = os.getenv("CORS_ORIGINS", "")
+allowed_origins = list(default_origins)
 if allowed_origins_env:
-    allowed_origins = [orig.strip() for orig in allowed_origins_env.split(",") if orig.strip()]
-else:
-    allowed_origins = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "*",  # Permissive for local hackathon development
-    ]
+    for orig in allowed_origins_env.split(","):
+        orig_clean = orig.strip()
+        if orig_clean and orig_clean not in allowed_origins:
+            allowed_origins.append(orig_clean)
+
+frontend_url = os.getenv("FRONTEND_URL", "").strip()
+if frontend_url and frontend_url not in allowed_origins:
+    allowed_origins.append(frontend_url)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 
 # Exception Handlers

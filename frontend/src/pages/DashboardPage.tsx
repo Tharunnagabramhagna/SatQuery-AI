@@ -248,13 +248,25 @@ export function DashboardPage() {
     const navState = location.state as {
       analysisId?: string;
       scenarioId?: string;
+      scenario?: any;
       analysisMode?: string;
       toolId?: string;
     } | null;
 
-    if (navState?.scenarioId) {
-      const scenario = findDatasetScenario(navState.scenarioId);
+    if (navState?.scenario || navState?.scenarioId) {
+      const scenario = navState.scenario || (navState.scenarioId ? findDatasetScenario(navState.scenarioId) : null);
       if (scenario) {
+        if (scenario.thumbnail) {
+          setCustomImagerySources({
+            t0Path: scenario.thumbnail,
+            t1Path: scenario.thumbnail,
+          });
+        }
+        if (scenario.query) {
+          setQueryAgentQuery(scenario.query);
+        }
+
+
         // Map mode to category: 'single_image' -> 'single', 'compare_images' -> 'compare', 'optical_sar' -> 'fusion'
         const category: 'single' | 'compare' | 'fusion' =
           scenario.mode === 'single_image'
@@ -283,6 +295,7 @@ export function DashboardPage() {
         }
 
         if (scenario.capability === 'grounding' || category === 'single') {
+
           setSelectedGroundingId('grounding-1');
           setOverlayLayers((prev) =>
             prev.map((l) => (l.type === 'grounding' ? { ...l, visible: true } : l))
