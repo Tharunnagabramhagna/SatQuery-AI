@@ -113,12 +113,14 @@ export function DatasetsPage() {
   const handleLaunchAnalysis = (scenario: DatasetScenario) => {
     navigate('/dashboard', {
       state: {
+        scenario,
         scenarioId: scenario.id,
         analysisMode: scenario.mode,
         toolId: scenario.toolId || scenario.capability,
       },
     });
   };
+
 
   const resetFilters = () => {
     setSearchQuery('');

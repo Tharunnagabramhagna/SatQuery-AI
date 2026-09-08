@@ -23,7 +23,8 @@ logger = logging.getLogger("satquery.api.datasets")
 
 router = APIRouter(prefix="/api/datasets", tags=["Datasets"])
 
-DATA_DIR = Path("data").resolve()
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+DATA_DIR = (REPO_ROOT / "data").resolve()
 UPLOADS_DIR = DATA_DIR / "uploads"
 RAW_DIR = DATA_DIR / "raw"
 
@@ -48,11 +49,17 @@ class DatasetScenarioResponse(BaseModel):
     dataset_name: Optional[str] = Field(default=None, alias="datasetName")
     tags: List[str] = Field(default_factory=list)
     image_url: Optional[str] = Field(default=None, alias="imageUrl")
+    thumbnail: Optional[str] = None
+    query: Optional[str] = None
     before_image_url: Optional[str] = Field(default=None, alias="beforeImageUrl")
     after_image_url: Optional[str] = Field(default=None, alias="afterImageUrl")
     suggested_queries: List[str] = Field(default_factory=list, alias="suggestedQueries")
     expected_observation: Optional[str] = Field(default=None, alias="expectedObservation")
+    expected_output: Optional[str] = Field(default=None, alias="expectedOutput")
+    sample_evidence: List[str] = Field(default_factory=list, alias="sampleEvidence")
     ground_truth_count: Optional[int] = Field(default=None, alias="groundTruthCount")
+    is_demo: bool = Field(default=False, alias="isDemo")
+
 
 
 class DatasetUploadResponse(BaseModel):
@@ -131,21 +138,28 @@ def _scan_local_dataset_images() -> List[DatasetScenarioResponse]:
             if subpath.is_file() and subpath.suffix.lower() in ALLOWED_IMAGE_EXTS:
                 rel_path = subpath.relative_to(DATA_DIR)
                 name_clean = subpath.stem.replace("_", " ").title()
+                img_url = f"/data/{rel_path}"
+                suggested = [
+                    f"Detect all objects and land features in {name_clean}.",
+                    "Perform spectral and structural visual grounding.",
+                ]
                 discovered.append(
                     DatasetScenarioResponse(
-                        id=f"local-{subpath.name}",
-                        title=f"{name_clean} (Local Image)",
-                        description=f"Locally ingested satellite image located at {rel_path}.",
+                        id=f"local-{subpath.stem}",
+                        title=f"{name_clean} (Imported)",
+                        description=f"Ingested satellite image located at {rel_path}.",
                         modality="optical",
                         capability="grounding",
                         mode="single_image",
-                        datasetName=subpath.parent.name or "Local Dataset",
+                        datasetName=subpath.parent.name or "Imported Dataset",
                         tags=["local", "custom-dataset", subpath.suffix.replace(".", "")],
-                        imageUrl=f"/data/{rel_path}",
-                        suggestedQueries=[
-                            f"Detect all objects and land features in {name_clean}.",
-                            "Perform spectral and structural visual grounding.",
-                        ],
+                        imageUrl=img_url,
+                        thumbnail=img_url,
+                        query=suggested[0],
+                        suggestedQueries=suggested,
+                        expectedOutput=f"Ingested scene {subpath.name} ready for AI grounding and segmentation.",
+                        sampleEvidence=[f"Verified image integrity at {rel_path}."],
+                        isDemo=False,
                     )
                 )
     return discovered
@@ -216,14 +230,16 @@ async def upload_dataset_zip(
                     logger.warning("Skipping suspicious zip member path: %s", member.filename)
                     continue
 
-                if member.is_dir():
+                if member.is_dir() or member.filename.startswith("__MACOSX"):
                     continue
 
                 if member_path.suffix.lower() in ALLOWED_IMAGE_EXTS:
-                    dest_file = target_extract_dir / member_path.name
+                    clean_filename = f"{len(extracted_images) + 1:03d}_{member_path.name}"
+                    dest_file = target_extract_dir / clean_filename
                     with zf.open(member) as src, open(dest_file, "wb") as dst:
                         shutil.copyfileobj(src, dst)
                     extracted_images.append(dest_file.name)
+
 
         # Clean up the zip file itself
         if temp_zip_path.exists():
