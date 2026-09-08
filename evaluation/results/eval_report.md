@@ -1,7 +1,7 @@
 # SatQuery ML Evaluation Report
 
-**Generated**: 2026-09-07T21:35:53.637037+00:00  
-**Evaluation Runtime**: 8.8s  
+**Generated**: 2026-09-07T21:47:27.324409+00:00  
+**Evaluation Runtime**: 6.52s  
 **Benchmark Suite**: 60 benchmark cases  
 **Total Evaluated**: 60 | **Passed**: 45 | **Failed**: 15 | **Overall Success Rate**: 75.0%
 

@@ -6,7 +6,9 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Link2,
+  Loader2,
 } from 'lucide-react';
 import type { UploadedImage } from '../../types';
 import { ImageMetadataPanel } from './ImageMetadataPanel';
@@ -35,6 +37,10 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [showMetadata, setShowMetadata] = useState(true);
+  const [activeTab, setActiveTab] = useState<'file' | 'url'>('file');
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -55,6 +61,27 @@ export function ImageUpload({
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       onUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleUrlSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!imageUrlInput.trim() || disabled) return;
+
+    try {
+      setIsFetchingUrl(true);
+      setUrlError(null);
+      const res = await fetch(imageUrlInput.trim());
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const filename = imageUrlInput.split('/').pop()?.split('?')[0] || 'remote_image.png';
+      const file = new File([blob], filename, { type: blob.type || 'image/png' });
+      onUpload(file);
+      setImageUrlInput('');
+    } catch (err: any) {
+      setUrlError(`Could not load image from URL: ${err.message || 'Network error'}`);
+    } finally {
+      setIsFetchingUrl(false);
     }
   };
 
@@ -84,7 +111,7 @@ export function ImageUpload({
             </span>
           )}
         </div>
-        {image?.status === 'uploaded' && image.metadata && (
+        {image?.status === 'uploaded' && image.metadata ? (
           <button
             type="button"
             onClick={() => setShowMetadata((prev) => !prev)}
@@ -93,6 +120,33 @@ export function ImageUpload({
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>{showMetadata ? 'Hide Metadata' : 'View Metadata'}</span>
           </button>
+        ) : (
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px]">
+            <button
+              type="button"
+              onClick={() => setActiveTab('file')}
+              className={cn(
+                'px-2 py-0.5 rounded font-medium transition-colors',
+                activeTab === 'file'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              )}
+            >
+              Upload
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('url')}
+              className={cn(
+                'px-2 py-0.5 rounded font-medium transition-colors',
+                activeTab === 'url'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              )}
+            >
+              URL
+            </button>
+          </div>
         )}
       </div>
 
@@ -107,36 +161,66 @@ export function ImageUpload({
 
       {/* Upload Box States */}
       {!image || image.status === 'idle' ? (
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={cn(
-            'relative flex flex-col items-center justify-center p-6 sm:p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer select-none',
-            isDragging
-              ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-500/5'
-              : error
-              ? 'border-red-400 dark:border-red-500/40 bg-red-50/50 dark:bg-red-500/5 hover:border-red-500'
-              : 'border-slate-300 dark:border-slate-800 bg-white dark:bg-[#0a0f1e]/40 hover:bg-slate-50/80 dark:hover:bg-[#0d1428] hover:border-slate-400 dark:hover:border-slate-700 shadow-sm'
-          )}
-        >
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 dark:bg-slate-900 border border-blue-100 dark:border-slate-800 text-blue-600 dark:text-blue-400 mb-3 shadow-sm">
-            <UploadCloud className="w-6 h-6" />
+        activeTab === 'url' ? (
+          <form
+            onSubmit={handleUrlSubmit}
+            className="flex flex-col p-5 rounded-xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#0a0f1e]/40 shadow-sm space-y-3"
+          >
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+              <Link2 className="w-4 h-4 text-cyan-500" />
+              <span>Enter Remote Satellite Image URL (HTTP/HTTPS)</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={imageUrlInput}
+                onChange={(e) => setImageUrlInput(e.target.value)}
+                placeholder="https://example.com/sentinel_scene.png"
+                disabled={isFetchingUrl || disabled}
+                className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              />
+              <button
+                type="submit"
+                disabled={!imageUrlInput.trim() || isFetchingUrl || disabled}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 text-white transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                {isFetchingUrl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Load'}
+              </button>
+            </div>
+            {urlError && <p className="text-[11px] text-red-500">{urlError}</p>}
+          </form>
+        ) : (
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              'relative flex flex-col items-center justify-center p-6 sm:p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer select-none',
+              isDragging
+                ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-500/5'
+                : error
+                ? 'border-red-400 dark:border-red-500/40 bg-red-50/50 dark:bg-red-500/5 hover:border-red-500'
+                : 'border-slate-300 dark:border-slate-800 bg-white dark:bg-[#0a0f1e]/40 hover:bg-slate-50/80 dark:hover:bg-[#0d1428] hover:border-slate-400 dark:hover:border-slate-700 shadow-sm'
+            )}
+          >
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 dark:bg-slate-900 border border-blue-100 dark:border-slate-800 text-blue-600 dark:text-blue-400 mb-3 shadow-sm">
+              <UploadCloud className="w-6 h-6" />
+            </div>
+
+            <h4 className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
+              {isDragging ? 'Drop satellite imagery here' : 'Drop satellite imagery here or click to browse'}
+            </h4>
+
+            <p className="text-[11px] text-slate-500 text-center max-w-xs mb-3">
+              {sublabel}
+            </p>
+
+            <span className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700/60 transition-colors shadow-sm">
+              Browse Imagery Files
+            </span>
           </div>
-
-          <h4 className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">
-            {isDragging ? 'Drop satellite imagery here' : 'Drop satellite imagery here or click to browse'}
-          </h4>
-
-          <p className="text-[11px] text-slate-500 text-center max-w-xs mb-3">
-            {sublabel}
-          </p>
-
-          <span className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700/60 transition-colors shadow-sm">
-            Browse Imagery Files
-          </span>
-        </div>
+        )
       ) : image.status === 'uploading' ? (
         <div className="flex flex-col p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0f1e]/80 shadow-sm">
           <div className="flex items-center justify-between mb-3">

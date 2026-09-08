@@ -77,10 +77,11 @@ const DASHBOARD_IMAGERY = [
   },
 ];
 
-interface AttachedImage {
+export interface AttachedImage {
   name: string;
   src: string;
   type: 'uploaded' | 'dashboard';
+  file?: File;
 }
 
 interface QueryAgentOverlayProps {
@@ -99,7 +100,7 @@ interface QueryAgentOverlayProps {
   onQueryChange: (query: string) => void;
 
   // Analysis trigger (captures query, closes overlay, runs dashboard analysis)
-  onSubmitQuery: (submittedQuery?: string) => void;
+  onSubmitQuery: (submittedQuery?: string, images?: AttachedImage[]) => void;
   isAnalyzing: boolean;
 }
 
@@ -245,7 +246,7 @@ export function QueryAgentOverlay({
   const handleSend = (queryToSend?: string) => {
     if (isAnalyzing) return;
     const finalQuery = (queryToSend !== undefined ? queryToSend : queryAgentQuery).trim();
-    onSubmitQuery(finalQuery);
+    onSubmitQuery(finalQuery, attachedImages);
   };
 
   // Tool selection handler
@@ -276,6 +277,7 @@ export function QueryAgentOverlay({
           name: file.name,
           src: objectUrl,
           type: 'uploaded',
+          file: file,
         });
       }
     }

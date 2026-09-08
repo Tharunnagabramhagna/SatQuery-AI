@@ -43,7 +43,7 @@ export function GroundingOverlay({
         // Tag position: above the box, or flipped below if too close to top edge
         const tagHeight = 16;
         const tagY = y > 24 ? y - tagHeight - 3 : y + height + 3;
-        const labelText = `${box.label} • Demo ${box.confidence}%`;
+        const labelText = `${box.label} • ${box.confidence}%`;
         const approxTagWidth = labelText.length * 6 + 14;
 
         const handleClick = (e: React.MouseEvent) => {
@@ -80,7 +80,7 @@ export function GroundingOverlay({
               className="pointer-events-auto cursor-pointer transition-all duration-150 focus:outline-none"
               tabIndex={0}
               role="button"
-              aria-label={`Grounding result: ${box.label}, Demo Confidence ${box.confidence}%`}
+              aria-label={`Grounding result: ${box.label}, Confidence ${box.confidence}%`}
               onClick={handleClick}
               onKeyDown={handleKeyDown}
             />

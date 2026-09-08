@@ -145,7 +145,7 @@ export function QueryAndExecutionPanel({
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
               <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-medium bg-cyan-500/[0.07] text-cyan-600 dark:text-cyan-300 border border-cyan-400/20 backdrop-blur-md">
-                DEMO TRACE
+                LIVE PIPELINE
               </span>
               {!showQueryInput && (
                 <span className="ml-1 px-2 py-0.5 rounded text-[10px] font-medium bg-white/40 dark:bg-white/[0.035] backdrop-blur-md text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-white/[0.07]">

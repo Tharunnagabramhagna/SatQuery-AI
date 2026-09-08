@@ -299,12 +299,12 @@ export function HistoryPage() {
                       )}
                       {isInProgress && (
                         <span className="px-2 py-0.5 text-[10px] font-medium rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center gap-1 animate-pulse">
-                          <Clock className="w-2.5 h-2.5" /> {t('history.inProgress')} ({t('common.demo')})
+                          <Clock className="w-2.5 h-2.5" /> {t('history.inProgress')}
                         </span>
                       )}
                       {isFailed && (
                         <span className="px-2 py-0.5 text-[10px] font-medium rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center gap-1">
-                          <AlertCircle className="w-2.5 h-2.5" /> {t('history.failed')} ({t('common.demo')})
+                          <AlertCircle className="w-2.5 h-2.5" /> {t('history.failed')}
                         </span>
                       )}
                     </div>
@@ -322,7 +322,7 @@ export function HistoryPage() {
                       {item.thumbnail ? (
                         <img
                           src={item.thumbnail}
-                          alt="Demo analysis preview"
+                          alt="Satellite analysis preview"
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
@@ -331,9 +331,6 @@ export function HistoryPage() {
                           <FileText className="w-6 h-6" />
                         </div>
                       )}
-                      <span className="absolute bottom-0 right-0 px-1 py-0.2 bg-black/60 text-[9px] text-white/80 font-mono tracking-tighter">
-                        {t('common.demo')}
-                      </span>
                     </div>
 
                     {/* Query & Title */}
@@ -391,11 +388,11 @@ export function HistoryPage() {
                     </Button>
                   ) : isInProgress ? (
                     <span className="text-[11px] text-sky-500 dark:text-sky-400 italic">
-                      {t('history.inProgress')} ({t('common.demo')})
+                      {t('history.inProgress')}
                     </span>
                   ) : (
                     <span className="text-[11px] text-rose-500 dark:text-rose-400 italic">
-                      {t('history.failed')} ({t('common.demo')})
+                      {t('history.failed')}
                     </span>
                   )}
                 </div>

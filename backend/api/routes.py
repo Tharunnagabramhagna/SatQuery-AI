@@ -127,6 +127,8 @@ async def frontend_analysis_endpoint(
     capability: Optional[str] = Form(default=None, description="Frontend capability hint (e.g. change_detection)"),
     before_image: Optional[UploadFile] = None,
     after_image: Optional[UploadFile] = None,
+    before_image_url: Optional[str] = Form(default=None, description="Direct URL to baseline satellite image"),
+    after_image_url: Optional[str] = Form(default=None, description="Direct URL to follow-up satellite image"),
     before_modality: Optional[str] = Form(default=None, description="Modality hint for baseline image (optical | sar | unknown)"),
     after_modality: Optional[str] = Form(default=None, description="Modality hint for follow-up image (optical | sar | unknown)"),
     current_user: Optional[User] = Depends(get_optional_current_user),
@@ -135,8 +137,8 @@ async def frontend_analysis_endpoint(
     """
     Frontend-compatible analysis endpoint with optional authentication.
 
-    Accepts multipart file uploads, saves to temp directory, runs through
-    the existing orchestrator pipeline, and returns a camelCase response.
+    Accepts multipart file uploads or remote image URLs, saves to temp directory,
+    runs through the existing orchestrator pipeline, and returns a camelCase response.
 
     Authentication behavior:
         - No Authorization header: anonymous analysis, no persistence.
@@ -148,7 +150,7 @@ async def frontend_analysis_endpoint(
         - The client does NOT receive a successful analysisId that doesn't exist in the DB.
 
     Flow:
-        POST /api/analysis (multipart) → temp file save → orchestrator.process_query()
+        POST /api/analysis (multipart/url) → temp file save → orchestrator.process_query()
         → FrontendAnalysisResponse adapter → persist if authenticated → camelCase JSON
     """
     # Validate query is not empty
@@ -164,19 +166,37 @@ async def frontend_analysis_endpoint(
     after_path: Optional[str] = None
 
     try:
-        # Save uploaded files to controlled temp directory
+        # 1. Save uploaded files to controlled temp directory
         if before_image is not None and before_image.filename:
             before_path = await _save_upload_to_temp(before_image, temp_dir, "before")
+        elif before_image_url and before_image_url.strip():
+            from backend.services.image_fetcher import ImageFetchError, fetch_image_from_url
+            try:
+                before_path = await fetch_image_from_url(before_image_url.strip(), target_dir=temp_dir, prefix="before")
+            except ImageFetchError as err:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to fetch baseline image from URL: {str(err)}",
+                ) from err
 
         if after_image is not None and after_image.filename:
             after_path = await _save_upload_to_temp(after_image, temp_dir, "after")
+        elif after_image_url and after_image_url.strip():
+            from backend.services.image_fetcher import ImageFetchError, fetch_image_from_url
+            try:
+                after_path = await fetch_image_from_url(after_image_url.strip(), target_dir=temp_dir, prefix="after")
+            except ImageFetchError as err:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to fetch follow-up image from URL: {str(err)}",
+                ) from err
 
         # Run through the existing orchestrator pipeline
         result = await orchestrator.process_query(
             query=query_stripped,
             before_image=before_path,
             after_image=after_path,
-            parameters=None,
+            parameters={"hint_capability": capability, "hint_mode": mode},
             before_image_modality=before_modality,
             after_image_modality=after_modality,
         )

@@ -66,6 +66,8 @@ export interface AnalysisRequest {
   files: File[];
   beforeImage?: File;
   afterImage?: File;
+  beforeImageUrl?: string;
+  afterImageUrl?: string;
 }
 
 export interface AnalysisResponse {

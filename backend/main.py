@@ -25,8 +25,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from fastapi.staticfiles import StaticFiles
+
 from backend.api.analyses import router as analyses_router
 from backend.api.auth import router as auth_router
+from backend.api.datasets import router as datasets_router
 from backend.api.oauth import router as oauth_router
 from backend.api.routes import router as api_router
 
@@ -128,6 +131,12 @@ app.include_router(api_router)
 app.include_router(auth_router)
 app.include_router(analyses_router)
 app.include_router(oauth_router)
+app.include_router(datasets_router)
+
+# Mount local data directory for static satellite image serving
+data_static_dir = repo_root / "data"
+data_static_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/data", StaticFiles(directory=str(data_static_dir)), name="data")
 
 
 if __name__ == "__main__":

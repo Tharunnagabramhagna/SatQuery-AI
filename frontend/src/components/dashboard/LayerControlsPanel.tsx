@@ -46,9 +46,6 @@ export function LayerControlsPanel({
           <h2 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-snug">
             {t('layers.title')}
           </h2>
-          <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800/60">
-            {t('common.demo')}
-          </span>
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}

@@ -252,12 +252,22 @@ class RuleBasedQueryClassifier(BaseQueryClassifier):
 
         # Check if top two intents have close competing scores
         if second_score > 2.0 and (top_score - second_score) <= 1.2:
-            is_ambiguous = True
-            ambiguity_reason = (
-                f"Query exhibits characteristics of both {top_intent.value} (score: {top_score:.1f}) "
-                f"and {second_intent.value} (score: {second_score:.1f})."
-            )
-            confidence = max(0.55, confidence - 0.20)
+            # If the query is asking about changes between images/time (Change VQA), resolve cleanly to CHANGE_DETECTION
+            if (
+                (top_intent == QueryIntent.CHANGE_DETECTION or second_intent == QueryIntent.CHANGE_DETECTION)
+                and (re.search(r"\b(?:between|changes?|diff|before\s+and\s+after|temporal)\b", q_lower))
+            ):
+                top_intent = QueryIntent.CHANGE_DETECTION
+                is_ambiguous = False
+                ambiguity_reason = None
+                confidence = 0.92
+            else:
+                is_ambiguous = True
+                ambiguity_reason = (
+                    f"Query exhibits characteristics of both {top_intent.value} (score: {top_score:.1f}) "
+                    f"and {second_intent.value} (score: {second_score:.1f})."
+                )
+                confidence = max(0.55, confidence - 0.20)
 
         # Special case: Grounding within Change Detection
         # e.g., "Locate the new buildings built between 2020 and 2023"

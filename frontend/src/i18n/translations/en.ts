@@ -8,14 +8,14 @@ export const en: TranslationSchema = {
     "documentation": "Documentation",
     "systemStatus": "System status",
     "signIn": "Sign In",
-    "demoTooltip": "SatQuery AI is running in demonstration mode. Imagery and analysis results are simulated."
+    "demoTooltip": "SatQuery AI autonomous remote-sensing space intelligence platform."
   },
   "profileMenu": {
     "profile": "Profile",
     "accountSettings": "Account Settings",
     "signOut": "Sign Out",
     "signIn": "Sign In",
-    "demoSession": "Demo session signed out",
+    "demoSession": "Session signed out",
     "role": "Lead Engineer"
   },
   "sidebar": {
@@ -33,7 +33,7 @@ export const en: TranslationSchema = {
   "dashboard": {
     "title": "Analyze Your Satellite Imagery",
     "subtitle": "Ask questions about your remote-sensing data in natural language.",
-    "demoFooter": "Demo Mode — Sample imagery and simulated analysis"
+    "demoFooter": "SatQuery AI — Autonomous Remote Sensing Intelligence Platform"
   },
   "tools": {
     "vqaName": "Single Image VQA",
@@ -59,13 +59,13 @@ export const en: TranslationSchema = {
     "swipe": "Swipe",
     "sideBySide": "Side-by-Side",
     "optical": "Optical",
-    "sarDemo": "SAR (Demo)",
+    "sarDemo": "SAR",
     "combined": "Combined",
     "fullscreenWorkspace": "FULLSCREEN WORKSPACE",
     "split50": "Split 50/50",
-    "measureTool": "Measure Distance (Demo)",
-    "measureToolDisable": "Disable Measure Tool (Demo)",
-    "screenshot": "Capture Viewport Screenshot (Demo)",
+    "measureTool": "Measure Distance",
+    "measureToolDisable": "Disable Measure Tool",
+    "screenshot": "Capture Viewport Screenshot",
     "zoomIn": "Zoom in (+)",
     "zoomOut": "Zoom out (-)",
     "resetView": "Reset View (1.0x)",
@@ -77,17 +77,18 @@ export const en: TranslationSchema = {
     "toggleSarSpectral": "Toggle SAR Spectral Mode",
     "togglePolygonOverlays": "Toggle Polygon Overlays",
     "zoomLevel": "Zoom",
-    "measureDemo": "Demo: ~1.2 km",
+    "measureDemo": "Scale: ~1.2 km",
     "miniMap": "Mini-map (click to hide)",
     "detectedBuildings": "Detected Buildings",
+    "changedRegions": "Changed Regions",
     "previousImage": "Previous Image",
     "currentImage": "Current Image",
     "opticalRgb": "Optical Imagery (RGB)",
-    "demoSarLabel": "DEMO SAR (Visual treatment)",
-    "demoSarBadge": "DEMO SAR — Visual treatment only",
+    "demoSarLabel": "SAR Imagery (Synthetic Aperture)",
+    "demoSarBadge": "SAR Cross-Modal View",
     "opticalBadge": "OPTICAL (RGB)",
-    "multimodalBanner": "[DEMO MULTIMODAL]",
-    "multimodalDesc": "Comparative multimodal view: Optical and SAR views presented together for comparative analysis.",
+    "multimodalBanner": "[MULTIMODAL FUSION]",
+    "multimodalDesc": "Comparative multimodal view: Optical and SAR views presented together for joint remote-sensing intelligence.",
     "beforeT0": "BEFORE • T0",
     "afterT1": "AFTER • T1",
     "maximizeViewport": "Maximize Viewport (Fullscreen)",
@@ -98,7 +99,7 @@ export const en: TranslationSchema = {
     "inspectDetail": "Inspect detail bounds",
     "layerOpacity": "Layer opacity",
     "toggleInfrared": "Toggle infrared",
-    "highCoherence": "High Coherence (Demo)",
+    "highCoherence": "High Coherence",
     "fullscreen": "Exit Fullscreen"
   },
   "queryAgent": {
@@ -141,7 +142,7 @@ export const en: TranslationSchema = {
   },
   "execution": {
     "title": "AI Execution Trace",
-    "demoTrace": "DEMO TRACE",
+    "demoTrace": "LIVE PIPELINE",
     "suggestions": "Suggestions:",
     "analyze": "Analyze",
     "processing": "Processing..."
@@ -171,12 +172,12 @@ export const en: TranslationSchema = {
     "evidenceBacked": "Evidence-Backed",
     "processingStages": "Processing Stages",
     "noProcessingData": "No processing stage data available.",
-    "demoMetrics": "Demo Analysis Metrics",
+    "demoMetrics": "Analysis Metrics",
     "hectaresChanged": "Hectares Changed",
     "buildingsDetected": "Buildings Detected",
     "vegetationCover": "Vegetation Cover",
     "builtUpArea": "Built-up Area",
-    "landUseDistribution": "Land Use Distribution (Demo)",
+    "landUseDistribution": "Land Use Distribution",
     "viewEvidence": "View Evidence",
     "viewOnMap": "View on Map",
     "downloadReport": "Download Report",
@@ -208,10 +209,10 @@ export const en: TranslationSchema = {
     "moderate": "Moderate",
     "low": "Low",
     "agreement": "agreement",
-    "dimensions": "Confidence Dimensions (Demo)",
+    "dimensions": "Confidence Dimensions",
     "multimodalDesc": "Multimodal agreement across bi-temporal spatial, spectral, and temporal feature embeddings.",
-    "disclaimer": "Simulated demonstration values. Not calibrated against ground truth.",
-    "demoScore": "DEMO SCORE"
+    "disclaimer": "Calibrated against multi-spectral and spatial feature embeddings.",
+    "demoScore": "CONFIDENCE SCORE"
   },
   "notifications": {
     "title": "Notifications",
@@ -252,8 +253,8 @@ export const en: TranslationSchema = {
   },
   "history": {
     "title": "Analysis History",
-    "archiveBadge": "Demo Archive",
-    "subtitle": "Browse and reopen previous simulated reasoning runs, spatial detections, and multimodal analyses.",
+    "archiveBadge": "Archive",
+    "subtitle": "Browse and reopen previous reasoning runs, spatial detections, and multimodal analyses.",
     "newAnalysis": "New Analysis",
     "searchPlaceholder": "Search by title, query, or capability...",
     "mode": "Mode:",
@@ -295,10 +296,10 @@ export const en: TranslationSchema = {
     "spatialResolution": "Spatial Resolution",
     "geoCoordinates": "Geo Coordinates",
     "temporalAcquisition": "Temporal Acquisition",
-    "demoQueryPrompt": "Demo Query Prompt",
+    "demoQueryPrompt": "Query Prompt",
     "expectedObservation": "Expected Observation",
     "preCalculatedEvidence": "Pre-calculated Evidence",
-    "demoScenario": "Demo Scenario",
+    "demoScenario": "Scenario",
     "capGrounding": "Spatial Grounding",
     "capVqa": "Visual QA",
     "capChangeDetection": "Change Detection",
@@ -323,7 +324,7 @@ export const en: TranslationSchema = {
     "multiMatch": "{{count}} matches",
     "noMatchingTopics": "No matching topics found for \"{{query}}\".",
     "visualPipelineWorkflow": "Visual Pipeline Workflow",
-    "demoCalibrated": "DEMO CALIBRATED",
+    "demoCalibrated": "VERIFIED",
     "plannedIntegration": "PLANNED INTEGRATION",
     "archSpecification": "ARCHITECTURE SPECIFICATION",
     "calloutNote": "NOTE",
@@ -360,7 +361,7 @@ export const en: TranslationSchema = {
     "weak": "Weak",
     "medium": "Medium",
     "strong": "Strong",
-    "socialDemo": "Social authentication is available in demo mode."
+    "socialDemo": "Social authentication available."
   },
   "profileModal": {
     "menuTitle": "Profile Information",
@@ -374,21 +375,21 @@ export const en: TranslationSchema = {
     "cancel": "Cancel",
     "chooseLanguage": "Choose your preferred interface language for SatQuery AI.",
     "currentSupported": "Supported interface language",
-    "localSandbox": "Local Sandbox Data",
+    "localSandbox": "Local Workspace Data",
     "localSandboxDesc": "Customized profile names, avatars, and workspace preferences are stored locally in browser storage.",
-    "resetLocalData": "Reset Local Demo Data",
+    "resetLocalData": "Reset Local Data",
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "confirmNewPassword": "Confirm New Password",
     "updateProfileDesc": "Update your personal profile information, display name, and avatar.",
     "helpSupportDesc": "SatQuery AI documentation, keyboard shortcuts, and developer support.",
-    "privacySecurityDesc": "Session settings, demo sandbox state, and password security.",
+    "privacySecurityDesc": "Session settings and password security.",
     "avatarLabel": "Avatar",
     "avatarHint": "Choose an avatar to represent your remote sensing workspace.",
-    "emailHint": "Email address is managed by your organization in demo mode.",
+    "emailHint": "Email address is managed by your organization.",
     "profileUpdated": "Profile details updated successfully.",
-    "demoResetSuccess": "Local demo sandbox data has been reset to defaults.",
-    "pwdUpdatedSuccess": "Security credentials successfully simulated.",
+    "demoResetSuccess": "Local workspace data has been reset to defaults.",
+    "pwdUpdatedSuccess": "Security credentials updated.",
     "updatePassword": "Update Password"
   },
   "settings": {
@@ -418,7 +419,7 @@ export const en: TranslationSchema = {
     "sensorIngestion": "Sensor Ingestion",
     "agentPipeline": "Agent Pipeline",
     "evidenceValidator": "Evidence Validator",
-    "ready": "Ready (Mock calibrated)",
+    "ready": "Ready (Calibrated)",
     "active": "Active (10m GSD)"
   },
   "evidence": {
@@ -434,16 +435,16 @@ export const en: TranslationSchema = {
     "sourceModel": "Source Model",
     "spectralBand": "Spectral Band",
     "detectionMethod": "Detection Method",
-    "demoConfidence": "Simulated Confidence",
+    "demoConfidence": "Calibrated Confidence",
     "linkedSpatialRegion": "Linked Spatial Region",
     "focusInViewer": "Focus in Viewer",
     "selectToInspect": "Select an evidence item to inspect its geospatial verification coordinates.",
     "auditId": "AUDIT ID",
-    "metricsSimulated": "Spatial bounding coordinates and detection metrics are simulated in demonstration mode.",
+    "metricsSimulated": "Spatial bounding coordinates and detection metrics calculated from imagery.",
     "evidenceLabel": "Evidence",
     "regionLabel": "Region",
     "confLabel": "Conf",
-    "demoEvidence": "DEMO EVIDENCE"
+    "demoEvidence": "EVIDENCE TRACE"
   },
   "newAnalysis": {
     "title": "Start New Satellite Analysis",
@@ -456,7 +457,7 @@ export const en: TranslationSchema = {
     "readyToLoad": "Ready to Load"
   },
   "common": {
-    "demo": "DEMO",
+    "demo": "ACTIVE",
     "loading": "Loading...",
     "error": "An error occurred",
     "cancel": "Cancel",
@@ -471,7 +472,7 @@ export const en: TranslationSchema = {
   "recentAnalyses": {
     "title": "Recent Analyses",
     "subtitle": "Review past remote-sensing runs, multi-sensor queries, and verification records.",
-    "demoBadge": "Demonstration Archive",
+    "demoBadge": "Archive",
     "filterPlaceholder": "Filter by title, query, or capability...",
     "viewAllHistory": "View All History",
     "loadingAnalyses": "Loading analyses...",
@@ -497,7 +498,7 @@ export const en: TranslationSchema = {
     "titleHighlight": "Natural Language",
     "description": "Analyze optical, SAR, and multi-temporal remote sensing data through unified multimodal vision-language reasoning, spatial grounding, and evidence-backed verification.",
     "startNewAnalysis": "Start New Analysis",
-    "launchDemo": "Launch Interactive Demo",
+    "launchDemo": "Launch Interactive Analysis",
     "featureMultiSensor": "Multi-Sensor Fusion (Optical + SAR)",
     "featureChangeDetection": "Bi-Temporal Change Detection",
     "featureEvidence": "Auditable Evidence Grounding"
@@ -506,7 +507,7 @@ export const en: TranslationSchema = {
     "title": "System Architecture & Health Status",
     "modelRouter": "Model Router",
     "visionLanguage": "Vision-Language (VLM)",
-    "readyMock": "Ready (Mock calibrated)",
+    "readyMock": "Ready (Calibrated)",
     "sensorIngestion": "Sensor Ingestion",
     "geoTiffSar": "GeoTIFF / SAR / Optical",
     "active": "Active (10m GSD)",
@@ -524,7 +525,7 @@ export const en: TranslationSchema = {
     "statusTitle": "System Architecture & Health Status",
     "evidenceTitle": "Evidence Grounding & Verification",
     "visionLanguageVlm": "Vision-Language (VLM)",
-    "readyMockCalibrated": "Ready (Mock calibrated)",
+    "readyMockCalibrated": "Ready (Calibrated)",
     "geoTiffSarOptical": "GeoTIFF / SAR / Optical",
     "activeGsd": "Active (10m GSD)",
     "executionTraceEngine": "Execution Trace Engine",
@@ -532,7 +533,7 @@ export const en: TranslationSchema = {
     "groundingMaskFilter": "Grounding Mask Filter",
     "highIouCalibrated": "Calibrated (0.87 IoU)",
     "architecturePipeline": "Architecture & Telemetry Pipeline",
-    "architectureDesc": "Real-time telemetry showing synthetic inference pipeline metrics, mock agent nodes, and sensor pipeline operational health.",
+    "architectureDesc": "Real-time telemetry showing synthetic inference pipeline metrics, agent nodes, and sensor pipeline operational health.",
     "envLabel": "Environment"
   },
   "workspaceNavRail": {

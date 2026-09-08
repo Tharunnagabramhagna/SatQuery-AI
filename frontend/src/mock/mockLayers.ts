@@ -85,7 +85,7 @@ export const DEFAULT_OVERLAY_LAYERS: VisualizationLayer[] = [
     visible: true,
     opacity: 90,
     color: '#38bdf8', // sky-400
-    description: 'AI localized bounding boxes & object tags (Demo)',
+    description: 'AI localized bounding boxes & object tags',
   },
   {
     id: 'overlay_vegetation',

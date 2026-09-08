@@ -35,9 +35,7 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// ─── API Configuration ──────────────────────────────────────────
-
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/+$/, '') : '') + '/api';
 
 // ─── Analysis ────────────────────────────────────────────────────
 
@@ -50,6 +48,8 @@ export async function submitAnalysis(request: AnalysisRequest): Promise<Analysis
     if (request.capability) formData.append('capability', request.capability);
     if (request.beforeImage) formData.append('before_image', request.beforeImage);
     if (request.afterImage) formData.append('after_image', request.afterImage);
+    if (request.beforeImageUrl) formData.append('before_image_url', request.beforeImageUrl);
+    if (request.afterImageUrl) formData.append('after_image_url', request.afterImageUrl);
 
     const response = await fetch(`${API_BASE}/analysis`, {
       method: 'POST',
@@ -146,13 +146,40 @@ export function getDemoScenario(id: string): DemoScenario | undefined {
 // ─── Dataset & Scenario Library ───────────────────────────────────
 
 export async function getDatasets(): Promise<DatasetScenario[]> {
-  // In the future: GET /api/datasets
+  try {
+    const response = await fetch(`${API_BASE}/datasets`);
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to fetch datasets from API, using fallback:', err);
+  }
   return MOCK_DATASET_SCENARIOS;
 }
 
 export async function getDatasetScenarioById(id: string): Promise<DatasetScenario | undefined> {
-  // In the future: GET /api/datasets/:id
-  return MOCK_DATASET_SCENARIOS.find((s) => s.id === id);
+  const allDatasets = await getDatasets();
+  return allDatasets.find((s) => s.id === id);
+}
+
+export async function uploadDatasetZip(file: File): Promise<{ datasetId: string; name: string; totalImages: number; message: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE}/datasets/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to upload dataset ZIP.' }));
+    throw new Error(err.detail || `Upload failed with status ${response.status}`);
+  }
+
+  return response.json();
 }
 
 // ─── Technical Documentation Center ───────────────────────────────

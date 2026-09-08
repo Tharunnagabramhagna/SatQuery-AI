@@ -593,17 +593,64 @@ export function DualImageryViewer({
                         {isOverlayVisible('changed_regions') && (
                           <g style={{ opacity: getOverlayOpacity('changed_regions') }}>
                             {regions
-                              .filter((r) => r.type === 'changed_area' && r.polygonPoints)
+                              .filter((r) => r.type === 'changed_area' && (r.polygonPoints || r.bounds))
                               .map((region) => (
-                                <polygon
-                                  key={region.id}
-                                  points={region.polygonPoints}
-                                  fill={highlightedRegionId === region.id ? 'rgba(250, 204, 21, 0.4)' : 'rgba(250, 204, 21, 0.18)'}
-                                  stroke={highlightedRegionId === region.id ? '#fef08a' : '#facc15'}
-                                  strokeWidth={highlightedRegionId === region.id ? '3.5' : '2.5'}
-                                  className="cursor-pointer pointer-events-auto transition-all duration-200"
-                                  onClick={() => handleRegionClick(region.id)}
-                                />
+                                <g key={region.id}>
+                                  {region.polygonPoints ? (
+                                    <polygon
+                                      points={region.polygonPoints}
+                                      fill={highlightedRegionId === region.id ? 'rgba(250, 204, 21, 0.4)' : 'rgba(250, 204, 21, 0.18)'}
+                                      stroke={highlightedRegionId === region.id ? '#fef08a' : '#facc15'}
+                                      strokeWidth={highlightedRegionId === region.id ? '3.5' : '2.5'}
+                                      className="cursor-pointer pointer-events-auto transition-all duration-200"
+                                      onClick={() => handleRegionClick(region.id)}
+                                    />
+                                  ) : (
+                                    <rect
+                                      x={region.bounds.x}
+                                      y={region.bounds.y}
+                                      width={region.bounds.width}
+                                      height={region.bounds.height}
+                                      fill={highlightedRegionId === region.id ? 'rgba(250, 204, 21, 0.4)' : 'rgba(250, 204, 21, 0.22)'}
+                                      stroke={highlightedRegionId === region.id ? '#fef08a' : '#facc15'}
+                                      strokeWidth={highlightedRegionId === region.id ? '3' : '2'}
+                                      className="cursor-pointer pointer-events-auto transition-all duration-200"
+                                      onClick={() => handleRegionClick(region.id)}
+                                    />
+                                  )}
+                                </g>
+                              ))}
+                          </g>
+                        )}
+                        {isOverlayVisible('buildings') && (
+                          <g style={{ opacity: getOverlayOpacity('buildings') }}>
+                            {regions
+                              .filter((r) => r.type === 'building' && (r.bounds || r.polygonPoints))
+                              .map((region) => (
+                                <g key={region.id}>
+                                  {region.polygonPoints ? (
+                                    <polygon
+                                      points={region.polygonPoints}
+                                      fill={highlightedRegionId === region.id ? 'rgba(250, 204, 21, 0.5)' : 'rgba(250, 204, 21, 0.3)'}
+                                      stroke={highlightedRegionId === region.id ? '#fff' : '#fef08a'}
+                                      strokeWidth={highlightedRegionId === region.id ? '2.5' : '1.5'}
+                                      className="cursor-pointer pointer-events-auto transition-all duration-200"
+                                      onClick={() => handleRegionClick(region.id)}
+                                    />
+                                  ) : (
+                                    <rect
+                                      x={region.bounds.x}
+                                      y={region.bounds.y}
+                                      width={region.bounds.width}
+                                      height={region.bounds.height}
+                                      fill={highlightedRegionId === region.id ? 'rgba(250, 204, 21, 0.5)' : 'rgba(250, 204, 21, 0.3)'}
+                                      stroke={highlightedRegionId === region.id ? '#fff' : '#fef08a'}
+                                      strokeWidth={highlightedRegionId === region.id ? '2.5' : '1.5'}
+                                      className="cursor-pointer pointer-events-auto transition-all duration-200"
+                                      onClick={() => handleRegionClick(region.id)}
+                                    />
+                                  )}
+                                </g>
                               ))}
                           </g>
                         )}
@@ -932,7 +979,7 @@ export function DualImageryViewer({
               title={t('viewer.miniMap')}
             >
               <img
-                src="/imagery/sat_after.jpg"
+                src={t1Path || t0Path || '/imagery/sat_after.jpg'}
                 alt="Mini-map overview"
                 className="w-full h-full object-cover opacity-60"
               />
@@ -954,39 +1001,51 @@ export function DualImageryViewer({
         {/* Beside Map Viewport: Zoomed Detail Inspection Tile (hidden in maximized fullscreen mode) */}
         {!isMaximized && (
           <div className="xl:col-span-4 relative rounded-xl border border-slate-300 dark:border-slate-800 bg-[#060a14] overflow-hidden shadow-md h-[340px] sm:h-[380px] lg:h-[400px] flex items-center justify-center p-3">
-            {/* Aspect-Ratio Preserving Detail Stage (1024 x 1024 square) */}
+            {/* Aspect-Ratio Preserving Detail Stage */}
             <div className="relative h-full max-w-full aspect-square overflow-hidden flex flex-col justify-between p-3 rounded-lg">
-              {/* Background Detail Satellite Imagery */}
+              {/* Background Detail Satellite Imagery (uses user uploaded image!) */}
               <img
-                src="/imagery/sat_detail.jpg"
+                src={t1Path || t0Path || '/imagery/sat_detail.jpg'}
                 alt="High-resolution localized satellite tile"
                 className="absolute inset-0 w-full h-full object-contain opacity-90 select-none"
               />
 
-              {/* Golden Polygon Overlays on Detail Tile */}
+              {/* Dynamic Region Highlights on Detail Tile */}
               <svg
                 className="absolute inset-0 w-full h-full pointer-events-none z-10"
-                viewBox="0 0 400 400"
+                viewBox="0 0 800 500"
               >
-                <polygon
-                  points="140,80 280,70 310,210 160,230"
-                  fill="rgba(250, 204, 21, 0.22)"
-                  stroke="#facc15"
-                  strokeWidth="2.5"
-                />
-                <polygon
-                  points="170,240 260,230 280,310 190,320"
-                  fill="rgba(250, 204, 21, 0.2)"
-                  stroke="#facc15"
-                  strokeWidth="2"
-                />
+                {regions
+                  .filter((r) => r.polygonPoints || r.bounds)
+                  .map((region) => (
+                    <g key={region.id}>
+                      {region.polygonPoints ? (
+                        <polygon
+                          points={region.polygonPoints}
+                          fill="rgba(250, 204, 21, 0.28)"
+                          stroke="#facc15"
+                          strokeWidth="3"
+                        />
+                      ) : (
+                        <rect
+                          x={region.bounds.x}
+                          y={region.bounds.y}
+                          width={region.bounds.width}
+                          height={region.bounds.height}
+                          fill="rgba(250, 204, 21, 0.28)"
+                          stroke="#facc15"
+                          strokeWidth="3"
+                        />
+                      )}
+                    </g>
+                  ))}
               </svg>
 
-              {/* Top Pill: Detected Buildings Badge */}
+              {/* Top Pill: Detected Features Badge */}
               <div className="relative z-20 flex items-center justify-between w-full">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-400/90 text-slate-950 text-xs font-bold shadow-md">
                   <span className="w-2.5 h-2.5 rounded-sm bg-slate-950" />
-                  <span>{t('viewer.detectedBuildings')}</span>
+                  <span>{modeCategory === 'compare' ? t('viewer.changedRegions') || 'Changed Regions' : t('viewer.detectedBuildings')}</span>
                 </div>
 
                 {/* Quick action: Crosshair locator */}

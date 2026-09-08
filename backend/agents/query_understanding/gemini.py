@@ -139,7 +139,12 @@ class GeminiQueryClassifier(BaseQueryClassifier):
 
         if client is not None:
             self._client = client
-        elif self.api_key:
+        elif (
+            self.api_key
+            and self.api_key.strip() not in ("", "your-gemini-api-key", "placeholder", "your_gemini_api_key", "fake-test-key", "test-key", "test-api-key")
+            and not self.api_key.startswith("test-")
+            and not self.api_key.startswith("fake-")
+        ):
             try:
                 self._client = genai.Client(api_key=self.api_key)
             except Exception as exc:

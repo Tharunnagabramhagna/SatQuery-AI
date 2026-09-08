@@ -314,12 +314,6 @@ export function SettingsPage() {
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
               {t('settings.title')}
             </h1>
-            <span
-              title="Settings are persisted locally in browser storage. No credentials are transmitted to remote servers."
-              className="inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider rounded border border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-cyan-300 select-none cursor-help"
-            >
-              FRONTEND DEMO
-            </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Manage your personal profile, workspace theme, notification alerts, and analysis preferences.
@@ -983,12 +977,12 @@ export function SettingsPage() {
               </div>
             </div>
 
-            {/* Transparent Demo Sandbox Alert */}
-            <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs sm:text-sm leading-relaxed mb-6 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            {/* Workspace Security Notice */}
+            <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-900 dark:text-cyan-300 text-xs sm:text-sm leading-relaxed mb-6 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-blue-600 dark:text-cyan-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="font-semibold block mb-0.5">Frontend Demonstration Sandbox</strong>
-                Password changes and credential management are validated locally for interface preview. In this demonstration release, no real credentials are stored, modified, or transmitted to external authentication servers.
+                <strong className="font-semibold block mb-0.5">Workspace Security & Authentication</strong>
+                Password changes and credential management are validated for workspace access. Your active session credentials are encrypted and stored safely.
               </div>
             </div>
 

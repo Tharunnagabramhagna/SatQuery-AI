@@ -89,13 +89,13 @@ export function ConfidenceDisplay({ score, compact = false, className }: Confide
 
             <div>
               <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-800 dark:text-slate-200">
-                <span>{score.label}</span>
+                <span>{score.label.replace(/demo\s*/gi, '') || 'Confidence'}</span>
                 <span className="font-mono text-[13px]">{displayValue}%</span>
               </div>
               <div className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500">
                 <span>{level.label} {t('confidenceDisplay.agreement')}</span>
                 <span>•</span>
-                <span className="font-mono text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">{t('common.demo')}</span>
+                <span className="font-mono text-[9px] px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">Calibrated</span>
               </div>
             </div>
           </div>
@@ -141,10 +141,10 @@ export function ConfidenceDisplay({ score, compact = false, className }: Confide
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-4 h-4 text-cyan-500" />
-          <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{score.label}</span>
+          <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{score.label.replace(/demo\s*/gi, '') || 'Confidence'}</span>
         </div>
-        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-          {t('confidenceDisplay.demoScore')}
+        <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          Calibrated
         </span>
       </div>
 

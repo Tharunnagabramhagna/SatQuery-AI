@@ -15,8 +15,10 @@ import {
   Sparkles,
   CheckCircle2,
   FileCode2,
+  UploadCloud,
+  Loader2,
 } from 'lucide-react';
-import { getDatasets } from '../services/api';
+import { getDatasets, uploadDatasetZip } from '../services/api';
 import type { DatasetScenario, AnalysisMode } from '../types';
 import { Button } from '../components/common/Button';
 import { EmptyState } from '../components/common/EmptyState';
@@ -31,27 +33,46 @@ export function DatasetsPage() {
   const navigate = useNavigate();
   const [scenarios, setScenarios] = useState<DatasetScenario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
   const [selectedScenario, setSelectedScenario] = useState<DatasetScenario | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadScenarios = () => {
+    setIsLoading(true);
     getDatasets()
       .then((data) => {
-        if (isMounted) {
-          setScenarios(data);
-          setIsLoading(false);
-        }
+        setScenarios(data);
+        setIsLoading(false);
       })
       .catch((err) => {
         console.error('Failed to load dataset scenarios:', err);
-        if (isMounted) setIsLoading(false);
+        setIsLoading(false);
       });
-    return () => {
-      isMounted = false;
-    };
+  };
+
+  useEffect(() => {
+    loadScenarios();
   }, []);
+
+  const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      setUploadMessage(null);
+      const res = await uploadDatasetZip(file);
+      setUploadMessage(`Success: ${res.message}`);
+      loadScenarios();
+    } catch (err: any) {
+      setUploadMessage(`Error: ${err.message || 'Failed to upload dataset'}`);
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -146,19 +167,33 @@ export function DatasetsPage() {
               <Database className="w-6 h-6 text-cyan-500" aria-hidden="true" />
               {t('datasets.title')}
             </h1>
-            <span
-              title="SatQuery AI is running in demonstration mode. Scenarios use simulated remote-sensing datasets."
-              className="px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-help"
-            >
-              {t('common.demo')}
-            </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             {t('datasets.subtitle')}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept=".zip"
+              onChange={handleZipUpload}
+              disabled={isUploading}
+              className="hidden"
+            />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white shadow-sm transition-colors cursor-pointer">
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Ingesting ZIP...
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="w-3.5 h-3.5" /> Upload Dataset (.zip)
+                </>
+              )}
+            </span>
+          </label>
           <Button
             variant="secondary"
             size="sm"
@@ -169,6 +204,19 @@ export function DatasetsPage() {
           </Button>
         </div>
       </div>
+
+      {uploadMessage && (
+        <div
+          className={cn(
+            'p-3 rounded-lg text-xs font-medium border transition-all',
+            uploadMessage.startsWith('Success')
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+              : 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400'
+          )}
+        >
+          {uploadMessage}
+        </div>
+      )}
 
       {/* ─── Search & Filter Bar ─────────────────────────────────── */}
       <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-md rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
@@ -270,9 +318,6 @@ export function DatasetsPage() {
                     <Layers className="w-2.5 h-2.5 text-cyan-400" />
                     {getModeLabel(scenario.mode)}
                   </span>
-                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider rounded bg-amber-500/80 text-black shadow-sm">
-                    DEMO
-                  </span>
                 </div>
 
                 {/* Bottom Overlay Modality Tag */}
@@ -345,9 +390,6 @@ export function DatasetsPage() {
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
                   {getCapabilityLabel(selectedScenario.capability)}
-                </span>
-                <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  {t('datasets.demoScenario')}
                 </span>
               </div>
 

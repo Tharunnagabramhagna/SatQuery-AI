@@ -204,12 +204,6 @@ export function DocumentationPage() {
               <BookOpen className="w-6 h-6 text-cyan-500" aria-hidden="true" />
               {t('docs.title')}
             </h1>
-            <span
-              title="SatQuery AI Technical Documentation. Features and workflows describe the demonstration platform."
-              className="px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-help"
-            >
-              DEMO
-            </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             {t('docs.subtitle')}
@@ -360,11 +354,6 @@ export function DocumentationPage() {
                     <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                       {t(`docs.categories.${activeSection.category}`)}
                     </span>
-                    {activeSection.isDemo && (
-                      <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                        {t('docs.demoCalibrated')}
-                      </span>
-                    )}
                     {activeSection.isPlanned && (
                       <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
                         {t('docs.plannedIntegration')}

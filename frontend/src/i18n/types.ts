@@ -97,6 +97,7 @@ export interface TranslationSchema {
     measureDemo: string;
     miniMap: string;
     detectedBuildings: string;
+    changedRegions: string;
     previousImage: string;
     currentImage: string;
     opticalRgb: string;

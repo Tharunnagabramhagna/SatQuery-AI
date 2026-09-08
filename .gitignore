@@ -62,5 +62,26 @@ Thumbs.db
 *.swp
 *.swo
 
+# Large Model Checkpoints & Weights
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.gguf
+weights/
+checkpoints/
+models_cache/
+
+# Large Datasets & Heavy Rasters
+data/raw/
+data/processed/
+data/large/
+*.tif
+*.tiff
+*.hdf
+*.h5
+*.nc
+
 # Scratch scripts
 scratch/

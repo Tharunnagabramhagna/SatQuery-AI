@@ -178,9 +178,6 @@ export function FinalAnswerPanel({
                     style={{ width: `${confidence}%` }}
                   />
                 </div>
-                <div className="text-right mt-1">
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-medium">{t('common.demo')}</span>
-                </div>
               </div>
             )}
 
@@ -206,7 +203,6 @@ export function FinalAnswerPanel({
                 <span className="font-medium text-slate-600 dark:text-slate-400">
                   {statistics.temporalRange.t0} → {statistics.temporalRange.t1}
                 </span>
-                <span className="text-slate-400 dark:text-slate-500 font-mono">({t('common.demo')})</span>
               </div>
             )}
           </>
@@ -217,7 +213,6 @@ export function FinalAnswerPanel({
           <div className="space-y-2">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">
               {t('results.processingStages')}
-              <span className="ml-1.5 text-[8px] font-mono text-slate-400/80 dark:text-slate-500 px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800/60">{t('common.demo')}</span>
             </div>
             {processingStages ? (
               <div className="space-y-1.5">
@@ -263,10 +258,6 @@ export function FinalAnswerPanel({
         {/* ─── Statistics Tab ─── */}
         {activeTab === 'statistics' && statistics && (
           <div className="space-y-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-1">
-              {t('results.demoMetrics')}
-            </div>
-
             {/* Stat Cards Grid */}
             <div className="grid grid-cols-2 gap-2">
               <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/40">
@@ -274,7 +265,7 @@ export function FinalAnswerPanel({
                   {statistics.areaChangedHectares}
                 </div>
                 <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  {t('results.hectaresChanged')} <span className="text-slate-400">({t('common.demo')})</span>
+                  {t('results.hectaresChanged')}
                 </div>
               </div>
 
@@ -283,7 +274,7 @@ export function FinalAnswerPanel({
                   {statistics.buildingCount}
                 </div>
                 <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  {t('results.buildingsDetected')} <span className="text-slate-400">({t('common.demo')})</span>
+                  {t('results.buildingsDetected')}
                 </div>
               </div>
 
@@ -292,7 +283,7 @@ export function FinalAnswerPanel({
                   {statistics.vegetationCoverPercent}%
                 </div>
                 <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  {t('results.vegetationCover')} <span className="text-slate-400">({t('common.demo')})</span>
+                  {t('results.vegetationCover')}
                 </div>
               </div>
 
@@ -301,7 +292,7 @@ export function FinalAnswerPanel({
                   {statistics.builtUpPercent}%
                 </div>
                 <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  {t('results.builtUpArea')} <span className="text-slate-400">({t('common.demo')})</span>
+                  {t('results.builtUpArea')}
                 </div>
               </div>
             </div>
@@ -340,7 +331,6 @@ export function FinalAnswerPanel({
               <span className="font-medium text-slate-600 dark:text-slate-400">
                 {statistics.temporalRange.t0} → {statistics.temporalRange.t1}
               </span>
-              <span className="text-slate-400 dark:text-slate-500 font-mono">({t('common.demo')})</span>
             </div>
           </div>
         )}

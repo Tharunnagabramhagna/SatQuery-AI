@@ -33,6 +33,8 @@ from backend.agents.router.agent_router import AgentRouter, default_agent_router
 from backend.agents.router.base import BaseRouter
 from backend.agents.tools.executor import ToolExecutor, default_tool_executor
 from backend.schemas.query import ExecutionSummary, ExecutionTraceStep
+from backend.schemas.query_understanding import QueryIntent
+from backend.schemas.router import RoutingDecision, ToolIdentifier
 from backend.validation import InputValidator
 
 
@@ -127,6 +129,34 @@ class AgentOrchestrator:
         # Step 2: Agent Routing
         t1 = time.perf_counter()
         routing_decision = await self.router.route(structured)
+
+        # Context-aware disambiguation:
+        # 1. If 2 images are provided (before & after), resolve to CHANGE_DETECTION_TOOL
+        hint_cap = (parameters or {}).get("hint_capability")
+        if (before_image and after_image) or hint_cap == "change_detection":
+            if routing_decision.requires_clarification or routing_decision.selected_tool == ToolIdentifier.CLARIFICATION_TOOL:
+                routing_decision = RoutingDecision(
+                    selected_tool=ToolIdentifier.CHANGE_DETECTION_TOOL,
+                    intent=QueryIntent.CHANGE_DETECTION,
+                    routing_confidence=0.95,
+                    reason="Bi-temporal image pair provided; executing full change detection analysis.",
+                    requires_clarification=False,
+                    parameters={"target_objects": structured.target_objects, "temporal": {"is_bi_temporal": True}},
+                    structured_query=structured,
+                )
+        # 2. If single image is provided with grounding intent or hint, resolve to GROUNDING_TOOL
+        elif before_image and (hint_cap == "grounding" or "detect" in query.lower() or "locate" in query.lower()):
+            if routing_decision.requires_clarification or routing_decision.selected_tool == ToolIdentifier.CLARIFICATION_TOOL:
+                routing_decision = RoutingDecision(
+                    selected_tool=ToolIdentifier.GROUNDING_TOOL,
+                    intent=QueryIntent.GROUNDING,
+                    routing_confidence=0.92,
+                    reason="Single satellite image provided with visual grounding context.",
+                    requires_clarification=False,
+                    parameters={"target_objects": structured.target_objects},
+                    structured_query=structured,
+                )
+
         duration_step2 = (time.perf_counter() - t1) * 1000
 
         step2_detail = (
@@ -144,6 +174,7 @@ class AgentOrchestrator:
         # Step 3: Tool Execution
         t2 = time.perf_counter()
         extra_params: Dict[str, Any] = dict(parameters or {})
+        extra_params["query"] = query
         if before_image:
             extra_params["before_image"] = before_image
         if after_image:

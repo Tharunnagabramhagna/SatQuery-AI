@@ -64,12 +64,6 @@ export function Navbar({
 
         <div className="flex items-center gap-2">
           <BrandMark />
-          <span
-            title={t('nav.demoTooltip')}
-            className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold tracking-wider rounded border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-help"
-          >
-            {t('common.demo')}
-          </span>
         </div>
 
         {/* Center / Left-Center Nav Tabs */}
