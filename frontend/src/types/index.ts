@@ -81,6 +81,7 @@ export interface AnalysisResponse {
   executionTrace: ExecutionTraceStep[];
   warnings: string[];
   isDemo: boolean;
+  statistics?: import('./visualization').AnalysisStatistics;
 }
 
 export interface AnalysisEvidence {

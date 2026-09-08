@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, UploadCloud, CheckCircle2, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -8,11 +8,20 @@ interface NewAnalysisModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLoadPreset: (presetId: string) => void;
+  onUploadFiles?: (files: File[]) => void;
 }
 
-export function NewAnalysisModal({ isOpen, onClose, onLoadPreset }: NewAnalysisModalProps) {
+export function NewAnalysisModal({
+  isOpen,
+  onClose,
+  onLoadPreset,
+  onUploadFiles,
+}: NewAnalysisModalProps) {
   const { t } = useTranslation();
   const [selectedPreset, setSelectedPreset] = useState<string>('change');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -47,8 +56,28 @@ export function NewAnalysisModal({ isOpen, onClose, onLoadPreset }: NewAnalysisM
     },
   ];
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const filesArray = Array.from(e.target.files);
+      setSelectedFiles(filesArray);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const filesArray = Array.from(e.dataTransfer.files);
+      setSelectedFiles(filesArray);
+    }
+  };
+
   const handleApply = () => {
-    onLoadPreset(selectedPreset);
+    if (selectedFiles.length > 0 && onUploadFiles) {
+      onUploadFiles(selectedFiles);
+    } else {
+      onLoadPreset(selectedPreset);
+    }
     onClose();
   };
 
@@ -79,16 +108,50 @@ export function NewAnalysisModal({ isOpen, onClose, onLoadPreset }: NewAnalysisM
           </button>
         </div>
 
+        {/* Hidden File Input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,.tif,.tiff"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
         {/* Upload Dropzone */}
-        <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 rounded-xl p-5 text-center bg-slate-50/50 dark:bg-slate-900/40 transition-colors cursor-pointer mb-4">
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          className={cn(
+            'border-2 border-dashed rounded-xl p-5 text-center transition-all cursor-pointer mb-4',
+            isDragging
+              ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-600/20 scale-[1.01]'
+              : selectedFiles.length > 0
+              ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-600/10'
+              : 'border-slate-300 dark:border-slate-700 hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/40'
+          )}
+        >
           <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-600/10 text-blue-600 dark:text-cyan-400 mx-auto flex items-center justify-center mb-2">
-            <UploadCloud className="w-5 h-5" />
+            {selectedFiles.length > 0 ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+            ) : (
+              <UploadCloud className="w-5 h-5" />
+            )}
           </div>
           <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-            {t('newAnalysis.dragDrop')}
+            {selectedFiles.length > 0
+              ? `${selectedFiles.length} file(s) selected: ${selectedFiles.map((f) => f.name).join(', ')}`
+              : t('newAnalysis.dragDrop')}
           </div>
           <p className="text-[10px] text-slate-400 mt-0.5">
-            {t('newAnalysis.supportedFormats')}
+            {selectedFiles.length > 0
+              ? 'Click to change image or click "Start Analysis" below'
+              : t('newAnalysis.supportedFormats')}
           </p>
         </div>
 

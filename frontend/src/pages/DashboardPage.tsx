@@ -32,12 +32,13 @@ import { findHistoryRecord } from '../mock/mockHistory';
 import { findDatasetScenario } from '../mock/mockDatasets';
 import { getUserPreferences, submitAnalysis } from '../services/api';
 import type { AttachedImage } from '../components/dashboard/QueryAgentOverlay';
-import type { VisualizationLayer, BandCombination, ComparisonMode, OpticalSarMode, MapRegion, GroundingBox } from '../types/visualization';
+import type { AnalysisCapability, AnalysisVisualization } from '../types';
+import type { VisualizationLayer, BandCombination, ComparisonMode, OpticalSarMode, MapRegion, GroundingBox, AnalysisStatistics } from '../types/visualization';
 import { exportReport, type ReportData } from '../utils/reportExport';
 import { useTranslation } from '../hooks/useTranslation';
 
 function parseVisualizationsToRegions(
-  visualizations: any[] | undefined,
+  visualizations: AnalysisVisualization[] | undefined,
   fallbackMode: 'compare' | 'single',
   confidenceScore: number = 0.94
 ): { parsedRegions: MapRegion[]; parsedBoxes: GroundingBox[] } {
@@ -47,8 +48,9 @@ function parseVisualizationsToRegions(
   if (visualizations && Array.isArray(visualizations)) {
     let count = 1;
     for (const v of visualizations) {
-      if (v.type === 'bounding_box' && v.data?.box_2d) {
-        const rawBox = v.data.box_2d;
+      const vData = v.data as { box_2d?: number[]; label?: string; confidence?: number } | undefined;
+      if (v.type === 'bounding_box' && vData?.box_2d) {
+        const rawBox = vData.box_2d;
         if (Array.isArray(rawBox) && rawBox.length === 4) {
           let [ymin, xmin, ymax, xmax] = rawBox.map(Number);
           // Scale from 1000 coordinate space if needed
@@ -72,7 +74,7 @@ function parseVisualizationsToRegions(
           const boxId = `grounding-${count}`;
           const label =
             v.label ||
-            v.data?.label ||
+            vData?.label ||
             (fallbackMode === 'compare'
               ? `Change Cluster #${count}`
               : `Target Feature #${count}`);
@@ -89,7 +91,7 @@ function parseVisualizationsToRegions(
             id: boxId,
             label,
             normalized: { x: normX, y: normY, width: normW, height: normH },
-            confidence: Math.round((v.data?.confidence || confidenceScore) * 100),
+            confidence: Math.round((vData?.confidence || confidenceScore) * 100),
             regionId: regId,
             category: 'building',
             isDemo: false,
@@ -221,6 +223,7 @@ export function DashboardPage() {
   const [liveAnswer, setLiveAnswer] = useState<string | null>(null);
   const [liveConfidence, setLiveConfidence] = useState<number | null>(null);
   const [liveEvidence, setLiveEvidence] = useState<string[] | null>(null);
+  const [liveStatistics, setLiveStatistics] = useState<AnalysisStatistics | null>(null);
   const [regions, setRegions] = useState<MapRegion[]>(MOCK_REGIONS);
   const [groundingBoxes, setGroundingBoxes] = useState<GroundingBox[]>(MOCK_GROUNDING_BOXES);
 
@@ -499,12 +502,115 @@ export function DashboardPage() {
     }
   };
 
-  // Trigger analysis simulation
-  const handleAnalyze = () => {
+  // Centralized analysis execution engine
+  const executeAnalysis = async (
+    queryToRun: string,
+    options?: {
+      files?: File[];
+      t0?: string;
+      t1?: string;
+      mode?: 'single' | 'compare' | 'fusion';
+      capability?: string;
+    }
+  ) => {
     setIsAnalyzing(true);
-    setTimeout(() => {
+    const targetMode = options?.mode || modeCategory;
+    const isCompare = targetMode === 'compare';
+    const isFusion = targetMode === 'fusion';
+
+    const t0Src = options?.t0 || customImagerySources.t0Path;
+    const t1Src = options?.t1 || customImagerySources.t1Path;
+    const file0 = options?.files?.[0];
+    const file1 = options?.files?.[1];
+
+    try {
+      const res = await submitAnalysis({
+        query: queryToRun,
+        mode: isCompare ? 'compare_images' : isFusion ? 'optical_sar' : 'single_image',
+        capability: (options?.capability as AnalysisCapability) || (activePresetMode.id as AnalysisCapability) || 'vqa',
+        files: options?.files || [],
+        beforeImage: file0,
+        afterImage: file1,
+        beforeImageUrl: typeof t0Src === 'string' && !t0Src.startsWith('blob:') ? t0Src : undefined,
+        afterImageUrl: typeof t1Src === 'string' && !t1Src.startsWith('blob:') ? t1Src : undefined,
+      });
+
+      setLiveAnswer(res.answer);
+      const conf = res.confidence ? Math.round(res.confidence * (res.confidence <= 1 ? 100 : 1)) : 92;
+      setLiveConfidence(conf);
+      if (res.evidence && res.evidence.length > 0) {
+        setLiveEvidence(
+          res.evidence.map((e) =>
+            typeof e === 'string' ? e : e.description || (e as unknown as Record<string, string>).content || (e as unknown as Record<string, string>).title || (e as unknown as Record<string, string>).type || ''
+          )
+        );
+      }
+      if (res.statistics) {
+        setLiveStatistics(res.statistics);
+      }
+
+      // Dynamically extract real detected change regions & bounding boxes
+      const { parsedRegions, parsedBoxes } = parseVisualizationsToRegions(
+        res.visualizations,
+        isCompare ? 'compare' : 'single',
+        conf / 100
+      );
+      if (parsedRegions.length > 0) {
+        setRegions(parsedRegions);
+        setGroundingBoxes(parsedBoxes);
+        setHighlightedRegionId(parsedRegions[0]?.id || null);
+        setSelectedGroundingId(parsedBoxes[0]?.id || null);
+      }
+
+      // Ensure appropriate overlay layers are active
+      setOverlayLayers((prev) =>
+        prev.map((l) => {
+          if (isCompare && l.type === 'changed_regions') return { ...l, visible: true };
+          if (!isCompare && (l.type === 'grounding' || l.type === 'buildings')) return { ...l, visible: true };
+          return l;
+        })
+      );
+    } catch (err) {
+      console.error('Analysis execution failed:', err);
+    } finally {
       setIsAnalyzing(false);
-    }, 1100);
+    }
+  };
+
+  // Trigger analysis on currently active imagery and query
+  const handleAnalyze = () => {
+    const activeQuery = displayedQuery || activePresetMode.prompt || 'Comprehensive satellite remote-sensing scene analysis';
+    executeAnalysis(activeQuery);
+  };
+
+  // Upload handler from NewAnalysisModal
+  const handleUploadImagesFromModal = (files: File[]) => {
+    if (!files || files.length === 0) return;
+    if (files.length >= 2) {
+      const t0 = URL.createObjectURL(files[0]);
+      const t1 = URL.createObjectURL(files[1]);
+      setCustomImagerySources({ t0Path: t0, t1Path: t1 });
+      setModeCategory('compare');
+      setComparisonMode('swipe');
+      executeAnalysis('Identify the changes between these two satellite acquisitions.', {
+        files: [files[0], files[1]],
+        t0,
+        t1,
+        mode: 'compare',
+        capability: 'change_detection',
+      });
+    } else {
+      const t0 = URL.createObjectURL(files[0]);
+      setCustomImagerySources({ t0Path: t0, t1Path: t0 });
+      setModeCategory('single');
+      executeAnalysis('Identify and describe key infrastructure, buildings, and land use patterns.', {
+        files: [files[0]],
+        t0,
+        t1: t0,
+        mode: 'single',
+        capability: 'grounding',
+      });
+    }
   };
 
   // View on map action
@@ -521,6 +627,7 @@ export function DashboardPage() {
     const activeAnswerVal = liveAnswer || activePresetMode.answerSummary;
     const activeEvidenceVal = liveEvidence && liveEvidence.length > 0 ? liveEvidence : activePresetMode.evidencePoints;
     const activeQueryVal = isQueryAgent ? (queryAgentQuery || 'Autonomous Query Agent Satellite Analysis') : (activePresetMode.prompt);
+    const activeStatsVal = liveStatistics || MOCK_STATISTICS;
 
     const reportData: ReportData = {
       project: 'SatQuery AI - Space Intelligence',
@@ -534,7 +641,7 @@ export function DashboardPage() {
         resolution: '10m GSD',
         crs: 'EPSG:4326',
         coordinates: '28.6139° N, 77.2090° E',
-        temporalRange: MOCK_STATISTICS.temporalRange,
+        temporalRange: activeStatsVal.temporalRange,
       },
       query: activeQueryVal,
       confidence: `${activeConfidenceVal}%`,
@@ -552,7 +659,7 @@ export function DashboardPage() {
       evidence: activeEvidenceVal,
       evidenceItems: MOCK_EVIDENCE,
       detectedFeatures: regions.length > 0 ? regions.length : activePresetMode.detectedFeaturesCount,
-      statistics: MOCK_STATISTICS,
+      statistics: activeStatsVal,
       processingStages: MOCK_PROCESSING_STAGES,
       isVerified: true,
     };
@@ -590,9 +697,9 @@ export function DashboardPage() {
     }
 
     // If in Auto / Query Agent mode, intelligently match query to appropriate capability
+    let matchedMode = activePresetMode;
     if (selectedToolId === 'query_agent') {
       const qLower = (finalQuery || '').toLowerCase();
-      let matchedMode = activePresetMode;
 
       if (
         qLower.includes('building') ||
@@ -647,128 +754,44 @@ export function DashboardPage() {
     // Close overlay immediately
     setIsQueryAgentOpen(false);
 
-    // Start analysis workflow on dashboard
-    setIsAnalyzing(true);
+    let t0 = customImagerySources.t0Path;
+    let t1 = customImagerySources.t1Path;
+    let files: File[] = [];
+    let cat = matchedMode ? matchedMode.category : modeCategory;
 
     if (attachedImages && attachedImages.length > 0) {
       if (attachedImages.length >= 2) {
-        // Bi-temporal change detection mode
-        const t0 = attachedImages[0].src;
-        const t1 = attachedImages[1].src;
+        t0 = attachedImages[0].src;
+        t1 = attachedImages[1].src;
         setCustomImagerySources({ t0Path: t0, t1Path: t1 });
+        cat = 'compare';
         setModeCategory('compare');
         setComparisonMode('swipe');
-
-        const file0 = attachedImages[0].file;
-        const file1 = attachedImages[1].file;
-        if (file0 && file1) {
-          submitAnalysis({
-            query: finalQuery || 'Analyze changes between before and after images',
-            mode: 'compare_images',
-            capability: 'change_detection',
-            files: [file0, file1],
-            beforeImage: file0,
-            afterImage: file1,
-          })
-            .then((res) => {
-              setLiveAnswer(res.answer);
-              const conf = res.confidence || 0.94;
-              setLiveConfidence(Math.round(conf * 100));
-              if (res.evidence && res.evidence.length > 0) {
-                setLiveEvidence(
-                  res.evidence.map((e: any) =>
-                    typeof e === 'string' ? e : e.description || e.content || e.title || e.type
-                  )
-                );
-              }
-
-              // Dynamically extract real detected change regions & bounding boxes
-              const { parsedRegions, parsedBoxes } = parseVisualizationsToRegions(
-                res.visualizations,
-                'compare',
-                conf
-              );
-              setRegions(parsedRegions);
-              setGroundingBoxes(parsedBoxes);
-              setHighlightedRegionId(parsedRegions[0]?.id || null);
-              setSelectedGroundingId(parsedBoxes[0]?.id || null);
-
-              // Ensure change overlay layer is active
-              setOverlayLayers((prev) =>
-                prev.map((l) =>
-                  l.type === 'changed_regions' ? { ...l, visible: true } : l
-                )
-              );
-            })
-            .catch((err) => {
-              console.error('Change analysis failed:', err);
-            })
-            .finally(() => {
-              setIsAnalyzing(false);
-            });
-          return;
+        const f0 = attachedImages[0].file;
+        const f1 = attachedImages[1].file;
+        if (f0 && f1) {
+          files = [f0, f1];
         }
       } else if (attachedImages.length === 1) {
-        // Single image grounding / VQA mode
-        const t0 = attachedImages[0].src;
+        t0 = attachedImages[0].src;
+        t1 = attachedImages[0].src;
         setCustomImagerySources({ t0Path: t0, t1Path: t0 });
+        cat = 'single';
         setModeCategory('single');
-
-        const file0 = attachedImages[0].file;
-        if (file0) {
-          submitAnalysis({
-            query: finalQuery || 'Analyze this satellite image',
-            mode: 'single_image',
-            capability: 'grounding',
-            files: [file0],
-            beforeImage: file0,
-          })
-            .then((res) => {
-              setLiveAnswer(res.answer);
-              const conf = res.confidence || 0.92;
-              setLiveConfidence(Math.round(conf * 100));
-              if (res.evidence && res.evidence.length > 0) {
-                setLiveEvidence(
-                  res.evidence.map((e: any) =>
-                    typeof e === 'string' ? e : e.description || e.content || e.title || e.type
-                  )
-                );
-              }
-
-              // Dynamically extract real localized objects & bounding boxes
-              const { parsedRegions, parsedBoxes } = parseVisualizationsToRegions(
-                res.visualizations,
-                'single',
-                conf
-              );
-              setRegions(parsedRegions);
-              setGroundingBoxes(parsedBoxes);
-              setHighlightedRegionId(parsedRegions[0]?.id || null);
-              setSelectedGroundingId(parsedBoxes[0]?.id || null);
-
-              // Ensure grounding and building overlay layers are active
-              setOverlayLayers((prev) =>
-                prev.map((l) =>
-                  l.type === 'grounding' || l.type === 'buildings'
-                    ? { ...l, visible: true }
-                    : l
-                )
-              );
-            })
-            .catch((err) => {
-              console.error('Grounding analysis failed:', err);
-            })
-            .finally(() => {
-              setIsAnalyzing(false);
-            });
-          return;
+        const f0 = attachedImages[0].file;
+        if (f0) {
+          files = [f0];
         }
       }
     }
 
-    setTimeout(() => {
-      setIsAnalyzing(false);
-    }, 1100);
+    executeAnalysis(finalQuery || 'Comprehensive satellite remote-sensing scene analysis', {
+      files,
+      t0,
+      t1,
+      mode: cat,
+      capability: matchedMode ? matchedMode.id : activePresetMode.id,
+    });
   };
 
   return (
@@ -815,7 +838,7 @@ export function DashboardPage() {
                 <DualImageryViewer
                   modeCategory={modeCategory}
                   onCategoryChange={handleCategoryChange}
-                  detectedFeaturesCount={activePresetMode.detectedFeaturesCount}
+                  detectedFeaturesCount={regions.length > 0 ? regions.length : activePresetMode.detectedFeaturesCount}
                   onInspectRegion={handleInspectRegion}
                   layers={overlayLayers}
                   regions={regions}
@@ -874,7 +897,7 @@ export function DashboardPage() {
                       }
                     : MOCK_CONFIDENCE
                 }
-                statistics={MOCK_STATISTICS}
+                statistics={liveStatistics || MOCK_STATISTICS}
                 processingStages={MOCK_PROCESSING_STAGES}
               />
 
@@ -916,6 +939,7 @@ export function DashboardPage() {
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
         onLoadPreset={handleLoadPreset}
+        onUploadFiles={handleUploadImagesFromModal}
       />
 
       <EvidenceModal
