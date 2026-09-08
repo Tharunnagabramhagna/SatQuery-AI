@@ -4,7 +4,7 @@ import { Navbar } from './Navbar';
 import { SignInModal } from './SignInModal';
 import { SystemStatusModal } from '../dashboard/SystemStatusModal';
 import { useSidebar } from '../../hooks/useSidebar';
-import { getUserProfile, updateUserProfile } from '../../services/api';
+import { getUserProfile, updateUserProfile, API_BASE } from '../../services/api';
 import type { UserProfile } from '../../types';
 
 interface AppShellProps {
@@ -23,12 +23,66 @@ export function AppShell({ children }: AppShellProps) {
     email: 'engineer@satquery.ai',
   });
 
+  const handleAuthSuccess = (userData?: { name: string; email: string; avatar?: string }) => {
+    setIsSignedIn(true);
+    if (userData) {
+      setDemoUser(userData);
+      updateUserProfile(userData);
+    }
+  };
+
   useEffect(() => {
     getUserProfile().then((profile) => {
       if (profile) {
         setDemoUser(profile);
       }
     });
+
+    // Handle OAuth Callback code from Google / Facebook
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthCode = urlParams.get('oauth_code');
+    const authError = urlParams.get('error');
+
+    if (oauthCode) {
+      fetch(`${API_BASE}/auth/oauth/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: oauthCode }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to exchange OAuth code');
+          return res.json();
+        })
+        .then((data) => {
+          if (data.access_token) {
+            localStorage.setItem('satquery_token', data.access_token);
+          }
+          if (data.user) {
+            const userProfile: UserProfile = {
+              name: data.user.display_name || data.user.name || data.user.email.split('@')[0],
+              email: data.user.email,
+              avatar: data.user.avatar_url,
+            };
+            handleAuthSuccess(userProfile);
+          }
+        })
+        .catch((err) => {
+          console.error('OAuth exchange error:', err);
+        })
+        .finally(() => {
+          urlParams.delete('oauth_code');
+          urlParams.delete('error');
+          const remainingQuery = urlParams.toString();
+          const cleanUrl =
+            window.location.pathname + (remainingQuery ? `?${remainingQuery}` : '') + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
+        });
+    } else if (authError) {
+      console.warn('OAuth authorization error:', authError);
+      urlParams.delete('error');
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
 
     const handleUserUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<UserProfile>;
@@ -41,6 +95,7 @@ export function AppShell({ children }: AppShellProps) {
     return () => window.removeEventListener('satquery-user-update', handleUserUpdate);
   }, []);
 
+
   const location = useLocation();
 
   const isWorkspacePage =
@@ -48,13 +103,6 @@ export function AppShell({ children }: AppShellProps) {
     location.pathname === '/' ||
     location.pathname === '/analysis';
 
-  const handleAuthSuccess = (userData?: { name: string; email: string }) => {
-    setIsSignedIn(true);
-    if (userData) {
-      setDemoUser(userData);
-      updateUserProfile(userData);
-    }
-  };
 
   return (
     <div className="relative flex flex-col min-h-screen bg-slate-50 dark:bg-[#060a14] text-slate-900 dark:text-slate-100 selection:bg-blue-600/30 selection:text-blue-600 dark:selection:text-blue-200 transition-colors duration-150 overflow-x-hidden">

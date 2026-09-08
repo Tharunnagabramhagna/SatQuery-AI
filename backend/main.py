@@ -143,6 +143,19 @@ app.include_router(analyses_router)
 app.include_router(oauth_router)
 app.include_router(datasets_router)
 
+
+@app.on_event("startup")
+def init_db():
+    try:
+        from backend.db.base import Base
+        import backend.db.models  # noqa: F401
+        from backend.db.session import engine
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables initialized successfully.")
+    except Exception as exc:
+        logger.warning("Database schema auto-creation skipped or deferred: %s", exc)
+
+
 # Mount local data directory for static satellite image serving
 data_static_dir = repo_root / "data"
 data_static_dir.mkdir(parents=True, exist_ok=True)

@@ -1,9 +1,4 @@
-"""Centralized configuration for SatQuery backend.
-
-Loads settings from environment variables and optional .env file.
-Keeps configuration minimal and focused for PostgreSQL database integration.
-"""
-
+import os
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -11,9 +6,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings with environment variable fallbacks."""
 
-    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/satquery"
-    TEST_DATABASE_URL: Optional[str] = "postgresql+psycopg://postgres:postgres@localhost:5432/satquery_test"
-    ENVIRONMENT: str = "development"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # Defaults to SQLite if PostgreSQL DATABASE_URL is not configured
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./satquery.db")
+    TEST_DATABASE_URL: Optional[str] = "sqlite:///:memory:"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     CORS_ORIGINS: Optional[str] = None
 
     # JWT Authentication configuration (override in production via environment / .env)
@@ -22,8 +24,9 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
     # Frontend and Backend URLs
-    FRONTEND_URL: str = "http://localhost:5173"
-    BACKEND_URL: str = "http://localhost:8000"
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://sat-query-ai-two.vercel.app")
+    BACKEND_URL: str = os.getenv("RENDER_EXTERNAL_URL", os.getenv("BACKEND_URL", "https://satquery-ai-u3ls.onrender.com"))
+
 
     # SMTP / Email Delivery configuration
     SMTP_HOST: Optional[str] = None

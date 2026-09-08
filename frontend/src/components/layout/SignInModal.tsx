@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useTranslation } from '../../hooks/useTranslation';
+import { API_BASE } from '../../services/api';
+
 
 // ─── Shared Sub-Components ───────────────────────────────────────────────────
 
@@ -255,9 +257,11 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
   // ─── Social Demo Handler ───────────────────────────────────────────
 
   const handleSocialAction = (provider: 'Google' | 'Facebook') => {
-    const action = authView === 'signin' ? 'sign-in' : 'sign-up';
-    setSocialNotice(`${provider} ${action} is currently available in demo mode.`);
+    setIsLoading(true);
+    setSocialNotice(`Redirecting to ${provider} authentication...`);
+    window.location.href = `${API_BASE}/auth/${provider.toLowerCase()}`;
   };
+
 
   // ─── Sign In Submit ────────────────────────────────────────────────
 
