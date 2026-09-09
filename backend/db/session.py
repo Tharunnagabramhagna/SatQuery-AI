@@ -16,14 +16,19 @@ from backend.config import settings
 
 logger = logging.getLogger("satquery.db")
 
-# Create primary synchronous database engine with connection pooling
-# pool_pre_ping checks connection health before handing it to a session
-engine: Engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-)
+# Create database engine with appropriate pooling strategy
+if settings.DATABASE_URL.startswith("sqlite"):
+    engine: Engine = create_engine(
+        settings.DATABASE_URL,
+        connect_args={"check_same_thread": False},
+    )
+else:
+    engine: Engine = create_engine(
+        settings.DATABASE_URL,
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+    )
 
 # Session factory for synchronous database operations
 SessionLocal = sessionmaker(

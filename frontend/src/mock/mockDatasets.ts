@@ -16,7 +16,7 @@ export const MOCK_DATASET_SCENARIOS: DatasetScenario[] = [
     capability: 'grounding',
     mode: 'single_image',
     toolId: 'grounding',
-    thumbnail: '/imagery/sat_after.jpg',
+    thumbnail: '/imagery/dataset_grounding_buildings.png',
     modality: 'Optical High-Resolution',
     query: 'Locate all warehouse structures, building footprints, and arterial transportation corridors.',
     datasetName: 'Demo scenario based on SpaceNet building testbed',
@@ -45,7 +45,7 @@ export const MOCK_DATASET_SCENARIOS: DatasetScenario[] = [
     capability: 'vqa',
     mode: 'single_image',
     toolId: 'vqa',
-    thumbnail: '/imagery/sat_after.jpg',
+    thumbnail: '/imagery/dataset_vqa_landuse.png',
     modality: 'Multispectral Optical',
     query: 'What infrastructure and agricultural land use patterns are present in this satellite scene?',
     datasetName: 'Demo scenario based on RSIVQA benchmark',
@@ -74,7 +74,7 @@ export const MOCK_DATASET_SCENARIOS: DatasetScenario[] = [
     capability: 'change_detection',
     mode: 'compare_images',
     toolId: 'change_analysis',
-    thumbnail: '/imagery/sat_before.jpg',
+    thumbnail: '/imagery/dataset_change_detection.png',
     modality: 'Bi-temporal Optical',
     query: 'Identify the major changes between these two images.',
     datasetName: 'Demo scenario based on WHU-CD / LEVIR-CD benchmark',
@@ -103,7 +103,7 @@ export const MOCK_DATASET_SCENARIOS: DatasetScenario[] = [
     capability: 'change_vqa',
     mode: 'compare_images',
     toolId: 'change_vqa',
-    thumbnail: '/imagery/sat_after.jpg',
+    thumbnail: '/imagery/dataset_change_vqa.png',
     modality: 'Bi-temporal Optical',
     query: 'How much agricultural land was converted into built-up structures between 2025 and 2026?',
     datasetName: 'Demo scenario based on ChangeVQA benchmark',
@@ -132,7 +132,7 @@ export const MOCK_DATASET_SCENARIOS: DatasetScenario[] = [
     capability: 'multimodal_analysis',
     mode: 'optical_sar',
     toolId: 'optical_sar',
-    thumbnail: '/imagery/sat_after.jpg',
+    thumbnail: '/imagery/dataset_optical_sar.png',
     modality: 'Optical RGB + C-Band SAR',
     query: 'Analyze complementary structure and surface reflectance across optical and radar backscatter.',
     datasetName: 'Demo scenario based on Sentinel-1 & Sentinel-2 fused testbeds',
@@ -184,8 +184,23 @@ export const MOCK_DATASET_SCENARIOS: DatasetScenario[] = [
 ];
 
 /**
- * Find a dataset scenario by ID
+ * Find a dataset scenario by ID (supporting both mock scenarios and custom imported datasets)
  */
 export function findDatasetScenario(id: string): DatasetScenario | undefined {
-  return MOCK_DATASET_SCENARIOS.find((scenario) => scenario.id === id);
+  const found = MOCK_DATASET_SCENARIOS.find((scenario) => scenario.id === id);
+  if (found) return found;
+
+  try {
+    const raw = localStorage.getItem('satquery-custom-datasets');
+    if (raw) {
+      const parsed: DatasetScenario[] = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.find((s) => s.id === id);
+      }
+    }
+  } catch {
+    // ignore parse error
+  }
+  return undefined;
 }
+
