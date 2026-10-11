@@ -5,6 +5,7 @@
 ### An Interactive Vision-Language Assistant for Multimodal Remote Sensing Image Analysis
 
 <p>
+  <img src="https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge" alt="Live Demo"/>
   <img src="https://img.shields.io/badge/SIH-26167-blue?style=for-the-badge" alt="SIH 26167"/>
   <img src="https://img.shields.io/badge/AI-Vision--Language-purple?style=for-the-badge" alt="Vision Language"/>
   <img src="https://img.shields.io/badge/Remote%20Sensing-Satellite%20AI-green?style=for-the-badge" alt="Remote Sensing"/>
@@ -16,6 +17,14 @@
 
 <p>
   <strong>Natural language → Remote-sensing reasoning → Multi-modal fusion → Map-accurate evidence</strong>
+</p>
+
+<p align="center">
+  <strong>👇 Click me to try SatQuery AI</strong>
+  <br/><br/>
+  <a href="https://sat-query-ai-xi-gold.vercel.app" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/badge/🚀_OPEN_LIVE_DEMO-24292f?style=for-the-badge" alt="Open Live Demo"/>
+  </a>
 </p>
 
 </div>
