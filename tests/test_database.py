@@ -715,34 +715,47 @@ def test_cors_behavior_with_preview_enabled_and_disabled():
     assert res_ext_reject.headers.get("access-control-allow-origin") is None
 
 
-def test_procfile_and_dockerfile_startup_command_consistency():
-    """Verify Procfile and Dockerfile start commands are consistent, target backend.main:app, and expand PORT via sh."""
+def test_procfile_dockerfile_and_railway_startup_command_consistency():
+    """Verify Procfile, Dockerfile, and railway.toml all use the canonical sh start.sh startup path."""
+    import tomllib
     from pathlib import Path
-    import re
 
     repo_root = Path(__file__).resolve().parent.parent
 
-    # 1. Procfile inspection
+    # 1. start.sh canonical script inspection
+    start_sh_path = repo_root / "start.sh"
+    assert start_sh_path.exists(), "start.sh must exist as the canonical entrypoint"
+    start_sh_content = start_sh_path.read_text(encoding="utf-8")
+    assert start_sh_content.startswith("#!/bin/sh\n"), "start.sh must have #!/bin/sh shebang"
+    assert "set -e\n" in start_sh_content, "start.sh must use set -e"
+    assert 'PORT="${PORT:-8000}"' in start_sh_content, "start.sh must define PORT=\"${PORT:-8000}\""
+    assert 'exec uvicorn backend.main:app --host 0.0.0.0 --port "$PORT"' in start_sh_content, (
+        "start.sh must exec uvicorn backend.main:app --host 0.0.0.0 --port \"$PORT\""
+    )
+
+    # 2. Procfile inspection
     procfile_path = repo_root / "Procfile"
     assert procfile_path.exists(), "Procfile must exist"
     procfile_content = procfile_path.read_text(encoding="utf-8").strip()
+    assert procfile_content == "web: sh start.sh", "Procfile must invoke 'web: sh start.sh'"
 
-    assert "backend.main:app" in procfile_content, "Procfile must target backend.main:app"
-    assert "--host 0.0.0.0" in procfile_content, "Procfile must bind to 0.0.0.0"
-    assert "sh -c" in procfile_content, "Procfile must use sh -c to expand environment variables"
-    assert "${PORT" in procfile_content, "Procfile must use shell parameter expansion ${PORT...}"
-    # Verify bare $PORT without sh -c is NOT present
-    assert not re.search(r"--port\s+\$PORT\b", procfile_content), "Procfile must not pass raw $PORT without shell expansion"
-
-    # 2. Dockerfile inspection
+    # 3. Dockerfile inspection
     dockerfile_path = repo_root / "Dockerfile"
     assert dockerfile_path.exists(), "Dockerfile must exist"
     dockerfile_content = dockerfile_path.read_text(encoding="utf-8")
+    assert 'CMD ["sh", "start.sh"]' in dockerfile_content, "Dockerfile CMD must specify [\"sh\", \"start.sh\"]"
 
-    assert "backend.main:app" in dockerfile_content, "Dockerfile must target backend.main:app"
-    assert "--host 0.0.0.0" in dockerfile_content, "Dockerfile must bind to 0.0.0.0"
-    assert "sh" in dockerfile_content and "-c" in dockerfile_content, "Dockerfile CMD must execute via sh -c"
-    assert "${PORT" in dockerfile_content, "Dockerfile CMD must expand ${PORT...}"
+    # 4. railway.toml inspection
+    railway_toml_path = repo_root / "railway.toml"
+    assert railway_toml_path.exists(), "railway.toml must exist as single config-as-code file"
+    with open(railway_toml_path, "rb") as f:
+        toml_data = tomllib.load(f)
+    assert toml_data.get("build", {}).get("builder") == "DOCKERFILE", "railway.toml must configure DOCKERFILE builder"
+    assert toml_data.get("deploy", {}).get("startCommand") == "sh start.sh", "railway.toml must configure 'sh start.sh'"
+
+    # 5. Ensure duplicate configuration files are not present
+    assert not (repo_root / "railway.json").exists(), "railway.json must not be present when railway.toml is used"
+    assert not (repo_root / "nixpacks.toml").exists(), "nixpacks.toml must not be present when Dockerfile is used"
 
 
 def test_uvicorn_port_validation_rejects_literal_string_and_accepts_integer():
@@ -770,78 +783,75 @@ def test_uvicorn_port_validation_rejects_literal_string_and_accepts_integer():
     assert "is not a valid integer" not in proc_good.stderr
 
 
-def test_procfile_sh_command_expands_numeric_port():
-    """Parse and execute the actual startup command from Procfile with a controlled numeric PORT without launching a server."""
+def test_start_sh_port_expansion_and_execution():
+    """Verify start.sh executes with sh start.sh and passes numeric ports to uvicorn on PATH."""
     import os
-    import re
     import shutil
     import subprocess
-    import sys
+    import tempfile
     from pathlib import Path
 
     repo_root = Path(__file__).resolve().parent.parent
-    procfile_path = repo_root / "Procfile"
-    assert procfile_path.exists(), "Procfile must exist"
-    procfile_content = procfile_path.read_text(encoding="utf-8").strip()
-
-    assert procfile_content.startswith("web: "), "Procfile must define a 'web: ' process"
-
-    # Extract the exact shell command wrapped in sh -c "..." directly from Procfile
-    match = re.search(r'sh\s+-c\s+["\'](.*?)["\']', procfile_content)
-    assert match is not None, "Procfile command must be wrapped in sh -c \"...\""
-    inner_cmd = match.group(1)
-
-    # Assertions on the actual parsed Procfile command
-    assert inner_cmd.startswith("uvicorn backend.main:app"), "Procfile must target backend.main:app"
-    assert "--host 0.0.0.0" in inner_cmd, "Procfile must bind to 0.0.0.0"
-    assert "--port ${PORT:-8000}" in inner_cmd, "Procfile must use ${PORT:-8000} expansion"
-
-    # Extract the exact port expression from inner_cmd
-    port_match = re.search(r'--port\s+([^\s]+)', inner_cmd)
-    assert port_match is not None, "Procfile command must specify a --port argument"
-    port_expr = port_match.group(1)
-    assert port_expr == "${PORT:-8000}", f"Expected '${{PORT:-8000}}', got '{port_expr}'"
+    start_sh = repo_root / "start.sh"
+    assert start_sh.exists(), "start.sh must exist"
 
     sh_executable = shutil.which("sh")
     if not sh_executable:
-        pytest.skip("POSIX shell 'sh' is not available in the current environment to execute shell expansion assertions.")
+        pytest.skip("POSIX shell 'sh' is not available in the current environment.")
 
-    # 1. Controlled numeric PORT=9050: verify expanded argument from Procfile is numeric
-    test_env = dict(os.environ, PORT="9050")
-    proc_custom = subprocess.run(
-        [sh_executable, "-c", f"echo {port_expr}"],
-        capture_output=True,
-        text=True,
-        env=test_env,
-    )
-    assert proc_custom.returncode == 0
-    expanded_port = proc_custom.stdout.strip()
-    assert expanded_port == "9050"
-    assert expanded_port.isdigit()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        args_log = tmp_path / "uvicorn_args.log"
+        fake_uvicorn = tmp_path / "uvicorn"
 
-    # 2. Unset PORT: verify default fallback from Procfile is numeric (8000)
-    test_env_no_port = {k: v for k, v in os.environ.items() if k != "PORT"}
-    proc_fallback = subprocess.run(
-        [sh_executable, "-c", f"echo {port_expr}"],
-        capture_output=True,
-        text=True,
-        env=test_env_no_port,
-    )
-    assert proc_fallback.returncode == 0
-    fallback_port = proc_fallback.stdout.strip()
-    assert fallback_port == "8000"
-    assert fallback_port.isdigit()
+        # Create temporary fake uvicorn executable that records arguments and exits without launching a server
+        fake_uvicorn.write_text(
+            '#!/bin/sh\n'
+            f'echo "$@" > "{args_log.as_posix()}"\n'
+            'exit 0\n',
+            encoding="utf-8",
+        )
+        try:
+            fake_uvicorn.chmod(0o755)
+        except OSError:
+            pass
 
-    # 3. Execute the actual Procfile command with python interpreter and --help (safe, no persistent server)
-    py_path = sys.executable.replace("\\", "/")
-    # Drop-in python interpreter for uvicorn in the parsed command, appending --help
-    test_help_cmd = inner_cmd.replace("uvicorn", f'"{py_path}" -m uvicorn', 1) + " --help"
-    proc_help = subprocess.run(
-        [sh_executable, "-c", test_help_cmd],
-        capture_output=True,
-        text=True,
-        env=test_env,
-    )
-    assert proc_help.returncode == 0
-    assert "[OPTIONS]" in proc_help.stdout and "APP" in proc_help.stdout
-    assert "is not a valid integer" not in proc_help.stderr
+        base_path = tmpdir + os.pathsep + os.environ.get("PATH", "")
+
+        # 1. Controlled numeric PORT=9050: verify --port receives 9050
+        env_custom = dict(os.environ, PORT="9050", PATH=base_path)
+        proc_custom = subprocess.run(
+            [sh_executable, "start.sh"],
+            capture_output=True,
+            text=True,
+            cwd=str(repo_root),
+            env=env_custom,
+        )
+        assert proc_custom.returncode == 0, f"sh start.sh failed: {proc_custom.stderr}"
+        recorded_args_custom = args_log.read_text(encoding="utf-8").strip().split()
+        assert "--port" in recorded_args_custom, f"Expected --port in arguments: {recorded_args_custom}"
+        port_index_custom = recorded_args_custom.index("--port")
+        assert recorded_args_custom[port_index_custom + 1] == "9050", (
+            f"Expected --port to receive 9050, got {recorded_args_custom[port_index_custom + 1]}"
+        )
+        assert "backend.main:app" in recorded_args_custom
+        assert "--host" in recorded_args_custom and recorded_args_custom[recorded_args_custom.index("--host") + 1] == "0.0.0.0"
+
+        # 2. Unset PORT: verify fallback --port receives 8000
+        env_fallback = {k: v for k, v in os.environ.items() if k != "PORT"}
+        env_fallback["PATH"] = base_path
+        proc_fallback = subprocess.run(
+            [sh_executable, "start.sh"],
+            capture_output=True,
+            text=True,
+            cwd=str(repo_root),
+            env=env_fallback,
+        )
+        assert proc_fallback.returncode == 0, f"sh start.sh failed: {proc_fallback.stderr}"
+        recorded_args_fallback = args_log.read_text(encoding="utf-8").strip().split()
+        assert "--port" in recorded_args_fallback, f"Expected --port in arguments: {recorded_args_fallback}"
+        port_index_fallback = recorded_args_fallback.index("--port")
+        assert recorded_args_fallback[port_index_fallback + 1] == "8000", (
+            f"Expected --port to receive 8000, got {recorded_args_fallback[port_index_fallback + 1]}"
+        )
+        assert "backend.main:app" in recorded_args_fallback
