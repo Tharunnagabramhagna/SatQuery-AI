@@ -321,8 +321,8 @@ export async function uploadDatasetZip(file: File): Promise<{ datasetId: string;
     const zip = await JSZip.loadAsync(file);
     const validImageExtensions = /\.(png|jpe?g|webp|bmp|tif|tiff)$/i;
 
-    const imageEntries = Object.values(zip.files).filter(
-      (entry) => !entry.dir && validImageExtensions.test(entry.name) && !entry.name.startsWith('__MACOSX')
+    const imageEntries: JSZip.JSZipObject[] = Object.values(zip.files).filter(
+      (entry: JSZip.JSZipObject) => !entry.dir && validImageExtensions.test(entry.name) && !entry.name.startsWith('__MACOSX')
     );
 
     if (imageEntries.length === 0) {
@@ -335,7 +335,7 @@ export async function uploadDatasetZip(file: File): Promise<{ datasetId: string;
     // Process up to 30 scenes for immediate analysis
     const processLimit = Math.min(imageEntries.length, 30);
     for (let i = 0; i < processLimit; i++) {
-      const entry = imageEntries[i];
+      const entry: JSZip.JSZipObject = imageEntries[i];
       const blob = await entry.async('blob');
 
       const isPng = /\.png$/i.test(entry.name);
@@ -345,7 +345,7 @@ export async function uploadDatasetZip(file: File): Promise<{ datasetId: string;
       const objectUrl = URL.createObjectURL(imageBlob);
 
       const fileNameOnly = entry.name.split('/').pop()?.replace(/\.[^/.]+$/, '') || `scene_${i + 1}`;
-      const cleanTitle = fileNameOnly.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const cleanTitle = fileNameOnly.replace(/[-_]/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
 
       const scenario: DatasetScenario = {
         id: `custom-${Date.now()}-${i}`,

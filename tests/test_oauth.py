@@ -85,6 +85,7 @@ def configure_oauth_settings(monkeypatch):
     monkeypatch.setattr(settings, "FACEBOOK_APP_SECRET", "test-facebook-app-secret")
     monkeypatch.setattr(settings, "FRONTEND_URL", "http://localhost:5173")
     monkeypatch.setattr(settings, "BACKEND_URL", "http://localhost:8000")
+    monkeypatch.setattr(settings, "JWT_SECRET_KEY", "test-jwt-secret-key-at-least-32-chars-long")
 
 
 # ─── 1. Initiation & State Generation ─────────────────────────────────────────

@@ -209,8 +209,15 @@ def test_orchestrator_custom_router_swapping():
 # 5. API Endpoint Integration with Routing & Execution Trace
 # -----------------------------------------------------------------------------
 
-def test_api_query_returns_routing_decision_and_trace():
+def test_api_query_returns_routing_decision_and_trace(monkeypatch):
     """Verify POST /api/query returns both Query Understanding and Agent Routing in execution trace."""
+    # Isolate classifier to ensure deterministic test execution without external LLM network variance
+    from backend.agents.orchestrator import orchestrator
+    monkeypatch.setattr(
+        orchestrator.query_understanding,
+        "classifier",
+        RuleBasedQueryClassifier(),
+    )
     query = "What changed between 2023 and 2025?"
     response = client.post("/api/query", json={"query": query})
     assert response.status_code == 200

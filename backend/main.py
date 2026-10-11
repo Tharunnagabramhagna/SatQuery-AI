@@ -32,6 +32,7 @@ from backend.api.auth import router as auth_router
 from backend.api.datasets import router as datasets_router
 from backend.api.oauth import router as oauth_router
 from backend.api.routes import router as api_router
+from backend.config import Settings, settings
 
 # Configure logging
 logging.basicConfig(
@@ -52,32 +53,60 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+
+def get_cors_origins(app_settings: Optional[Settings] = None) -> list[str]:
+    """Compute allowed CORS origins based on environment and explicit configuration.
+
+    In production and staging, localhost origins are NOT automatically allowed.
+    Only the configured non-localhost FRONTEND_URL and explicitly provided CORS_ORIGINS are allowed.
+    In development and test environments, localhost origins are allowed by default.
+    """
+    cfg = app_settings if app_settings is not None else settings
+    origins: list[str] = []
+
+    # 1. Configured frontend URL
+    frontend_url = (cfg.FRONTEND_URL or os.getenv("FRONTEND_URL", "")).strip()
+    is_localhost_fe = any(
+        frontend_url.startswith(prefix)
+        for prefix in ("http://localhost", "http://127.0.0.1", "https://localhost", "https://127.0.0.1")
+    )
+    if frontend_url and (not cfg.is_production_grade or not is_localhost_fe):
+        if frontend_url not in origins:
+            origins.append(frontend_url)
+    elif cfg.is_production_grade and not origins:
+        # Production fallback to production frontend if configured FRONTEND_URL was local development URL
+        prod_default = "https://sat-query-ai-two.vercel.app"
+        if prod_default not in origins:
+            origins.append(prod_default)
+
+    # 2. Local development origins: only in non-production/staging environments
+    if not cfg.is_production_grade:
+        dev_origins = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+        for dev_orig in dev_origins:
+            if dev_orig not in origins:
+                origins.append(dev_orig)
+
+    # 3. Explicitly configured CORS_ORIGINS (always honored in all environments)
+    cors_origins_raw = cfg.CORS_ORIGINS or os.getenv("CORS_ORIGINS", "")
+    if cors_origins_raw:
+        for orig in cors_origins_raw.split(","):
+            orig_clean = orig.strip()
+            if orig_clean and orig_clean not in origins:
+                origins.append(orig_clean)
+
+    return origins
+
+
 # Configure CORS Middleware
-# Explicit allowed origins including production Vercel frontend and local development
-default_origins = [
-    "https://sat-query-ai-two.vercel.app",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-allowed_origins_env = os.getenv("CORS_ORIGINS", "")
-allowed_origins = list(default_origins)
-if allowed_origins_env:
-    for orig in allowed_origins_env.split(","):
-        orig_clean = orig.strip()
-        if orig_clean and orig_clean not in allowed_origins:
-            allowed_origins.append(orig_clean)
-
-frontend_url = os.getenv("FRONTEND_URL", "").strip()
-if frontend_url and frontend_url not in allowed_origins:
-    allowed_origins.append(frontend_url)
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_origin_regex=r"^https://.*\.vercel\.app$",
+    allow_origins=get_cors_origins(settings),
+    allow_origin_regex=r"^https://.*\.vercel\.app$" if settings.ALLOW_VERCEL_PREVIEWS else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
